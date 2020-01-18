@@ -1,35 +1,31 @@
 #include <stdio.h>
-#include <stdbool.h> 
+#include <stdbool.h>
 
 #include "SDL2/SDL.h"
-
+#include "std.h"
+#include "window.h"
 
 #define SCREEN_WIDTH 640
 #define SCREEN_HEIGHT 480
 
-int main(int argc, char* argv[]) {
-  SDL_Window* window = NULL;
-  SDL_Surface* screenSurface = NULL;
-  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    fprintf(stderr, "could not initialize sdl2: %s\n", SDL_GetError());
-    return 1;
-  }
-  window = SDL_CreateWindow(
-			    "hello_sdl2",
-			    SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
-			    SCREEN_WIDTH, SCREEN_HEIGHT,
-			    SDL_WINDOW_SHOWN
-			    );
-  if (window == NULL) {
-    fprintf(stderr, "could not create window: %s\n", SDL_GetError());
-    return 1;
-  }
-  screenSurface = SDL_GetWindowSurface(window);
-  SDL_FillRect(screenSurface, NULL, SDL_MapRGB(screenSurface->format, 0xFF, 0xFF, 0xFF));
-  SDL_UpdateWindowSurface(window);
-  SDL_Delay(2000);
-  SDL_DestroyWindow(window);
-  SDL_Quit();
+int main(int argc, char *argv[])
+{
 
-  return 0;
+    struct SdlContext *windowContext = SdlContext_New(640, 480);
+
+    if (!windowContext)
+    {
+        return 1;
+    }
+
+    windowContext->surface = SDL_GetWindowSurface(windowContext->window);
+    SDL_FillRect(windowContext->surface, NULL, SDL_MapRGB(windowContext->surface->format, 0xFF, 0xFF, 0xFF));
+    SDL_UpdateWindowSurface(windowContext->window);
+    SDL_Delay(2000);
+
+    // Cleanup code
+    SDL_DestroyWindow(windowContext->window);
+    SDL_Quit();
+
+    return 0;
 }

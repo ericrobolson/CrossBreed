@@ -2,15 +2,13 @@
     // See https://go.microsoft.com/fwlink/?LinkId=733558
     // for the documentation about the tasks.json format
     "version": "2.0.0",
-    "tasks": [
-        {
-            "label": "Win64 build",
-            "type": "shell",
-            "command": "gcc -I'include/' -L'lib' -o CrossBreed main.c -lmingw32 -lSDL2main -lSDL2",
-            "group": {
-                "kind": "build",
-                "isDefault": true
-            }
+    "tasks": [{
+        "label": "Win64 build",
+        "type": "shell",
+        "command": "gcc -I'include/' -L'lib' -o CrossBreed main.c -lmingw32 -lSDL2main -lSDL2",
+        "group": {
+            "kind": "build",
+            "isDefault": true
         }
-    ]
+    }]
 }
