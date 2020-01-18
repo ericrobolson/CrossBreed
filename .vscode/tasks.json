@@ -6,7 +6,7 @@
         {
             "label": "Win64 build",
             "type": "shell",
-            "command": "gcc -o CrossBreed main.c",
+            "command": "gcc -I'include/' -L'lib' -o CrossBreed main.c -lmingw32 -lSDL2main -lSDL2",
             "group": {
                 "kind": "build",
                 "isDefault": true
