@@ -5,7 +5,7 @@
     "tasks": [{
         "label": "Win64 build",
         "type": "shell",
-        "command": "gcc -I'include/' -L'lib' -o CrossBreed main.c -lmingw32 -lSDL2main -lSDL2",
+        "command": "gcc -o CrossBreed include/window.c main.c -I'include/' -L'lib' -lmingw32 -lSDL2main -lSDL2",
         "group": {
             "kind": "build",
             "isDefault": true

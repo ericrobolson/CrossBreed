@@ -24,8 +24,7 @@ int main(int argc, char *argv[])
     SDL_Delay(2000);
 
     // Cleanup code
-    SDL_DestroyWindow(windowContext->window);
-    SDL_Quit();
+    SdlContext_Destroy(windowContext);
 
     return 0;
 }
