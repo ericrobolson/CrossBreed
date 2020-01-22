@@ -3,12 +3,31 @@
     // for the documentation about the tasks.json format
     "version": "2.0.0",
     "tasks": [{
-        "label": "Win64 build",
-        "type": "shell",
-        "command": "gcc -o CrossBreed include/window.c main.c -I'include/' -L'lib' -lmingw32 -lSDL2main -lSDL2",
-        "group": {
-            "kind": "build",
-            "isDefault": true
+            "label": "Default Build",
+            "type": "cargo",
+            "subcommand": "build",
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "type": "shell",
+            "label": "cargo test build",
+            "command": "cargo",
+            "args": [
+                "test",
+                "--no-run"
+            ],
+            "problemMatcher": [
+                "$rustc"
+            ],
+            "group": {
+                "kind": "build",
+            }
         }
-    }]
+    ]
 }

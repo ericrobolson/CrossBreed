@@ -1,5 +1,0 @@
-enum Result
-{
-    Ok,
-    Error
-};
