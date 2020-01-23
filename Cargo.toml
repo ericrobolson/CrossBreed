@@ -9,7 +9,6 @@ edition = "2018"
 [dependencies]
 gl = "0.14.0"
 
-
 [dependencies.sdl2]
 version = "0.32"
 features = ["bundled"]
