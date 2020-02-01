@@ -11,12 +11,12 @@ enum RunType {
     AlwaysRun,
 }
 
-pub struct context {
+pub struct Context {
     run_type: RunType,
 }
 
 pub struct ContextManager {
-    context_stack: Vec<context>, //TODO: implement a stack of all context types.
+    context_stack: Vec<Context>, //TODO: implement a stack of all context types.
 
                                  // Base context is main menu. Sim context would be the actual game itself.
                                  // Note: if real time game, game sim must always run if it's on the stack.
@@ -36,7 +36,12 @@ impl ContextManager {
         return mgr;
     }
 
-    fn init_main_menu(&mut self) {}
+    fn init_main_menu(&mut self) {
+        let main = Context {
+            run_type: RunType::RunWhenActive,
+        };
+        self.context_stack.push(main);
+    }
 
     pub fn tick(&self, inputs: Vec<Input>) -> Self {
         //TODO: do stuff with inputs and run the different contexts, inputting no input if blank

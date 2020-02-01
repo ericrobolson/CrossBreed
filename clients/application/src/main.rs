@@ -55,6 +55,7 @@ fn main() {
 
         if context_manager.has_active_context() == false {
             //TODO: exit game
+            break;
         }
 
         //TODO: figure out
