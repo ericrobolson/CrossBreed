@@ -1,4 +1,6 @@
 /clients/application/target
+/server/*/target
+
 
 #Added by cargo
 #

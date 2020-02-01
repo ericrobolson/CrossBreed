@@ -6,23 +6,23 @@
     "configurations": [
 
         {
-            "name": "(Windows) Debug",
+            "name": "Navigation Debug",
             "type": "cppvsdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/target/debug/cross_breed.exe",
+            "program": "/target/debug/navigation.exe",
             "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
+            "cwd": "${workspaceFolder}/server/navigation",
             "externalConsole": true
         },
-        {
-            "name": "(TESTs) Debug",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${workspaceFolder}/target/debug/deps/cross_breed-174c971fec2a8caf.exe",
-            "stopAtEntry": false,
-            "cwd": "${workspaceFolder}",
-            "externalConsole": true,
-            "preLaunchTask": "cargo test build",
-        }
+        //{
+        //    "name": "(TESTs) Debug",
+        //    "type": "cppvsdbg",
+        //    "request": "launch",
+        //    "program": "${workspaceFolder}/target/debug/deps/cross_breed-174c971fec2a8caf.exe",
+        //    "stopAtEntry": false,
+        //    "cwd": "${workspaceFolder}",
+        //    "externalConsole": true,
+        //    "preLaunchTask": "cargo test build",
+        //}
     ]
 }
