@@ -1,6 +1,6 @@
 tech stack:
 
-# framework: actix-web
+# framework: nickel
 
 # orm: diesel
 
