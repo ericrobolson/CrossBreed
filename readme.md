@@ -5,3 +5,7 @@ tech stack:
 # orm: diesel
 
 # auth: oath2
+
+
+Dependencies:
+# CMake (for SDL2)

@@ -12,7 +12,7 @@
 		"webfreak.debug",
 		"Swellaby.rust-pack",
 		"Swellaby.vscode-rust-test-adapter",
-		
+		"ms-vscode.cpptools",
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
 	"unwantedRecommendations": [
