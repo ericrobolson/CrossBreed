@@ -1,7 +1,6 @@
 {
 	// See http://go.microsoft.com/fwlink/?LinkId=827846 to learn about workspace recommendations.
 	// Extension identifier format: ${publisher}.${name}. Example: vscode.csharp
-
 	// List of extensions which should be recommended for users of this workspace.
 	"recommendations": [
 		"bungcip.better-toml",
@@ -9,13 +8,10 @@
 		"ms-vscode.cpptools",
 		"serayuzgur.crates",
 		"rust-lang.rust",
-		"webfreak.debug",
-		"Swellaby.rust-pack",
+		"webfreak.debug",		
 		"Swellaby.vscode-rust-test-adapter",
-		"ms-vscode.cpptools",
+		"ms-vscode.cpptools",		
 	],
 	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
-	"unwantedRecommendations": [
-		
-	]
+	"unwantedRecommendations": []
 }
