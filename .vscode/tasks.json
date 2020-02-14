@@ -5,43 +5,49 @@
   "tasks": [
     {
       "label": "build all",
-      "dependsOn":["build navigation", "build pc client"],      
+      "dependsOn": [
+        "build navigation",
+        "build pc client"
+      ],
       "group": {
-        "kind": "build"       ,
+        "kind": "build",
         "isDefault": true
       }
     },
     {
-    "label": "build navigation",
-    "type": "shell",
-    "command": "cargo",
-    "args": ["build"],
-    "problemMatcher": [
-      "$rustc"
-    ],
-    "options": {
-      "cwd": "${workspaceRoot}/server/navigation"
+      "label": "build navigation",
+      "type": "shell",
+      "command": "cargo",
+      "args": [
+        "build"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "options": {
+        "cwd": "${workspaceRoot}/server/navigation"
+      },
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      }
     },
-    "group": {
-      "kind": "build"
-    }
-  },
-  {
-    "label": "build pc client",
-    "type": "shell",
-    "command": "cargo",
-    "args": ["build"],
-    "problemMatcher": [
-      "$rustc"
-    ],
-    "options": {
-      "cwd": "${workspaceRoot}/client"
+    {
+      "label": "build pc client",
+      "type": "shell",
+      "command": "cargo",
+      "args": [
+        "build"
+      ],
+      "problemMatcher": [
+        "$rustc"
+      ],
+      "options": {
+        "cwd": "${workspaceRoot}/client"
+      },
+      "group": {
+        "kind": "build"
+      }
     },
-    "group": {
-      "kind": "build"
-    }
-  },
-
-
-]
+  ]
 }

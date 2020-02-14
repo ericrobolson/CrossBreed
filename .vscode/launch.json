@@ -13,6 +13,15 @@
             "cwd": "${workspaceFolder}/server/navigation",
             "externalConsole": true
         },
+        {
+            "name": "Client Debug",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "/target/debug/client.exe",
+            "stopAtEntry": false,
+            "cwd": "${workspaceFolder}/client",
+            "externalConsole": true
+        },
         //{
         //    "name": "(TESTs) Debug",
         //    "type": "cppvsdbg",
