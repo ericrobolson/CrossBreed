@@ -1,10 +1,9 @@
 pub type GameTick = u32;
+pub type PlayerId = u8;
 
-pub enum CbEventType {
-    Input,
-    Network,
-}
+pub const FRAMEDELAY: GameTick = 3;
 
-pub struct CbEvent {
+pub struct CbEvent<T> {
     pub tick: GameTick,
+    pub value: T,
 }
