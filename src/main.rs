@@ -1,5 +1,6 @@
 // External crates
 extern crate gl;
+extern crate rmercury;
 extern crate sdl2;
 use sdl2::{event::Event, keyboard::Keycode, video::GLProfile};
 
@@ -10,6 +11,14 @@ pub mod cb_simulation;
 pub mod cb_system;
 pub mod contexts;
 use cb_system::{CbEvent, GameTick, PlayerId};
+
+pub struct GameSim {}
+
+impl GameSim {
+    pub fn new() -> Self {
+        return GameSim {};
+    }
+}
 
 fn main() {
     // Init SDL
@@ -39,13 +48,18 @@ fn main() {
     let player_id: PlayerId = 1;
     let mut game_state = cb_simulation::GameState::new();
 
-    let mut movement_context = cb_input::MovementContext::new();
+    let mut movement_context = cb_input::contexts::shooter_context::ShooterMovementContext::new();
 
     loop {
         // Get Events
         {
-            movement_context =
-                cb_input::get_movement_context(game_tick, &mut event_pump, &movement_context);
+            let os_events = cb_input::get_os_inputs(&mut event_pump);
+
+            movement_context = cb_input::contexts::shooter_context::get_shooter_movement_context(
+                game_tick,
+                &os_events,
+                &movement_context,
+            );
 
             let input_event = CbEvent {
                 tick: game_tick + cb_system::FRAMEDELAY,
