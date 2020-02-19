@@ -60,10 +60,7 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new().build();
     dispatcher.setup(&mut world);
 
-    world
-        .create_entity()
-        .with(cb_simulation::components::rts_components::ArmorComponent::new())
-        .build();
+    cb_simulation::assemblages::rts_assemblages::new_unit(&mut world);
 
     loop {
         // Get Events
