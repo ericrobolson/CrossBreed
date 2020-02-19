@@ -4,7 +4,7 @@ extern crate rmercury;
 extern crate specs;
 use specs::prelude::*;
 extern crate sdl2;
-use sdl2::{event::Event, keyboard::Keycode, video::GLProfile};
+use sdl2::video::GLProfile;
 
 // Internal crates
 #[macro_use]
