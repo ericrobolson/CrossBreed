@@ -1,10 +1,15 @@
 // External crates
 extern crate gl;
 extern crate rmercury;
+extern crate specs;
+use specs::prelude::*;
 extern crate sdl2;
 use sdl2::{event::Event, keyboard::Keycode, video::GLProfile};
 
 // Internal crates
+#[macro_use]
+pub mod external_libs;
+
 pub mod cb_graphics;
 pub mod cb_input;
 pub mod cb_simulation;
@@ -49,6 +54,16 @@ fn main() {
     let mut game_state = cb_simulation::GameState::new();
 
     let mut movement_context = cb_input::contexts::shooter_context::ShooterMovementContext::new();
+
+    // Init specs
+    let mut world = World::new();
+    let mut dispatcher = DispatcherBuilder::new().build();
+    dispatcher.setup(&mut world);
+
+    world
+        .create_entity()
+        .with(cb_simulation::components::rts_components::ArmorComponent::new())
+        .build();
 
     loop {
         // Get Events

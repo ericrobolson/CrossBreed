@@ -1,6 +1,9 @@
 use crate::cb_system;
 use cb_system::{CbEvent, GameTick};
 
+pub mod assemblages;
+pub mod components;
+
 #[derive(Debug, Copy, Clone)]
 pub struct GameState {
     pub current_tick: GameTick,
