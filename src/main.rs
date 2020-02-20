@@ -5,6 +5,7 @@ extern crate specs;
 use specs::prelude::*;
 extern crate sdl2;
 use sdl2::video::GLProfile;
+use std::ffi::CString;
 
 // Internal crates
 #[macro_use]
@@ -60,7 +61,57 @@ fn main() {
     let mut dispatcher = DispatcherBuilder::new().build();
     dispatcher.setup(&mut world);
 
+    //TODO: fix up
     //   cb_simulation::assemblages::rts_assemblages::new_unit(&mut world);
+
+    // Init OpenGL
+    let vert_shader = cb_graphics::render_gl::Shader::from_vert_source(
+        &CString::new(include_str!("triangle.vert")).unwrap(),
+    )
+    .unwrap();
+
+    let frag_shader = cb_graphics::render_gl::Shader::from_frag_source(
+        &CString::new(include_str!("triangle.frag")).unwrap(),
+    )
+    .unwrap();
+
+    let shader_program =
+        cb_graphics::render_gl::Program::from_shaders(&[vert_shader, frag_shader]).unwrap();
+    shader_program.set_used();
+
+    let vertices: Vec<f32> = vec![-0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0];
+    let mut vbo: gl::types::GLuint = 0;
+    unsafe {
+        gl::GenBuffers(1, &mut vbo);
+
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::BufferData(
+            gl::ARRAY_BUFFER,
+            (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+            vertices.as_ptr() as *const gl::types::GLvoid,
+            gl::STATIC_DRAW,
+        );
+
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+    }
+
+    let mut vao: gl::types::GLuint = 0;
+    unsafe {
+        gl::GenVertexArrays(1, &mut vao);
+        gl::BindVertexArray(vao);
+        gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+        gl::EnableVertexAttribArray(0);
+        gl::VertexAttribPointer(
+            0,
+            3,
+            gl::FLOAT,
+            gl::FALSE,
+            (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
+            std::ptr::null(),
+        );
+        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+        gl::BindVertexArray(0);
+    }
 
     loop {
         // Get Events
@@ -93,11 +144,10 @@ fn main() {
 
         // Run gfx
         {
-            //TODO
-            // Random GFX example
+            shader_program.set_used();
             unsafe {
-                gl::ClearColor(0.6, 0.0, 0.8, 1.0);
-                gl::Clear(gl::COLOR_BUFFER_BIT);
+                gl::BindVertexArray(vao);
+                gl::DrawArrays(gl::TRIANGLES, 0, 3);
             }
 
             window.gl_swap_window();
