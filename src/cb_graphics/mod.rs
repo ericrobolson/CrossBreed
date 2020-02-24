@@ -6,12 +6,15 @@ use sdl2::video::GLProfile;
 mod open_gl_backend;
 use open_gl_backend::OpenGlBackend;
 
+use crate::cb_simulation;
+use cb_simulation::GameState;
+
 #[allow(dead_code)]
 pub struct CbGfx {
     sdl_context: sdl2::Sdl,
     event_pump: sdl2::EventPump,
     window: sdl2::video::Window,
-    gl_context: sdl2::video::GLContext,
+    gl_context: sdl2::video::GLContext, // Need this to keep the OpenGL context active
     gl_backend: OpenGlBackend,
 }
 
@@ -52,16 +55,8 @@ impl CbGfx {
         return &mut self.event_pump;
     }
 
-    pub fn context(&mut self) -> &mut sdl2::Sdl {
-        return &mut self.sdl_context;
-    }
-
-    pub fn window(&mut self) -> &mut sdl2::video::Window {
-        return &mut self.window;
-    }
-
-    pub fn render(&mut self) {
-        self.gl_backend.render();
+    pub fn render(&mut self, game_state: &GameState) {
+        self.gl_backend.render(game_state);
         self.window.gl_swap_window();
     }
 }

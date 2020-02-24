@@ -1,10 +1,8 @@
 extern crate gl;
-extern crate rmercury;
-extern crate specs;
-use specs::prelude::*;
-extern crate sdl2;
-use sdl2::video::GLProfile;
 use std::ffi::CString;
+
+use crate::cb_simulation;
+use cb_simulation::GameState;
 
 pub mod render_gl;
 
@@ -68,7 +66,7 @@ impl OpenGlBackend {
         };
     }
 
-    pub fn render(&mut self) {
+    pub fn render(&mut self, game_state: &GameState) {
         self.program.set_used();
         unsafe {
             gl::BindVertexArray(self.vao);

@@ -77,7 +77,7 @@ fn main() {
         }
 
         // Run gfx
-        gfx.render();
+        gfx.render(&game_state);
     }
 
     // Cleanup

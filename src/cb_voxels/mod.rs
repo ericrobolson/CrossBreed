@@ -7,6 +7,7 @@ type COORDINATE = (usize, usize, usize);
 /// Voxels are stored in a 1d array, even though they can be referenced within a 3d array
 pub const CHUNK_SIZE_1D_ARRAY: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
+#[derive(Debug, Copy, Clone)]
 pub struct CbVoxel {
     pub on: bool,
 }
