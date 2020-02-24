@@ -44,16 +44,17 @@ impl OpenGlBackend {
 
         let mut vao: gl::types::GLuint = 0;
         unsafe {
+            let num_vertices = 3;
             gl::GenVertexArrays(1, &mut vao);
             gl::BindVertexArray(vao);
             gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
             gl::EnableVertexAttribArray(0);
             gl::VertexAttribPointer(
                 0,
-                3,
+                num_vertices,
                 gl::FLOAT,
                 gl::FALSE,
-                (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
+                (num_vertices as usize * std::mem::size_of::<f32>()) as gl::types::GLint,
                 std::ptr::null(),
             );
             gl::BindBuffer(gl::ARRAY_BUFFER, 0);
@@ -68,6 +69,7 @@ impl OpenGlBackend {
 
     pub fn render(&mut self, game_state: &GameState) {
         self.program.set_used();
+
         unsafe {
             gl::BindVertexArray(self.vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 3);
