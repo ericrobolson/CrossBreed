@@ -1,23 +1,24 @@
-pub mod render_gl;
 extern crate gl;
 extern crate rmercury;
-extern crate specs;
-use specs::prelude::*;
 extern crate sdl2;
 use sdl2::video::GLProfile;
-use std::ffi::CString;
 
+mod open_gl_backend;
+use open_gl_backend::OpenGlBackend;
+
+#[allow(dead_code)]
 pub struct CbGfx {
     sdl_context: sdl2::Sdl,
     event_pump: sdl2::EventPump,
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext,
+    gl_backend: OpenGlBackend,
 }
 
 impl CbGfx {
     pub fn new() -> Self {
-        let mut sdl_context = sdl2::init().unwrap();
-        let mut event_pump = sdl_context.event_pump().unwrap();
+        let sdl_context = sdl2::init().unwrap();
+        let event_pump = sdl_context.event_pump().unwrap();
 
         // Init OpenGL
         let video_subsystem = sdl_context.video().unwrap();
@@ -25,7 +26,7 @@ impl CbGfx {
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(3, 2);
 
-        let mut window = video_subsystem
+        let window = video_subsystem
             .window("Window", 800, 600)
             .opengl()
             .build()
@@ -36,11 +37,14 @@ impl CbGfx {
         debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
         debug_assert_eq!(gl_attr.context_version(), (3, 2));
 
+        let gl_backend = OpenGlBackend::new();
+
         return Self {
             sdl_context: sdl_context,
             event_pump: event_pump,
             window: window,
             gl_context: ctx,
+            gl_backend: gl_backend,
         };
     }
 
@@ -54,5 +58,10 @@ impl CbGfx {
 
     pub fn window(&mut self) -> &mut sdl2::video::Window {
         return &mut self.window;
+    }
+
+    pub fn render(&mut self) {
+        self.gl_backend.render();
+        self.window.gl_swap_window();
     }
 }
