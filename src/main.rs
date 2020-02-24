@@ -13,8 +13,10 @@ pub mod external_libs;
 
 pub mod cb_graphics;
 pub mod cb_input;
+pub mod cb_math;
 pub mod cb_simulation;
 pub mod cb_system;
+pub mod cb_voxels;
 pub mod contexts;
 use cb_system::{CbEvent, GameTick, PlayerId};
 
@@ -27,26 +29,7 @@ impl GameSim {
 }
 
 fn main() {
-    // Init SDL
-    let sdl_context = sdl2::init().unwrap();
-    let mut event_pump = sdl_context.event_pump().unwrap();
-
-    // Init OpenGL
-    let video_subsystem = sdl_context.video().unwrap();
-    let gl_attr = video_subsystem.gl_attr();
-    gl_attr.set_context_profile(GLProfile::Core);
-    gl_attr.set_context_version(3, 2);
-
-    let window = video_subsystem
-        .window("Window", 800, 600)
-        .opengl()
-        .build()
-        .unwrap();
-
-    let ctx = window.gl_create_context().unwrap();
-    gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
-    debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
-    debug_assert_eq!(gl_attr.context_version(), (3, 2));
+    let mut gfx = cb_graphics::CbGfx::new();
 
     // Init simulation data
     let mut game_tick: GameTick = 0;
@@ -116,7 +99,7 @@ fn main() {
     loop {
         // Get Events
         {
-            let os_events = cb_input::get_os_inputs(&mut event_pump);
+            let os_events = cb_input::get_os_inputs(gfx.event_pump());
 
             movement_context = cb_input::contexts::shooter_context::get_shooter_movement_context(
                 game_tick,
@@ -150,7 +133,7 @@ fn main() {
                 gl::DrawArrays(gl::TRIANGLES, 0, 3);
             }
 
-            window.gl_swap_window();
+            gfx.window().gl_swap_window();
         }
     }
 
