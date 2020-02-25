@@ -1,4 +1,5 @@
 extern crate gl;
+extern crate glm;
 use std::ffi::CString;
 
 use crate::cb_simulation;
@@ -9,6 +10,7 @@ pub mod render_gl;
 pub struct OpenGlBackend {
     program: render_gl::Program,
     voxel_vao: u32,
+    mvp_id: i32,
 }
 
 fn init_cube_buffers() -> gl::types::GLuint {
@@ -105,9 +107,17 @@ impl OpenGlBackend {
 
         let voxels = init_cube_buffers();
 
+        // MVP uniform
+        let mvp_str = &CString::new("MVP").unwrap();
+        let mut mvp_id;
+        unsafe {
+            mvp_id = gl::GetUniformLocation(shader_program.id(), mvp_str.as_ptr());
+        }
+
         return Self {
             program: shader_program,
             voxel_vao: voxels,
+            mvp_id: mvp_id,
         };
     }
 
@@ -119,8 +129,35 @@ impl OpenGlBackend {
 
     fn draw_voxel(&mut self) {
         unsafe {
+            let model = identity_mat4();
+            let view = identity_mat4();
+            let projection = identity_mat4();
+
+            //TODO: implement projection/view
+            //let mvp = projection * view * model;
+            let mvp = model;
+
+            gl::UniformMatrix4fv(self.mvp_id, 1, gl::FALSE, mvp.as_ptr());
+
             gl::BindVertexArray(self.voxel_vao);
             gl::DrawArrays(gl::TRIANGLES, 0, 12 * 3);
         }
     }
+}
+
+fn identity_mat4() -> Vec<f32> {
+    return vec![
+        1.0, 0.0, 0.0, 0.0, //
+        0.0, 1.0, 0.0, 0.0, //
+        0.0, 0.0, 1.0, 0.0, //
+        0.0, 0.0, 0.0, 1.0, //
+    ];
+}
+
+fn mat3(f: f32) -> Vec<f32> {
+    return vec![f, f, f, f, f, f, f, f, f, f, f, f];
+}
+
+fn mat4(f: f32) -> Vec<f32> {
+    return vec![f, f, f, f, f, f, f, f, f, f, f, f, f, f, f, f];
 }
