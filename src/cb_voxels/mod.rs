@@ -1,8 +1,9 @@
 use crate::cb_math;
 use cb_math::pow;
 
-pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE: usize = 3;
 const MAX_CHUNK_INDEX_3d: usize = CHUNK_SIZE - 1;
+
 type COORDINATE = (usize, usize, usize);
 /// Voxels are stored in a 1d array, even though they can be referenced within a 3d array
 pub const CHUNK_SIZE_1D_ARRAY: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
@@ -18,8 +19,9 @@ impl CbVoxel {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct CbVoxelChunk {
-    voxels: Vec<(COORDINATE, CbVoxel)>,
+    pub voxels: Vec<(COORDINATE, CbVoxel)>,
 }
 
 impl CbVoxelChunk {
@@ -27,16 +29,20 @@ impl CbVoxelChunk {
         let mut voxels = vec![];
 
         voxels.reserve(CHUNK_SIZE_1D_ARRAY);
-        for i in 0..CHUNK_SIZE_1D_ARRAY {
-            let coordinate = Self::voxel_1d_to_3d(i);
+        for x in 0..CHUNK_SIZE {
+            for y in 0..CHUNK_SIZE {
+                for z in 0..CHUNK_SIZE {
+                    let coordinate = (x, y, z);
 
-            voxels.push((coordinate, CbVoxel::new()));
+                    voxels.push((coordinate, CbVoxel::new()));
+                }
+            }
         }
 
         return Self { voxels: voxels };
     }
 
-    fn voxel_1d_to_3d(i: usize) -> COORDINATE {
+    pub fn voxel_1d_to_3d(i: usize) -> COORDINATE {
         // i % max_x
         let x = i % MAX_CHUNK_INDEX_3d;
         // (i / max_x) % max_y

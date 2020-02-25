@@ -6,17 +6,17 @@ use crate::cb_voxels;
 pub mod assemblages;
 pub mod components;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Clone)]
 pub struct GameState {
     pub current_tick: GameTick,
-    voxel: cb_voxels::CbVoxel,
+    pub voxel_chunk: cb_voxels::CbVoxelChunk,
 }
 
 impl GameState {
     pub fn new() -> Self {
         return GameState {
             current_tick: 0,
-            voxel: cb_voxels::CbVoxel::new(),
+            voxel_chunk: cb_voxels::CbVoxelChunk::new(),
         };
     }
 }
