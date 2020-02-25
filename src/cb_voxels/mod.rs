@@ -1,7 +1,8 @@
 use crate::cb_math;
 use cb_math::pow;
 
-pub const CHUNK_SIZE: usize = 16;
+pub const CHUNK_SIZE: usize = 32;
+pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 const MAX_CHUNK_INDEX_3d: usize = CHUNK_SIZE - 1;
 
 type COORDINATE = (usize, usize, usize);
@@ -22,14 +23,14 @@ pub enum CbVoxelTypes {
 
 #[derive(Debug, Copy, Clone)]
 pub struct CbVoxel {
-    pub on: bool,
+    pub active: bool,
     pub voxel_type: CbVoxelTypes,
 }
 
 impl CbVoxel {
     pub fn new() -> Self {
         return CbVoxel {
-            on: true,
+            active: true,
             voxel_type: CbVoxelTypes::Default,
         };
     }

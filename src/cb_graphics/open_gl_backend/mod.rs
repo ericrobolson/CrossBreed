@@ -7,6 +7,8 @@ use na::{Isometry3, Perspective3, Point3, Vector3};
 use crate::cb_simulation;
 use cb_simulation::GameState;
 
+use crate::cb_voxels;
+
 pub mod render_gl;
 
 pub struct OpenGlBackend {
@@ -155,10 +157,95 @@ impl OpenGlBackend {
         let proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
         let proj = proj.as_matrix();
 
-        for ((x, y, z), voxel) in game_state.voxel_chunk.voxels.iter() {
-            let x = *x as f32;
-            let y = *y as f32;
-            let z = *z as f32;
+        let mut draw_calls = 0;
+
+        for ((x, y, z), voxel) in game_state
+            .voxel_chunk
+            .voxels
+            .iter()
+            .filter(|((_, _, _), voxel)| voxel.active)
+        {
+            let x = *x;
+            let y = *y;
+            let z = *z;
+
+            // if not visible, skip, but always render the outer most voxels
+            if x != 0
+                && x != cb_voxels::MAX_CHUNK_INDEX
+                && y != 0
+                && y != cb_voxels::MAX_CHUNK_INDEX
+                && z != 0
+                && z != cb_voxels::MAX_CHUNK_INDEX
+            {
+                // same layer
+                let n1 = game_state.voxel_chunk.voxel_3d_index(x - 1, y, z);
+                let n2 = game_state.voxel_chunk.voxel_3d_index(x + 1, y, z);
+                let n3 = game_state.voxel_chunk.voxel_3d_index(x, y - 1, z);
+                let n4 = game_state.voxel_chunk.voxel_3d_index(x, y + 1, z);
+                let n5 = game_state.voxel_chunk.voxel_3d_index(x + 1, y + 1, z);
+                let n6 = game_state.voxel_chunk.voxel_3d_index(x + 1, y - 1, z);
+                let n7 = game_state.voxel_chunk.voxel_3d_index(x - 1, y - 1, z);
+                let n8 = game_state.voxel_chunk.voxel_3d_index(x - 1, y + 1, z);
+
+                let obscured_by_same_layer = n1.active
+                    && n2.active
+                    && n3.active
+                    && n4.active
+                    && n5.active
+                    && n6.active
+                    && n7.active
+                    && n8.active;
+
+                // top layer
+                let n1 = game_state.voxel_chunk.voxel_3d_index(x - 1, y, z - 1);
+                let n2 = game_state.voxel_chunk.voxel_3d_index(x + 1, y, z - 1);
+                let n3 = game_state.voxel_chunk.voxel_3d_index(x, y - 1, z - 1);
+                let n4 = game_state.voxel_chunk.voxel_3d_index(x, y + 1, z - 1);
+                let n5 = game_state.voxel_chunk.voxel_3d_index(x + 1, y + 1, z - 1);
+                let n6 = game_state.voxel_chunk.voxel_3d_index(x + 1, y - 1, z - 1);
+                let n7 = game_state.voxel_chunk.voxel_3d_index(x - 1, y - 1, z - 1);
+                let n8 = game_state.voxel_chunk.voxel_3d_index(x - 1, y + 1, z - 1);
+                let n9 = game_state.voxel_chunk.voxel_3d_index(x, y, z - 1);
+
+                let obscured_by_top_layer = n1.active
+                    && n2.active
+                    && n3.active
+                    && n4.active
+                    && n5.active
+                    && n6.active
+                    && n7.active
+                    && n8.active
+                    && n9.active;
+
+                // bottom layer
+                let n1 = game_state.voxel_chunk.voxel_3d_index(x - 1, y, z + 1);
+                let n2 = game_state.voxel_chunk.voxel_3d_index(x + 1, y, z + 1);
+                let n3 = game_state.voxel_chunk.voxel_3d_index(x, y - 1, z + 1);
+                let n4 = game_state.voxel_chunk.voxel_3d_index(x, y + 1, z + 1);
+                let n5 = game_state.voxel_chunk.voxel_3d_index(x + 1, y + 1, z + 1);
+                let n6 = game_state.voxel_chunk.voxel_3d_index(x + 1, y - 1, z + 1);
+                let n7 = game_state.voxel_chunk.voxel_3d_index(x - 1, y - 1, z + 1);
+                let n8 = game_state.voxel_chunk.voxel_3d_index(x - 1, y + 1, z + 1);
+                let n9 = game_state.voxel_chunk.voxel_3d_index(x, y, z + 1);
+
+                let obscured_by_bot_layer = n1.active
+                    && n2.active
+                    && n3.active
+                    && n4.active
+                    && n5.active
+                    && n6.active
+                    && n7.active
+                    && n8.active
+                    && n9.active;
+
+                if obscured_by_same_layer && obscured_by_top_layer && obscured_by_bot_layer {
+                    continue;
+                }
+            }
+
+            let x = x as f32;
+            let y = y as f32;
+            let z = z as f32;
 
             unsafe {
                 // Model
@@ -174,6 +261,10 @@ impl OpenGlBackend {
                 gl::BindVertexArray(self.voxel_vao);
                 gl::DrawArrays(gl::TRIANGLES, 0, 12 * 3);
             }
+
+            draw_calls += 1;
         }
+
+        println!("draw calls: {}", draw_calls);
     }
 }
