@@ -1,7 +1,7 @@
 use crate::cb_math;
 use cb_math::pow;
 
-pub const CHUNK_SIZE: usize = 3;
+pub const CHUNK_SIZE: usize = 16;
 const MAX_CHUNK_INDEX_3d: usize = CHUNK_SIZE - 1;
 
 type COORDINATE = (usize, usize, usize);
@@ -9,13 +9,29 @@ type COORDINATE = (usize, usize, usize);
 pub const CHUNK_SIZE_1D_ARRAY: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 #[derive(Debug, Copy, Clone)]
+pub enum CbVoxelTypes {
+    Default,
+    Grass,
+    Dirt,
+    Water,
+    Stone,
+    Wood,
+    Sand,
+    Metal,
+}
+
+#[derive(Debug, Copy, Clone)]
 pub struct CbVoxel {
     pub on: bool,
+    pub voxel_type: CbVoxelTypes,
 }
 
 impl CbVoxel {
     pub fn new() -> Self {
-        return CbVoxel { on: true };
+        return CbVoxel {
+            on: true,
+            voxel_type: CbVoxelTypes::Default,
+        };
     }
 }
 
