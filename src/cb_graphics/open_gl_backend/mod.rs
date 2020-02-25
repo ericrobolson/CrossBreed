@@ -7,6 +7,8 @@ use na::{Isometry3, Perspective3, Point3, Vector3};
 use crate::cb_simulation;
 use cb_simulation::GameState;
 
+use crate::cb_graphics;
+
 use crate::cb_voxels;
 
 pub mod render_gl;
@@ -132,23 +134,21 @@ impl OpenGlBackend {
         };
     }
 
-    pub fn render(&mut self, game_state: &GameState) {
+    pub fn render(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
         unsafe {
             gl::ClearColor(0.0, 1.0, 0.0, 0.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
         self.program.set_used();
-        self.draw_voxel(game_state);
+        self.draw_voxel(camera, game_state);
 
         self.frame += 1;
     }
 
-    fn draw_voxel(&mut self, game_state: &GameState) {
+    fn draw_voxel(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
         // Camera
-        let mapped_pos = self.frame as f32 * 0.01;
-
-        let eye = Point3::new(4.0, 3.0, mapped_pos);
+        let eye = Point3::new(camera.pos_x, camera.pos_y, camera.pos_z);
         let target = Point3::new(0.0, 0.0, 0.0);
         let view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
         let view = view.to_homogeneous();
@@ -265,6 +265,6 @@ impl OpenGlBackend {
             draw_calls += 1;
         }
 
-        println!("draw calls: {}", draw_calls);
+        //println!("draw calls: {}", draw_calls);
     }
 }

@@ -9,6 +9,21 @@ use open_gl_backend::OpenGlBackend;
 use crate::cb_simulation;
 use cb_simulation::GameState;
 
+pub struct CbCamera {
+    pub pos_x: f32,
+    pub pos_y: f32,
+    pub pos_z: f32,
+}
+impl CbCamera {
+    fn new() -> Self {
+        return Self {
+            pos_x: 4.0,
+            pos_y: 3.0,
+            pos_z: 0.0,
+        };
+    }
+}
+
 #[allow(dead_code)]
 pub struct CbGfx {
     sdl_context: sdl2::Sdl,
@@ -16,6 +31,7 @@ pub struct CbGfx {
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext, // Need this to keep the OpenGL context active
     gl_backend: OpenGlBackend,
+    camera: CbCamera,
 }
 
 impl CbGfx {
@@ -48,6 +64,7 @@ impl CbGfx {
             window: window,
             gl_context: ctx,
             gl_backend: gl_backend,
+            camera: CbCamera::new(),
         };
     }
 
@@ -55,8 +72,12 @@ impl CbGfx {
         return &mut self.event_pump;
     }
 
+    pub fn camera(&mut self) -> &mut CbCamera {
+        return &mut self.camera;
+    }
+
     pub fn render(&mut self, game_state: &GameState) {
-        self.gl_backend.render(game_state);
+        self.gl_backend.render(&self.camera, game_state);
         self.window.gl_swap_window();
     }
 }

@@ -58,6 +58,30 @@ fn main() {
                 &movement_context,
             );
 
+            let mut camera = gfx.camera();
+
+            if movement_context.move_forward == cb_input::input_type::State::On {
+                camera.pos_x -= 0.1;
+            } else if movement_context.move_backward == cb_input::input_type::State::On {
+                camera.pos_x += 0.1;
+            }
+
+            if movement_context.move_right == cb_input::input_type::State::On
+                && movement_context.move_left != cb_input::input_type::State::On
+            {
+                camera.pos_z -= 0.1;
+            } else if movement_context.move_left == cb_input::input_type::State::On
+                && movement_context.move_right != cb_input::input_type::State::On
+            {
+                camera.pos_z += 0.1;
+            }
+
+            if movement_context.crouching == cb_input::input_type::State::On {
+                camera.pos_y -= 0.1;
+            } else if movement_context.jump == cb_input::input_type::Press::Pressed {
+                camera.pos_y += 0.1;
+            }
+
             let input_event = CbEvent {
                 tick: game_tick + cb_system::FRAMEDELAY,
                 value: movement_context,

@@ -1,7 +1,7 @@
 use crate::cb_math;
 use cb_math::pow;
 
-pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE: usize = 8;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 const MAX_CHUNK_INDEX_3d: usize = CHUNK_SIZE - 1;
 
