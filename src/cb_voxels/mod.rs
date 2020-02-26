@@ -1,7 +1,7 @@
 use crate::cb_math;
 use cb_math::pow;
 
-pub const CHUNK_SIZE: usize = 8;
+pub const CHUNK_SIZE: usize = 4;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 const MAX_CHUNK_INDEX_3d: usize = CHUNK_SIZE - 1;
 
@@ -21,6 +21,16 @@ pub enum CbVoxelTypes {
     Metal,
 }
 
+///TODO: move into gfx land
+#[derive(Debug, Clone)]
+pub struct Mesh {}
+
+impl Mesh {
+    pub fn new() -> Self {
+        return Self {};
+    }
+}
+
 #[derive(Debug, Copy, Clone)]
 pub struct CbVoxel {
     pub active: bool,
@@ -38,6 +48,8 @@ impl CbVoxel {
 
 #[derive(Debug, Clone)]
 pub struct CbVoxelChunk {
+    dirty: bool,
+    mesh: Option<Mesh>,
     pub voxels: Vec<(COORDINATE, CbVoxel)>,
 }
 
@@ -50,13 +62,34 @@ impl CbVoxelChunk {
             for y in 0..CHUNK_SIZE {
                 for z in 0..CHUNK_SIZE {
                     let coordinate = (x, y, z);
+                    let mut voxel = CbVoxel::new();
 
-                    voxels.push((coordinate, CbVoxel::new()));
+                    if (x + y + z) % 2 == 0 {
+                        //    voxel.active = false;
+                    }
+                    voxels.push((coordinate, voxel));
                 }
             }
         }
 
-        return Self { voxels: voxels };
+        return Self {
+            voxels: voxels,
+            dirty: true,
+            mesh: None,
+        };
+    }
+
+    pub fn mesh(&mut self) -> &Mesh {
+        if !self.dirty {
+            // return previously calculated mesh
+        }
+
+        self.dirty = false;
+        let mesh = Mesh::new();
+
+        self.mesh = Some(mesh);
+
+        return self.mesh.as_ref().unwrap();
     }
 
     pub fn voxel_1d_to_3d(i: usize) -> COORDINATE {

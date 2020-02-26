@@ -146,12 +146,12 @@ impl OpenGlBackend {
         }
 
         self.program.set_used();
-        self.draw_voxel(camera, game_state);
+        self.draw_voxel_old(camera, game_state);
 
         self.frame += 1;
     }
 
-    fn draw_voxel(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
+    fn draw_voxel_old(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
         // Camera
         let horizontal_angle = 3.14;
         let vertical_angle = 0.0;
@@ -182,8 +182,6 @@ impl OpenGlBackend {
 
         let proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
         let proj = proj.as_matrix();
-
-        let mut draw_calls = 0;
 
         for ((x, y, z), voxel) in game_state
             .voxel_chunk
@@ -287,10 +285,6 @@ impl OpenGlBackend {
                 gl::BindVertexArray(self.voxel_vao);
                 gl::DrawArrays(gl::TRIANGLES, 0, 12 * 3);
             }
-
-            draw_calls += 1;
         }
-
-        //println!("draw calls: {}", draw_calls);
     }
 }

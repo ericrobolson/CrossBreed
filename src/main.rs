@@ -62,9 +62,6 @@ fn main() {
             // Camera movement
             {
                 let mut camera = gfx.camera();
-                let mut position = na::Vector3::new(0.0, 0.0, 0.0);
-                let right_vector = na::Vector3::new(x, y, z);
-
                 if movement_context.move_forward == cb_input::input_type::State::On {
                     camera.pos_x -= 0.1;
                 } else if movement_context.move_backward == cb_input::input_type::State::On {
