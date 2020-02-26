@@ -9,7 +9,7 @@ extern crate sdl2;
 
 // Internal crates
 #[macro_use]
-pub mod external_libs;
+pub mod cb_utility;
 
 pub mod cb_graphics;
 pub mod cb_input;
