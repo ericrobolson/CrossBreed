@@ -1,8 +1,8 @@
 extern crate sdl2;
-use sdl2::{event::Event, keyboard::Keycode, video::GLProfile};
+use sdl2::{event::Event, keyboard::Keycode};
 
 use crate::cb_system;
-use cb_system::{CbEvent, GameTick};
+use cb_system::GameTick;
 
 use super::*;
 use input_type::{Press, Range, State};

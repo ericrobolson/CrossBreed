@@ -33,6 +33,10 @@ pub fn get_shooter_movement_context(
     previous_context: &ShooterMovementContext,
 ) -> ShooterMovementContext {
     let mut context = previous_context.clone();
+
+    // Make all presses not pressed
+    context.jump = Press::NotPressed;
+
     // TODO: make this a configurable thing
     for event in events {
         match event {
@@ -140,5 +144,5 @@ pub fn get_shooter_movement_context(
         }
     }
 
-    return ShooterMovementContext::new();
+    return context;
 }
