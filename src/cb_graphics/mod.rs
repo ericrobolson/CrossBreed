@@ -13,13 +13,27 @@ pub struct CbCamera {
     pub pos_x: f32,
     pub pos_y: f32,
     pub pos_z: f32,
+    pub dir_x: f32,
+    pub dir_y: f32,
+    pub dir_z: f32,
+    pub cursor_x: f32,
+    pub cursor_y: f32,
+    pub window_width: f32,
+    pub window_height: f32,
 }
 impl CbCamera {
-    fn new() -> Self {
+    fn new(window_width: f32, window_height: f32) -> Self {
         return Self {
             pos_x: 4.0,
             pos_y: 3.0,
             pos_z: 0.0,
+            dir_x: 0.0,
+            dir_y: 0.0,
+            dir_z: 0.0,
+            cursor_x: 0.0,
+            cursor_y: 0.0,
+            window_width: window_width,
+            window_height: window_height,
         };
     }
 }
@@ -45,8 +59,11 @@ impl CbGfx {
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(3, 2);
 
+        let window_width = 1920;
+        let window_height = 1080;
+
         let window = video_subsystem
-            .window("Window", 800, 600)
+            .window("Window", window_width, window_height)
             .opengl()
             .build()
             .unwrap();
@@ -64,7 +81,7 @@ impl CbGfx {
             window: window,
             gl_context: ctx,
             gl_backend: gl_backend,
-            camera: CbCamera::new(),
+            camera: CbCamera::new(window_width as f32, window_height as f32),
         };
     }
 
@@ -77,7 +94,14 @@ impl CbGfx {
     }
 
     pub fn render(&mut self, game_state: &GameState) {
+        let cursor = sdl2::mouse::MouseState::new(self.event_pump());
+
+        self.camera.cursor_x = cursor.x() as f32;
+        self.camera.cursor_y = cursor.y() as f32;
+
         self.gl_backend.render(&self.camera, game_state);
         self.window.gl_swap_window();
+
+        // sdl2::sys::SDL_WarpMouseInWindow(&mut self.window.as_ptr());
     }
 }

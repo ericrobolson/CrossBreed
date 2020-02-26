@@ -126,6 +126,11 @@ impl OpenGlBackend {
             gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
         }
 
+        // Backface culling
+        unsafe {
+            gl::Enable(gl::CULL_FACE);
+        }
+
         return Self {
             program: shader_program,
             voxel_vao: voxels,
@@ -148,12 +153,33 @@ impl OpenGlBackend {
 
     fn draw_voxel(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
         // Camera
+        let horizontal_angle = 3.14;
+        let vertical_angle = 0.0;
+        let initial_fov = 45.0;
+        let mouse_speed = 0.005; // configure to user variable?
+
+        let delta_time = 1.0; //TODO: figure out
+
+        let horizontal_angle = horizontal_angle
+            + mouse_speed * delta_time * (camera.window_width / 2.0 - camera.cursor_x);
+        let vertical_angle = vertical_angle
+            + mouse_speed * delta_time * (camera.window_height / 2.0 - camera.cursor_y);
+
+        let mouse_target = Point3::new(
+            vertical_angle.cos() * horizontal_angle.sin(),
+            vertical_angle.sin(),
+            vertical_angle.cos() * horizontal_angle.cos(),
+        );
+
         let eye = Point3::new(camera.pos_x, camera.pos_y, camera.pos_z);
-        let target = Point3::new(0.0, 0.0, 0.0);
+        let target = Point3::new(
+            mouse_target.x + camera.pos_x,
+            mouse_target.y + camera.pos_y,
+            mouse_target.z + camera.pos_z,
+        );
         let view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
         let view = view.to_homogeneous();
 
-        // Projection
         let proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
         let proj = proj.as_matrix();
 
