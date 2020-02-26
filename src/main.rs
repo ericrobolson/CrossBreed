@@ -6,6 +6,7 @@ extern crate rmercury;
 extern crate specs;
 use specs::prelude::*;
 extern crate sdl2;
+use std::panic;
 
 // Internal crates
 #[macro_use]
@@ -29,6 +30,13 @@ impl GameSim {
 }
 
 fn main() {
+    //NOTE: this is only for dev use, to allow panics to be caught
+    let result = panic::catch_unwind(|| main_loop());
+
+    loop {}
+}
+
+fn main_loop() {
     let mut gfx = cb_graphics::CbGfx::new();
 
     // Init simulation data
@@ -97,6 +105,8 @@ fn main() {
         // Update simulation + pump events into simulation
         {
             game_state = cb_simulation::update_simulation(game_tick, &events, &game_state);
+
+            game_state.voxel_chunk.mesh();
 
             // Clear events and increment game tick
             events.clear();

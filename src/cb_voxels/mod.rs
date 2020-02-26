@@ -4,7 +4,7 @@ use cb_math::pow;
 extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
-pub const CHUNK_SIZE: usize = 4;
+pub const CHUNK_SIZE: usize = 8;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 const MAX_CHUNK_INDEX_3d: usize = CHUNK_SIZE - 1;
 
@@ -85,7 +85,7 @@ impl CbVoxelChunk {
         }
 
         self.dirty = false;
-        let mesh = Mesh::new();
+        let mesh = greedy();
 
         self.mesh = Some(mesh);
 
@@ -125,7 +125,12 @@ impl VoxelFace {
 }
 
 fn getVoxelFace(_: i32, _: i32, _: i32, _: usize) -> VoxelFace {
-    unimplemented!();
+    //TODO: implement
+    return VoxelFace {
+        transparent: false,
+        vf_type: 1,
+        side: 0,
+    };
 }
 
 fn greedy() -> Mesh {
@@ -149,6 +154,9 @@ fn greedy() -> Mesh {
 
     // Create a mask of matching voxel faces as we go through the chunk in 6 directions, once for each face
     let mut mask = Vec::with_capacity(CHUNK_WIDTH * CHUNK_HEIGHT);
+    for _ in 0..CHUNK_WIDTH * CHUNK_HEIGHT {
+        mask.push(None);
+    }
 
     // Working variables to hold two faces during comparison
     init_multiple_mut_vars![(voxel_face, voxel_face1), Option<VoxelFace>, None];
@@ -226,7 +234,6 @@ fn greedy() -> Mesh {
                             }
 
                             // Compare the faces based on number of attributes. Choose the face to add to the mask depending on backface or not.
-                            n += 1;
                             if voxel_face.is_some()
                                 && voxel_face1.is_some()
                                 && voxel_face.unwrap().equals(&voxel_face1.unwrap())
@@ -238,6 +245,7 @@ fn greedy() -> Mesh {
                                 mask[n] = voxel_face;
                             }
 
+                            n += 1;
                             x[u] += 1;
                         }
 
@@ -249,8 +257,101 @@ fn greedy() -> Mesh {
 
                 // Now generate the mesh for the mask
                 n = 0;
+                j = 0;
+                while j < CHUNK_HEIGHT {
+                    i = 0;
+                    while i < CHUNK_WIDTH {
+                        if mask[n].is_some() {
+                            // Compute the width
+                            w = 1;
+                            while i + w < CHUNK_WIDTH
+                                && mask[n + w].is_some()
+                                && mask[n + w].unwrap().equals(&mask[n].unwrap())
+                            {
+                                w += 1;
+                            }
 
-                // continue at ln 269
+                            // Compute the height
+                            let mut done = false;
+
+                            h = 1;
+                            while j + h < CHUNK_HEIGHT {
+                                k = 0;
+                                while k < w {
+                                    if mask[n + k + h * CHUNK_WIDTH].is_none()
+                                        || !mask[n + k + h * CHUNK_WIDTH]
+                                            .unwrap()
+                                            .equals(&mask[n].unwrap())
+                                    {
+                                        done = true;
+                                        break;
+                                    }
+                                    k += 1;
+                                }
+
+                                if done {
+                                    break;
+                                }
+                                h += 1;
+                            }
+
+                            // Do not mesh transparent/culled faces
+                            if !mask[n].unwrap().transparent {
+                                // Add quad
+                                x[u] = i as i32;
+                                x[v] = j as i32;
+
+                                du[0] = 0;
+                                du[1] = 0;
+                                du[2] = 0;
+                                du[u] = w as i32;
+
+                                dv[0] = 0;
+                                dv[1] = 0;
+                                dv[2] = 0;
+                                dv[v] = h as i32;
+
+                                //TODO: replace with Quad function
+                                // Call the quad() to render the merged quad in the scene. mask[n] will contain the attributes to pass to shaders
+                                let quad = (
+                                    Vector3::new(x[0], x[1], x[2]),
+                                    Vector3::new(x[0] + du[0], x[1] + du[1], x[2] + du[2]),
+                                    Vector3::new(
+                                        x[0] + du[0] + dv[0],
+                                        x[1] + du[1] + dv[1],
+                                        x[2] + du[2] + dv[2],
+                                    ),
+                                    Vector3::new(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]),
+                                    w,
+                                    h,
+                                    mask[n],
+                                    backface,
+                                );
+                            }
+
+                            // Zero out the mask
+                            l = 0;
+                            while l < h {
+                                k = 0;
+                                while k < w {
+                                    mask[n + k + l * CHUNK_WIDTH] = None;
+
+                                    k += 1;
+                                }
+
+                                l += 1;
+                            }
+
+                            // Increment the counters + continue
+                            i += w;
+                            n += w;
+                        } else {
+                            i += 1;
+                            n += 1;
+                        }
+                    }
+                    j += 1;
+                }
             }
         }
     }
@@ -262,7 +363,6 @@ fn greedy() -> Mesh {
         vf_type: 0,
     }));
 
+    return Mesh {};
     // END NOTE
-
-    unimplemented!();
 }
