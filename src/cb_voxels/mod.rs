@@ -111,6 +111,7 @@ impl CbVoxelChunk {
     }
 }
 
+#[derive(Debug, Copy, Clone)]
 struct VoxelFace {
     pub transparent: bool,
     pub vf_type: usize,
@@ -123,6 +124,10 @@ impl VoxelFace {
     }
 }
 
+fn getVoxelFace(_: i32, _: i32, _: i32, _: usize) -> VoxelFace {
+    unimplemented!();
+}
+
 fn greedy() -> Mesh {
     const SOUTH: usize = 0;
     const NORTH: usize = 1;
@@ -132,9 +137,9 @@ fn greedy() -> Mesh {
     const BOTTOM: usize = 5;
 
     const CHUNK_WIDTH: usize = CHUNK_SIZE;
-    const CHUNK_WIDTH_i: i32 = CHUNK_WIDTH as i32;
+    const CHUNK_WIDTH_I: i32 = CHUNK_WIDTH as i32;
     const CHUNK_HEIGHT: usize = CHUNK_SIZE;
-    const CHUNK_HEIGHT_i: i32 = CHUNK_HEIGHT as i32;
+    const CHUNK_HEIGHT_I: i32 = CHUNK_HEIGHT as i32;
 
     // Referenced https://github.com/roboleary/GreedyMesh/blob/master/src/mygame/Main.java
 
@@ -192,25 +197,58 @@ fn greedy() -> Mesh {
 
             // Move through the dimension from front to back
             x[d] = -1;
-            while x[d] < CHUNK_WIDTH_i {
+            while x[d] < CHUNK_WIDTH_I {
                 // Compute the mask
                 n = 0;
 
                 x[v] = 0;
-                while x[v] < CHUNK_HEIGHT_i {
+                while x[v] < CHUNK_HEIGHT_I {
                     x[v] += 1;
 
                     x[u] = 0;
-                    while x[u] < CHUNK_WIDTH_i {
+                    while x[u] < CHUNK_WIDTH_I {
                         x[u] += 1;
 
                         // Retrieve the two voxel faces to compare.
+                        if x[d] >= 0 {
+                            voxel_face = Some(getVoxelFace(x[0], x[1], x[2], side));
+                        } else {
+                            voxel_face = None;
+                        }
 
-                        ///////////////////
-                        // XX Continue here
-                        ///////////////////
+                        if x[d] < CHUNK_WIDTH_I - 1 {
+                            voxel_face1 =
+                                Some(getVoxelFace(x[0] + q[0], x[1] + q[1], x[2] + q[2], side));
+                        } else {
+                            voxel_face1 = None;
+                        }
+
+                        // Uses the voxel face equal function, which allows the faces to be compared on any number of attributes.
+                        // Chooses the face to add depending on whether it's moving through a backface or not.
+
+                        n += 1;
+                        if voxel_face.is_some()
+                            && voxel_face1.is_some()
+                            && voxel_face.unwrap().equals(&voxel_face1.unwrap())
+                        {
+                            mask[n] = None;
+                        } else if backface {
+                            mask[n] = voxel_face1;
+                        } else if !backface {
+                            mask[n] = voxel_face;
+                        }
                     }
                 }
+
+                x[d] += 1;
+
+                // Generate the mesh for the mask
+
+                n = 0;
+
+                ///////////////////
+                // XX Continue here
+                ///////////////////
             }
 
             // Inner loop end
@@ -219,30 +257,6 @@ fn greedy() -> Mesh {
     }
 
     /*
-                                /*
-                                 * Here we retrieve two voxel faces for comparison.
-                                 */
-                                voxelFace  = (x[d] >= 0 )             ? getVoxelFace(x[0], x[1], x[2], side)                      : null;
-                                voxelFace1 = (x[d] < CHUNK_WIDTH - 1) ? getVoxelFace(x[0] + q[0], x[1] + q[1], x[2] + q[2], side) : null;
-
-                                /*
-                                 * Note that we're using the equals function in the voxel face class here, which lets the faces
-                                 * be compared based on any number of attributes.
-                                 *
-                                 * Also, we choose the face to add to the mask depending on whether we're moving through on a backface or not.
-                                 */
-                                mask[n++] = ((voxelFace != null && voxelFace1 != null && voxelFace.equals(voxelFace1)))
-                                            ? null
-                                            : backFace ? voxelFace1 : voxelFace;
-                            }
-                        }
-
-                        x[d]++;
-
-                        /*
-                         * Now we generate the mesh for the mask
-                         */
-                        n = 0;
 
                         for(j = 0; j < CHUNK_HEIGHT; j++) {
 
@@ -333,11 +347,11 @@ fn greedy() -> Mesh {
     */
 
     // NOTE: THIS IS JUST DUMB CODE TO GET IT COMPILING - REMOVE
-    mask.push(VoxelFace {
+    mask.push(Some(VoxelFace {
         transparent: false,
         side: 0,
         vf_type: 0,
-    });
+    }));
 
     // END NOTE
 
