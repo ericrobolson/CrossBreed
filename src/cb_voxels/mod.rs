@@ -7,6 +7,8 @@ use na::{Isometry3, Perspective3, Point3, Vector3};
 pub const CHUNK_SIZE: usize = 8;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
+pub const VOXEL_SIZE: i32 = 1;
+
 type COORDINATE = (usize, usize, usize);
 /// Voxels are stored in a 1d array, even though they can be referenced within a 3d array
 pub const CHUNK_SIZE_1D_ARRAY: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
@@ -21,16 +23,6 @@ pub enum CbVoxelTypes {
     Wood,
     Sand,
     Metal,
-}
-
-///TODO: move into gfx land
-#[derive(Debug, Clone)]
-pub struct Mesh {}
-
-impl Mesh {
-    pub fn new() -> Self {
-        return Self {};
-    }
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -51,7 +43,7 @@ impl CbVoxel {
 #[derive(Debug, Clone)]
 pub struct CbVoxelChunk {
     dirty: bool,
-    mesh: Option<Mesh>,
+    mesh: Option<Vec<Mesh>>,
     pub voxels: Vec<(COORDINATE, CbVoxel)>,
 }
 
@@ -66,6 +58,10 @@ impl CbVoxelChunk {
                     let coordinate = (x, y, z);
                     let mut voxel = CbVoxel::new();
 
+                    if x % 2 == 0 {
+                        voxel.voxel_type = CbVoxelTypes::Dirt;
+                    }
+
                     voxels.push((coordinate, voxel));
                 }
             }
@@ -78,7 +74,7 @@ impl CbVoxelChunk {
         };
     }
 
-    pub fn mesh(&mut self) -> &Mesh {
+    pub fn mesh(&mut self) -> &Vec<Mesh> {
         if !self.dirty {
             // return previously calculated mesh
         }
@@ -87,6 +83,8 @@ impl CbVoxelChunk {
         let mesh = self.calculate_greedy_mesh();
 
         self.mesh = Some(mesh);
+
+        println!("Greedy quads: {}", self.mesh.as_ref().unwrap().len());
 
         return self.mesh.as_ref().unwrap();
     }
@@ -110,6 +108,10 @@ impl CbVoxelChunk {
     }
 
     fn get_voxel_face(&self, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
+        //NOTE: if adding culling, it would happen here
+        // NOTE: Add the following here:
+        // ** Culling
+        // ** Set per face / per vertex values as well as voxel values here.
         let voxel = self.voxel_3d_index(x, y, z);
 
         let transparent = !voxel.active;
@@ -121,7 +123,7 @@ impl CbVoxelChunk {
         };
     }
 
-    fn calculate_greedy_mesh(&self) -> Mesh {
+    fn calculate_greedy_mesh(&self) -> Vec<Mesh> {
         const SOUTH: usize = 0;
         const NORTH: usize = 1;
         const EAST: usize = 2;
@@ -133,6 +135,8 @@ impl CbVoxelChunk {
         const CHUNK_WIDTH_I: i32 = CHUNK_WIDTH as i32;
         const CHUNK_HEIGHT: usize = CHUNK_SIZE;
         const CHUNK_HEIGHT_I: i32 = CHUNK_HEIGHT as i32;
+
+        let mut meshes = vec![];
 
         // Referenced https://github.com/roboleary/GreedyMesh/blob/master/src/mygame/Main.java
 
@@ -309,20 +313,35 @@ impl CbVoxelChunk {
 
                                     //TODO: replace with Quad function
                                     // Call the quad() to render the merged quad in the scene. mask[n] will contain the attributes to pass to shaders
-                                    let quad = (
-                                        Vector3::new(x[0], x[1], x[2]),
-                                        Vector3::new(x[0] + du[0], x[1] + du[1], x[2] + du[2]),
+
+                                    let x0 = x[0] as f32;
+                                    let x1 = x[1] as f32;
+                                    let x2 = x[2] as f32;
+
+                                    let du0 = du[0] as f32;
+                                    let du1 = du[1] as f32;
+                                    let du2 = du[2] as f32;
+
+                                    let dv0 = dv[0] as f32;
+                                    let dv1 = dv[1] as f32;
+                                    let dv2 = dv[2] as f32;
+
+                                    let quad = get_quad(
+                                        Vector3::new(x0, x1, x2),
+                                        Vector3::new(x0 + du0, x1 + du1, x2 + du2),
                                         Vector3::new(
-                                            x[0] + du[0] + dv[0],
-                                            x[1] + du[1] + dv[1],
-                                            x[2] + du[2] + dv[2],
+                                            x0 + du0 + dv0,
+                                            x1 + du1 + dv1,
+                                            x2 + du2 + dv2,
                                         ),
-                                        Vector3::new(x[0] + dv[0], x[1] + dv[1], x[2] + dv[2]),
+                                        Vector3::new(x0 + dv0, x1 + dv1, x2 + dv2),
                                         w,
                                         h,
                                         mask[n],
                                         backface,
                                     );
+
+                                    meshes.push(quad);
                                 }
 
                                 // Zero out the mask
@@ -352,16 +371,68 @@ impl CbVoxelChunk {
             }
         }
 
-        // NOTE: THIS IS JUST DUMB CODE TO GET IT COMPILING - REMOVE
-        mask.push(Some(VoxelFace {
-            transparent: false,
-            side: 0,
-            vf_type: CbVoxelTypes::Default,
-        }));
-
-        return Mesh {};
-        // END NOTE
+        return meshes;
     }
+}
+
+type V3 = nalgebra::Matrix<
+    f32,
+    nalgebra::U3,
+    nalgebra::U1,
+    nalgebra::ArrayStorage<f32, nalgebra::U3, nalgebra::U1>,
+>;
+
+fn get_quad(
+    bottom_left: V3,
+    top_left: V3,
+    top_right: V3,
+    bottom_right: V3,
+    width: usize,
+    height: usize,
+    voxel: std::option::Option<VoxelFace>,
+    backface: bool,
+) -> Mesh {
+    let voxel_size = VOXEL_SIZE as f32;
+
+    // Order is important here
+    const VALUES_IN_VERTEX: usize = 3;
+    let vertices = vec![
+        //
+        bottom_left.x,
+        bottom_left.y,
+        bottom_left.z,
+        //
+        bottom_right.x,
+        bottom_right.y,
+        bottom_right.z,
+        //
+        top_left.x,
+        top_left.y,
+        top_left.z,
+        //
+        top_right.x,
+        top_right.y,
+        top_right.z,
+    ];
+
+    let vertices = vertices.iter().map(|n| n * voxel_size).collect();
+
+    let indices;
+    if backface {
+        indices = vec![
+            2, 0, 1, //
+            1, 3, 2, //
+        ];
+    } else {
+        indices = vec![
+            2, 3, 1, //
+            1, 0, 2, //
+        ];
+    }
+
+    //TODO: colors
+
+    return Mesh::new(VALUES_IN_VERTEX, vertices, indices);
 }
 
 /// Struct used for meshing purposes
@@ -375,5 +446,36 @@ struct VoxelFace {
 impl VoxelFace {
     fn equals(&self, other: &VoxelFace) -> bool {
         return self.transparent == other.transparent && self.vf_type == other.vf_type;
+    }
+}
+
+/*
+    TODO: move into gfx land
+*/
+
+#[derive(Debug, Clone)]
+pub struct Mesh {
+    indices: Vec<i32>,
+    /// The number of values each vertex is composed of. Can be 1, 2, 3, or 4.
+    vertex_size: usize,
+    vertices: Vec<f32>,
+}
+
+pub type CbMatrix = std::vec::Vec<
+    nalgebra::Matrix<
+        f32,
+        nalgebra::U3,
+        nalgebra::U1,
+        nalgebra::ArrayStorage<f32, nalgebra::U3, nalgebra::U1>,
+    >,
+>;
+
+impl Mesh {
+    pub fn new(vertex_size: usize, vertices: Vec<f32>, indices: Vec<i32>) -> Self {
+        return Self {
+            vertex_size: vertex_size,
+            vertices: vertices,
+            indices: indices,
+        };
     }
 }

@@ -183,6 +183,8 @@ impl OpenGlBackend {
         let proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
         let proj = proj.as_matrix();
 
+        let mut draw_count = 0;
+
         for ((x, y, z), voxel) in game_state
             .voxel_chunk
             .voxels
@@ -274,6 +276,7 @@ impl OpenGlBackend {
             unsafe {
                 // Model
                 let model_pos = Vector3::new(x, y, z);
+
                 let model_pos = Isometry3::new(model_pos, na::zero());
 
                 let model = model_pos.to_homogeneous() * na::Matrix4::identity();
@@ -285,6 +288,10 @@ impl OpenGlBackend {
                 gl::BindVertexArray(self.voxel_vao);
                 gl::DrawArrays(gl::TRIANGLES, 0, 12 * 3);
             }
+
+            draw_count += 1;
         }
+
+        println!("draw counts - cubes: {}", draw_count);
     }
 }
