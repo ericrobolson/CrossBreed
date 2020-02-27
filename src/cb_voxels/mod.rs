@@ -4,7 +4,7 @@ use cb_math::pow;
 extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
-pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE: usize = 8;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: i32 = 1;
@@ -67,10 +67,11 @@ impl CbVoxelChunk {
                     let mut voxel = CbVoxel::new();
 
                     if x < CHUNK_SIZE / 2 && y < CHUNK_SIZE / 2 && z < CHUNK_SIZE / 2 {
-                        voxel.active = false;
+                        //voxel.active = false;
+                        //voxel.voxel_type = CbVoxelTypes::Grass;
                     }
 
-                    if x % 2 == 0 && y % 2 == 0 {
+                    if x % 2 == 0 && y % 2 == 0 && z % 2 == 0 {
                         voxel.voxel_type = CbVoxelTypes::Grass;
                     }
 
@@ -356,7 +357,7 @@ impl CbVoxelChunk {
                                         w,
                                         h,
                                         mask[n].unwrap(),
-                                        backface,
+                                        !backface,
                                     );
 
                                     meshes.push(quad);
@@ -438,8 +439,6 @@ fn get_quad(
         top_right.z,
     ];
 
-    let vertices = vertices.iter().map(|n| n * voxel_size).collect();
-
     let indices;
     if backface {
         indices = vec![
@@ -452,6 +451,77 @@ fn get_quad(
             1, 0, 2, //
         ];
     }
+
+    // NEW NOTE: there's an issue where all normals are flipped
+    let mut vertices = vec![
+        // ----
+        top_right.x,
+        top_right.y,
+        top_right.z,
+        // ----
+        bottom_right.x,
+        bottom_right.y,
+        bottom_right.z,
+        // ----
+        bottom_left.x,
+        bottom_left.y,
+        bottom_left.z,
+        // ----
+        top_left.x,
+        top_left.y,
+        top_left.z,
+    ];
+
+    let mut indices;
+    if backface {
+        indices = vec![
+            2, 1, 3, //
+            1, 0, 3, //
+        ];
+    } else {
+        indices = vec![
+            0, 1, 3, //
+            1, 2, 3, //
+        ];
+    }
+
+    // actual: think this is right
+    let mut vertices = vec![
+        // ----
+        top_left.x,
+        top_left.y,
+        top_left.z,
+        // ----
+        bottom_left.x,
+        bottom_left.y,
+        bottom_left.z,
+        // ----
+        bottom_right.x,
+        bottom_right.y,
+        bottom_right.z,
+        // ----
+        top_right.x,
+        top_right.y,
+        top_right.z,
+    ];
+
+    // need to recalculate
+    let mut indices;
+    if backface {
+        indices = vec![
+            2, 1, 3, //
+            1, 0, 3, //
+        ];
+    } else {
+        indices = vec![
+            0, 1, 3, //
+            1, 2, 3, //
+        ];
+    }
+
+    // END NEW
+
+    let vertices = vertices.iter().map(|n| n * voxel_size).collect();
 
     //TODO: colors
     const COLOR_CAPACITY: usize = 9;
@@ -481,13 +551,16 @@ fn get_quad(
         i += COLOR_VERTEX_SIZE;
     }
 
-    return Mesh::new(
+    let mut mesh = Mesh::new(
         VALUES_IN_VERTEX,
         vertices,
         indices,
         COLOR_VERTEX_SIZE,
         colors,
     );
+
+    //mesh.wire_frame = true;
+    return mesh;
 }
 
 /// Struct used for meshing purposes
@@ -516,6 +589,7 @@ pub struct Mesh {
     pub vertices: Vec<f32>,
     pub colors: Vec<f32>,
     pub color_vertex_size: usize,
+    pub wire_frame: bool,
 }
 
 pub type CbMatrix = std::vec::Vec<
@@ -541,6 +615,7 @@ impl Mesh {
             indices: indices,
             color_vertex_size: color_vertex_size,
             colors: colors,
+            wire_frame: false,
         };
     }
 }

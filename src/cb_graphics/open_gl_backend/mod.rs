@@ -19,6 +19,7 @@ pub struct OpenGlBackend {
     voxel_vao: u32,
     voxel_vbo: u32,
     voxel_ebo: u32,
+    voxel_color_buff: u32,
     mvp_id: i32,
     frame: usize,
 }
@@ -102,17 +103,24 @@ fn init_cube_buffers() -> gl::types::GLuint {
     return vao;
 }
 
-fn init_mesh_buffers() -> (gl::types::GLuint, gl::types::GLuint, gl::types::GLuint) {
+fn init_mesh_buffers() -> (
+    gl::types::GLuint,
+    gl::types::GLuint,
+    gl::types::GLuint,
+    gl::types::GLuint,
+) {
     let mut vao: gl::types::GLuint = 0;
     let mut vbo: gl::types::GLuint = 0;
     let mut ebo: gl::types::GLuint = 0;
+    let mut color_buff: gl::types::GLuint = 0;
     unsafe {
         gl::GenVertexArrays(1, &mut vao);
         gl::GenBuffers(1, &mut vbo);
         gl::GenBuffers(1, &mut ebo);
+        gl::GenBuffers(1, &mut color_buff);
     }
 
-    return (vao, vbo, ebo);
+    return (vao, vbo, ebo, color_buff);
 }
 
 impl OpenGlBackend {
@@ -135,7 +143,7 @@ impl OpenGlBackend {
         mesh_program.set_used();
 
         //let meshes = init_mesh_buffers();
-        let (voxels, vbo, ebo) = init_mesh_buffers();
+        let (voxels, vbo, ebo, color_buff) = init_mesh_buffers();
 
         // MVP uniform
         let mvp_str = &CString::new("MVP").unwrap();
@@ -144,14 +152,10 @@ impl OpenGlBackend {
             mvp_id = gl::GetUniformLocation(mesh_program.id(), mvp_str.as_ptr());
         }
 
-        // Wireframes?
-        unsafe {
-            //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-        }
-
         // Backface culling
         unsafe {
             gl::Enable(gl::CULL_FACE);
+            gl::CullFace(gl::BACK);
         }
 
         return Self {
@@ -159,6 +163,7 @@ impl OpenGlBackend {
             voxel_vao: voxels,
             voxel_vbo: vbo,
             voxel_ebo: ebo,
+            voxel_color_buff: color_buff,
             mvp_id: mvp_id,
             frame: 0,
         };
@@ -255,9 +260,15 @@ impl OpenGlBackend {
 
         // Render the data; iterates over each mesh; naive implementation
         for mesh in meshes.iter() {
+            if mesh.wire_frame {
+                // Wireframes?
+                unsafe {
+                    gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                }
+            }
+
             unsafe {
                 // Optimization: only update the buffer if it's needed
-
                 // 1
                 gl::BindVertexArray(self.voxel_vao);
 
@@ -288,7 +299,7 @@ impl OpenGlBackend {
                     std::ptr::null(),
                 );
 
-                // 4
+                // 4 vertices
                 gl::VertexAttribPointer(
                     0,
                     mesh.vertex_size as gl::types::GLint,
@@ -299,6 +310,24 @@ impl OpenGlBackend {
                 );
 
                 gl::EnableVertexAttribArray(0);
+
+                // Colors
+                gl::EnableVertexAttribArray(1);
+                gl::BindBuffer(gl::ARRAY_BUFFER, self.voxel_color_buff);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (mesh.colors.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                    mesh.colors.as_ptr() as *const gl::types::GLvoid,
+                    gl::STATIC_DRAW,
+                );
+                gl::VertexAttribPointer(
+                    1,
+                    mesh.color_vertex_size as gl::types::GLint,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    0 as gl::types::GLint,
+                    std::ptr::null(),
+                );
 
                 // Render
                 {
