@@ -146,7 +146,7 @@ impl OpenGlBackend {
 
         // Wireframes?
         unsafe {
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            //gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
         }
 
         // Backface culling
@@ -233,7 +233,7 @@ impl OpenGlBackend {
         // https://learnopengl.com/Getting-started/Hello-Triangle
 
         // flatten all the data so it can be put into one buffer + draw call; look into this. Need to ensure that vertex number counts are the exact same.
-        /*
+        //TODO: Ensure vertex counts are the same, if not need to figure out
         let mut vertices = vec![];
         let mut indices = vec![];
 
@@ -252,11 +252,12 @@ impl OpenGlBackend {
                 indices.push(index + start_vertex_index);
             }
         }
-        */
 
         // Render the data; iterates over each mesh; naive implementation
         for mesh in meshes.iter() {
             unsafe {
+                // Optimization: only update the buffer if it's needed
+
                 // 1
                 gl::BindVertexArray(self.voxel_vao);
 
@@ -299,15 +300,17 @@ impl OpenGlBackend {
 
                 gl::EnableVertexAttribArray(0);
 
-                gl::BindVertexArray(self.voxel_vao);
-                gl::DrawElements(
-                    gl::TRIANGLES,
-                    mesh.indices.len() as i32,
-                    gl::UNSIGNED_INT,
-                    std::ptr::null(),
-                );
-                gl::BindVertexArray(0);
-
+                // Render
+                {
+                    gl::BindVertexArray(self.voxel_vao);
+                    gl::DrawElements(
+                        gl::TRIANGLES,
+                        mesh.indices.len() as i32,
+                        gl::UNSIGNED_INT,
+                        std::ptr::null(),
+                    );
+                    gl::BindVertexArray(0);
+                }
                 /*
                                 // ..:: Initialization code :: ..
                 // 1. bind Vertex Array Object
@@ -370,7 +373,6 @@ impl OpenGlBackend {
                     }
                 }
         */
-        println!("draw counts - cubes: {}", draw_count);
     }
 
     fn draw_voxel_old(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {

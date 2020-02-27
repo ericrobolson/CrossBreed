@@ -4,7 +4,7 @@ use cb_math::pow;
 extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
-pub const CHUNK_SIZE: usize = 8;
+pub const CHUNK_SIZE: usize = 32;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: i32 = 1;
@@ -12,6 +12,14 @@ pub const VOXEL_SIZE: i32 = 1;
 type COORDINATE = (usize, usize, usize);
 /// Voxels are stored in a 1d array, even though they can be referenced within a 3d array
 pub const CHUNK_SIZE_1D_ARRAY: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+
+pub struct CbChunkManager {}
+
+impl CbChunkManager {
+    pub fn new() -> Self {
+        return Self {};
+    }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CbVoxelTypes {
@@ -58,8 +66,12 @@ impl CbVoxelChunk {
                     let coordinate = (x, y, z);
                     let mut voxel = CbVoxel::new();
 
-                    if x % 2 == 0 {
-                        // voxel.active = false;
+                    if x < CHUNK_SIZE / 2 && y < CHUNK_SIZE / 2 && z < CHUNK_SIZE / 2 {
+                        voxel.active = false;
+                    }
+
+                    if x % 2 == 0 && y % 2 == 0 {
+                        voxel.voxel_type = CbVoxelTypes::Grass;
                     }
 
                     voxels.push((coordinate, voxel));
@@ -80,7 +92,7 @@ impl CbVoxelChunk {
 
     pub fn mesh(&mut self) -> &Vec<Mesh> {
         if !self.dirty {
-            // return previously calculated mesh
+            return self.mesh.as_ref().unwrap();
         }
 
         self.dirty = false;
@@ -343,7 +355,7 @@ impl CbVoxelChunk {
                                         Vector3::new(x0 + dv0, x1 + dv1, x2 + dv2),
                                         w,
                                         h,
-                                        mask[n],
+                                        mask[n].unwrap(),
                                         backface,
                                     );
 
@@ -395,27 +407,32 @@ fn get_quad(
     bottom_right: V3,
     width: usize,
     height: usize,
-    voxel: std::option::Option<VoxelFace>,
+    voxel: VoxelFace,
     backface: bool,
 ) -> Mesh {
-    let voxel_size = VOXEL_SIZE as f32;
+    let voxel_size = VOXEL_SIZE as f32 / 2.0; //TODO: change this
+
+    let (color_x, color_y, color_z) = match voxel.vf_type {
+        CbVoxelTypes::Default => (1.0, 0.0, 0.0),
+        _ => (0.0, 0.0, 1.0),
+    };
 
     // Order is important here
     const VALUES_IN_VERTEX: usize = 3;
     let vertices = vec![
-        //
+        // ----
         bottom_left.x,
         bottom_left.y,
         bottom_left.z,
-        //
+        // ----
         bottom_right.x,
         bottom_right.y,
         bottom_right.z,
-        //
+        // ----
         top_left.x,
         top_left.y,
         top_left.z,
-        //
+        // ----
         top_right.x,
         top_right.y,
         top_right.z,
@@ -437,8 +454,40 @@ fn get_quad(
     }
 
     //TODO: colors
+    const COLOR_CAPACITY: usize = 9;
+    const COLOR_VERTEX_SIZE: usize = 3;
+    let mut colors = Vec::with_capacity(COLOR_CAPACITY);
+    for i in 0..COLOR_CAPACITY {
+        colors.push(0.0);
+    }
 
-    return Mesh::new(VALUES_IN_VERTEX, vertices, indices);
+    let mut i = 0;
+    while i < COLOR_CAPACITY {
+        match voxel.vf_type {
+            CbVoxelTypes::Default => {
+                colors[i] = 1.0;
+                colors[i + 1] = 0.0;
+                colors[i + 2] = 0.0;
+                //                colors[i + 3] = 1.0;
+            }
+            _ => {
+                colors[i] = 0.0;
+                colors[i + 1] = 0.0;
+                colors[i + 2] = 1.0;
+                //          colors[i + 3] = 1.0;
+            }
+        }
+
+        i += COLOR_VERTEX_SIZE;
+    }
+
+    return Mesh::new(
+        VALUES_IN_VERTEX,
+        vertices,
+        indices,
+        COLOR_VERTEX_SIZE,
+        colors,
+    );
 }
 
 /// Struct used for meshing purposes
@@ -462,9 +511,11 @@ impl VoxelFace {
 #[derive(Debug, Clone)]
 pub struct Mesh {
     pub indices: Vec<i32>,
-    /// The number of values each vertex is composed of. Can be 1, 2, 3, or 4.
+    /// The number of values each vertex is composed of. Can be 1, 2, 3, or 4. TODO: make this some sort of static, fixed thing.
     pub vertex_size: usize,
     pub vertices: Vec<f32>,
+    pub colors: Vec<f32>,
+    pub color_vertex_size: usize,
 }
 
 pub type CbMatrix = std::vec::Vec<
@@ -477,11 +528,19 @@ pub type CbMatrix = std::vec::Vec<
 >;
 
 impl Mesh {
-    pub fn new(vertex_size: usize, vertices: Vec<f32>, indices: Vec<i32>) -> Self {
+    pub fn new(
+        vertex_size: usize,
+        vertices: Vec<f32>,
+        indices: Vec<i32>,
+        color_vertex_size: usize,
+        colors: Vec<f32>,
+    ) -> Self {
         return Self {
             vertex_size: vertex_size,
             vertices: vertices,
             indices: indices,
+            color_vertex_size: color_vertex_size,
+            colors: colors,
         };
     }
 }
