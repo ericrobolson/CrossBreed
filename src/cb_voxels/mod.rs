@@ -59,7 +59,7 @@ impl CbVoxelChunk {
                     let mut voxel = CbVoxel::new();
 
                     if x % 2 == 0 {
-                        voxel.voxel_type = CbVoxelTypes::Dirt;
+                        // voxel.active = false;
                     }
 
                     voxels.push((coordinate, voxel));
@@ -67,11 +67,15 @@ impl CbVoxelChunk {
             }
         }
 
-        return Self {
+        let mut chunk = Self {
             voxels: voxels,
             dirty: true,
             mesh: None,
         };
+
+        chunk.mesh();
+
+        return chunk;
     }
 
     pub fn mesh(&mut self) -> &Vec<Mesh> {
@@ -86,6 +90,10 @@ impl CbVoxelChunk {
 
         println!("Greedy quads: {}", self.mesh.as_ref().unwrap().len());
 
+        return self.mesh.as_ref().unwrap();
+    }
+
+    pub fn get_last_mesh(&self) -> &Vec<Mesh> {
         return self.mesh.as_ref().unwrap();
     }
 
@@ -311,9 +319,6 @@ impl CbVoxelChunk {
                                     dv[2] = 0;
                                     dv[v] = h as i32;
 
-                                    //TODO: replace with Quad function
-                                    // Call the quad() to render the merged quad in the scene. mask[n] will contain the attributes to pass to shaders
-
                                     let x0 = x[0] as f32;
                                     let x1 = x[1] as f32;
                                     let x2 = x[2] as f32;
@@ -326,6 +331,7 @@ impl CbVoxelChunk {
                                     let dv1 = dv[1] as f32;
                                     let dv2 = dv[2] as f32;
 
+                                    // Call the quad() to render the merged quad in the scene. mask[n] will contain the attributes to pass to shaders
                                     let quad = get_quad(
                                         Vector3::new(x0, x1, x2),
                                         Vector3::new(x0 + du0, x1 + du1, x2 + du2),
@@ -455,10 +461,10 @@ impl VoxelFace {
 
 #[derive(Debug, Clone)]
 pub struct Mesh {
-    indices: Vec<i32>,
+    pub indices: Vec<i32>,
     /// The number of values each vertex is composed of. Can be 1, 2, 3, or 4.
-    vertex_size: usize,
-    vertices: Vec<f32>,
+    pub vertex_size: usize,
+    pub vertices: Vec<f32>,
 }
 
 pub type CbMatrix = std::vec::Vec<
