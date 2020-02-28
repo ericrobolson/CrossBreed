@@ -65,18 +65,9 @@ impl CbVoxelChunk {
                 for z in 0..CHUNK_SIZE {
                     let coordinate = (x, y, z);
                     let mut voxel = CbVoxel::new();
+                    voxel.voxel_type = CbVoxelTypes::Grass;
 
-                    if x < CHUNK_SIZE / 2 && y < CHUNK_SIZE / 2 && z < CHUNK_SIZE / 2 {
-                        voxel.voxel_type = CbVoxelTypes::Grass;
-                    }
-
-                    if x % 2 == 0 && y % 2 == 0 && z % 2 == 0 {
-                        voxel.voxel_type = CbVoxelTypes::Dirt;
-                    }
-
-                    if x % 3 == 0 && y % 3 == 0 && z % 3 == 0 {
-                        voxel.active = false;
-                    }
+                    voxel.active = false;
 
                     voxels.push((coordinate, voxel));
                 }
@@ -89,9 +80,20 @@ impl CbVoxelChunk {
             mesh: None,
         };
 
+        chunk.init_landscape();
+
         chunk.mesh();
 
         return chunk;
+    }
+
+    pub fn init_landscape(&mut self) {
+        for ((x, y, z), voxel) in self.voxels.iter_mut() {
+            if x == y && y == z {
+                voxel.active = true;
+                voxel.voxel_type = CbVoxelTypes::Grass;
+            }
+        }
     }
 
     pub fn mesh(&mut self) -> &Mesh {
@@ -120,6 +122,11 @@ impl CbVoxelChunk {
         let z = i / (CHUNK_SIZE * CHUNK_SIZE);
 
         return (x, y, z);
+    }
+
+    fn get_1d_index(&self, x: usize, y: usize, z: usize) -> usize {
+        let i = x + y * MAX_CHUNK_INDEX + z * MAX_CHUNK_INDEX * MAX_CHUNK_INDEX;
+        return i;
     }
 
     pub fn voxel_3d_index(&self, x: usize, y: usize, z: usize) -> &CbVoxel {
@@ -430,7 +437,7 @@ fn get_quad(
     voxel: VoxelFace,
     backface: bool,
 ) -> Mesh {
-    let voxel_size = VOXEL_SIZE as f32 / 10.0; //TODO: change this
+    let voxel_size = VOXEL_SIZE as f32 / 5.0; //TODO: change this
 
     const VALUES_IN_VERTEX: usize = 3;
     let vertices;

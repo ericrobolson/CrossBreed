@@ -41,7 +41,6 @@ fn main_loop() {
 
     // Init simulation data
     let mut game_tick: GameTick = 0;
-    let mut events = vec![];
     let player_id: PlayerId = 1;
     let mut game_state = cb_simulation::GameState::new();
 
@@ -109,12 +108,11 @@ fn main_loop() {
 
         // Update simulation + pump events into simulation
         {
-            game_state = cb_simulation::update_simulation(game_tick, &events, &game_state);
+            //game_state = cb_simulation::update_simulation(game_tick, &events, &game_state);
 
             game_state.voxel_chunk.mesh();
 
             // Clear events and increment game tick
-            events.clear();
             game_tick += 1;
         }
 
