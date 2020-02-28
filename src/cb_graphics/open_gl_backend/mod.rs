@@ -11,119 +11,49 @@ use crate::cb_graphics;
 
 use crate::cb_voxels;
 
+mod r_voxel_meshes;
+
 pub mod render_gl;
 
+pub struct MeshBuffers {
+    pub vao: gl::types::GLuint,
+    pub vbo: gl::types::GLuint,
+    pub ebo: gl::types::GLuint,
+    pub color_buff: gl::types::GLuint,
+    pub last_calculated_frame: usize,
+}
+
 pub struct OpenGlBackend {
-    program: render_gl::Program,
-    voxel_vao: u32,
+    basic_mesh_program: render_gl::Program,
+    chunk_mesh_buffers: Vec<MeshBuffers>,
     mvp_id: i32,
     frame: usize,
 }
 
-fn init_cube_buffers() -> gl::types::GLuint {
-    let vertices: Vec<f32> = vec![
-        -1.0, -1.0, -1.0, // triangle 1 : begin
-        -1.0, -1.0, 1.0, // triangle 1: mid
-        -1.0, 1.0, 1.0, // triangle 1 : end
-        1.0, 1.0, -1.0, // triangle 2 : begin
-        -1.0, -1.0, -1.0, //
-        -1.0, 1.0, -1.0, // triangle 2 : end
-        1.0, -1.0, 1.0, // tri3
-        -1.0, -1.0, -1.0, //
-        1.0, -1.0, -1.0, // tri3
-        1.0, 1.0, -1.0, // tri4
-        1.0, -1.0, -1.0, //
-        -1.0, -1.0, -1.0, // tri4
-        -1.0, -1.0, -1.0, // tri begin
-        -1.0, 1.0, 1.0, //
-        -1.0, 1.0, -1.0, // tri end
-        1.0, -1.0, 1.0, // tri begin
-        -1.0, -1.0, 1.0, //
-        -1.0, -1.0, -1.0, // tri end
-        -1.0, 1.0, 1.0, // tri begin
-        -1.0, -1.0, 1.0, //
-        1.0, -1.0, 1.0, // tri end
-        1.0, 1.0, 1.0, // tri begin
-        1.0, -1.0, -1.0, //
-        1.0, 1.0, -1.0, // tri end
-        1.0, -1.0, -1.0, // tri begin
-        1.0, 1.0, 1.0, //
-        1.0, -1.0, 1.0, // tri end
-        1.0, 1.0, 1.0, // tri begin
-        1.0, 1.0, -1.0, //
-        -1.0, 1.0, -1.0, // tri end
-        1.0, 1.0, 1.0, // tri begin
-        -1.0, 1.0, -1.0, //
-        -1.0, 1.0, 1.0, // tri end
-        1.0, 1.0, 1.0, // tri begin
-        -1.0, 1.0, 1.0, //
-        1.0, -1.0, 1.0, // tri end
-    ];
-
-    let mut vbo_tri: gl::types::GLuint = 0;
-    unsafe {
-        gl::GenBuffers(1, &mut vbo_tri);
-
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo_tri);
-        gl::BufferData(
-            gl::ARRAY_BUFFER,
-            (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-            vertices.as_ptr() as *const gl::types::GLvoid,
-            gl::STATIC_DRAW,
-        );
-
-        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-    }
-
-    let mut vao: gl::types::GLuint = 0;
-    unsafe {
-        let num_vertices = 12 * 3; // 12 triangles, 3 vertices each
-        gl::GenVertexArrays(1, &mut vao);
-        gl::BindVertexArray(vao);
-        gl::BindBuffer(gl::ARRAY_BUFFER, vbo_tri);
-        gl::EnableVertexAttribArray(0);
-        gl::VertexAttribPointer(
-            0,
-            3,
-            gl::FLOAT,
-            gl::FALSE,
-            (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
-            std::ptr::null(),
-        );
-        gl::BindBuffer(gl::ARRAY_BUFFER, 0);
-        gl::BindVertexArray(0);
-    }
-
-    return vao;
-}
-
 impl OpenGlBackend {
     pub fn new() -> Self {
-        let vert_shader = render_gl::Shader::from_vert_source(
-            &CString::new(include_str!("triangle.vert")).unwrap(),
-        )
-        .unwrap();
+        // Basic mesh program
+        let mesh_program;
+        {
+            let vert_shader = render_gl::Shader::from_vert_source(
+                &CString::new(include_str!("mesh.vert")).unwrap(),
+            )
+            .unwrap();
 
-        let frag_shader = render_gl::Shader::from_frag_source(
-            &CString::new(include_str!("triangle.frag")).unwrap(),
-        )
-        .unwrap();
+            let frag_shader = render_gl::Shader::from_frag_source(
+                &CString::new(include_str!("mesh.frag")).unwrap(),
+            )
+            .unwrap();
+            mesh_program = render_gl::Program::from_shaders(&[vert_shader, frag_shader]).unwrap();
+        }
 
-        let shader_program = render_gl::Program::from_shaders(&[vert_shader, frag_shader]).unwrap();
-        shader_program.set_used();
-
-        let voxels = init_cube_buffers();
+        mesh_program.set_used();
 
         // MVP uniform
         let mvp_str = &CString::new("MVP").unwrap();
-        let mut mvp_id;
+        let mvp_id;
         unsafe {
-            mvp_id = gl::GetUniformLocation(shader_program.id(), mvp_str.as_ptr());
-        }
-
-        // Wireframes?
-        unsafe {
-            gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+            mvp_id = gl::GetUniformLocation(mesh_program.id(), mvp_str.as_ptr());
         }
 
         // Backface culling
@@ -131,9 +61,14 @@ impl OpenGlBackend {
             gl::Enable(gl::CULL_FACE);
         }
 
+        // Depth
+        unsafe {
+            gl::Enable(gl::DEPTH_TEST);
+        }
+
         return Self {
-            program: shader_program,
-            voxel_vao: voxels,
+            basic_mesh_program: mesh_program,
+            chunk_mesh_buffers: r_voxel_meshes::init_voxel_mesh_buffers(),
             mvp_id: mvp_id,
             frame: 0,
         };
@@ -141,21 +76,45 @@ impl OpenGlBackend {
 
     pub fn render(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
         unsafe {
-            gl::ClearColor(0.0, 1.0, 0.0, 0.0);
+            gl::ClearColor(1.0, 1.0, 1.0, 0.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        self.program.set_used();
-        self.draw_voxel(camera, game_state);
+        self.basic_mesh_program.set_used();
+        r_voxel_meshes::draw_voxel_meshes(self, camera, game_state);
 
         self.frame += 1;
     }
+}
 
-    fn draw_voxel(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
-        // Camera
+type CbProjection = cb_graphics::open_gl_backend::na::Matrix<
+    f32,
+    cb_graphics::open_gl_backend::na::U4,
+    cb_graphics::open_gl_backend::na::U4,
+    cb_graphics::open_gl_backend::na::ArrayStorage<
+        f32,
+        cb_graphics::open_gl_backend::na::U4,
+        cb_graphics::open_gl_backend::na::U4,
+    >,
+>;
+
+type CbView = cb_graphics::open_gl_backend::na::Matrix<
+    f32,
+    cb_graphics::open_gl_backend::na::U4,
+    cb_graphics::open_gl_backend::na::U4,
+    cb_graphics::open_gl_backend::na::ArrayStorage<
+        f32,
+        cb_graphics::open_gl_backend::na::U4,
+        cb_graphics::open_gl_backend::na::U4,
+    >,
+>;
+
+fn get_proj_view(camera: &cb_graphics::CbCamera) -> (CbProjection, CbView) {
+    let proj;
+    let view;
+    {
         let horizontal_angle = 3.14;
         let vertical_angle = 0.0;
-        let initial_fov = 45.0;
         let mouse_speed = 0.005; // configure to user variable?
 
         let delta_time = 1.0; //TODO: figure out
@@ -177,120 +136,12 @@ impl OpenGlBackend {
             mouse_target.y + camera.pos_y,
             mouse_target.z + camera.pos_z,
         );
-        let view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
-        let view = view.to_homogeneous();
-
-        let proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
-        let proj = proj.as_matrix();
-
-        let mut draw_calls = 0;
-
-        for ((x, y, z), voxel) in game_state
-            .voxel_chunk
-            .voxels
-            .iter()
-            .filter(|((_, _, _), voxel)| voxel.active)
-        {
-            let x = *x;
-            let y = *y;
-            let z = *z;
-
-            // if not visible, skip, but always render the outer most voxels
-            if x != 0
-                && x != cb_voxels::MAX_CHUNK_INDEX
-                && y != 0
-                && y != cb_voxels::MAX_CHUNK_INDEX
-                && z != 0
-                && z != cb_voxels::MAX_CHUNK_INDEX
-            {
-                // same layer
-                let n1 = game_state.voxel_chunk.voxel_3d_index(x - 1, y, z);
-                let n2 = game_state.voxel_chunk.voxel_3d_index(x + 1, y, z);
-                let n3 = game_state.voxel_chunk.voxel_3d_index(x, y - 1, z);
-                let n4 = game_state.voxel_chunk.voxel_3d_index(x, y + 1, z);
-                let n5 = game_state.voxel_chunk.voxel_3d_index(x + 1, y + 1, z);
-                let n6 = game_state.voxel_chunk.voxel_3d_index(x + 1, y - 1, z);
-                let n7 = game_state.voxel_chunk.voxel_3d_index(x - 1, y - 1, z);
-                let n8 = game_state.voxel_chunk.voxel_3d_index(x - 1, y + 1, z);
-
-                let obscured_by_same_layer = n1.active
-                    && n2.active
-                    && n3.active
-                    && n4.active
-                    && n5.active
-                    && n6.active
-                    && n7.active
-                    && n8.active;
-
-                // top layer
-                let n1 = game_state.voxel_chunk.voxel_3d_index(x - 1, y, z - 1);
-                let n2 = game_state.voxel_chunk.voxel_3d_index(x + 1, y, z - 1);
-                let n3 = game_state.voxel_chunk.voxel_3d_index(x, y - 1, z - 1);
-                let n4 = game_state.voxel_chunk.voxel_3d_index(x, y + 1, z - 1);
-                let n5 = game_state.voxel_chunk.voxel_3d_index(x + 1, y + 1, z - 1);
-                let n6 = game_state.voxel_chunk.voxel_3d_index(x + 1, y - 1, z - 1);
-                let n7 = game_state.voxel_chunk.voxel_3d_index(x - 1, y - 1, z - 1);
-                let n8 = game_state.voxel_chunk.voxel_3d_index(x - 1, y + 1, z - 1);
-                let n9 = game_state.voxel_chunk.voxel_3d_index(x, y, z - 1);
-
-                let obscured_by_top_layer = n1.active
-                    && n2.active
-                    && n3.active
-                    && n4.active
-                    && n5.active
-                    && n6.active
-                    && n7.active
-                    && n8.active
-                    && n9.active;
-
-                // bottom layer
-                let n1 = game_state.voxel_chunk.voxel_3d_index(x - 1, y, z + 1);
-                let n2 = game_state.voxel_chunk.voxel_3d_index(x + 1, y, z + 1);
-                let n3 = game_state.voxel_chunk.voxel_3d_index(x, y - 1, z + 1);
-                let n4 = game_state.voxel_chunk.voxel_3d_index(x, y + 1, z + 1);
-                let n5 = game_state.voxel_chunk.voxel_3d_index(x + 1, y + 1, z + 1);
-                let n6 = game_state.voxel_chunk.voxel_3d_index(x + 1, y - 1, z + 1);
-                let n7 = game_state.voxel_chunk.voxel_3d_index(x - 1, y - 1, z + 1);
-                let n8 = game_state.voxel_chunk.voxel_3d_index(x - 1, y + 1, z + 1);
-                let n9 = game_state.voxel_chunk.voxel_3d_index(x, y, z + 1);
-
-                let obscured_by_bot_layer = n1.active
-                    && n2.active
-                    && n3.active
-                    && n4.active
-                    && n5.active
-                    && n6.active
-                    && n7.active
-                    && n8.active
-                    && n9.active;
-
-                if obscured_by_same_layer && obscured_by_top_layer && obscured_by_bot_layer {
-                    continue;
-                }
-            }
-
-            let x = x as f32;
-            let y = y as f32;
-            let z = z as f32;
-
-            unsafe {
-                // Model
-                let model_pos = Vector3::new(x, y, z);
-                let model_pos = Isometry3::new(model_pos, na::zero());
-
-                let model = model_pos.to_homogeneous() * na::Matrix4::identity();
-                // MVP
-                let mvp = proj * (view * model);
-
-                gl::UniformMatrix4fv(self.mvp_id, 1, gl::FALSE, mvp.as_ptr());
-
-                gl::BindVertexArray(self.voxel_vao);
-                gl::DrawArrays(gl::TRIANGLES, 0, 12 * 3);
-            }
-
-            draw_calls += 1;
-        }
-
-        //println!("draw calls: {}", draw_calls);
+        view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
+        proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
     }
+
+    let proj: CbProjection = *proj.as_matrix();
+    let view = view.to_homogeneous();
+
+    return (proj, view);
 }

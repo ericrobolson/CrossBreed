@@ -6,6 +6,8 @@ use sdl2::video::GLProfile;
 mod open_gl_backend;
 use open_gl_backend::OpenGlBackend;
 
+pub mod mesh;
+
 use crate::cb_simulation;
 use cb_simulation::GameState;
 
@@ -24,9 +26,9 @@ pub struct CbCamera {
 impl CbCamera {
     fn new(window_width: f32, window_height: f32) -> Self {
         return Self {
-            pos_x: 4.0,
-            pos_y: 3.0,
-            pos_z: 0.0,
+            pos_x: -12.5000105,
+            pos_y: 15.800025,
+            pos_z: 2.0,
             dir_x: 0.0,
             dir_y: 0.0,
             dir_z: 0.0,

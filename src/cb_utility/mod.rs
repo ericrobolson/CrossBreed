@@ -15,3 +15,13 @@ macro_rules! init_component_implementations{
             )*
         };
     }
+
+/// Initialize multiple variables
+#[macro_export]
+macro_rules! let_mut_for{
+     ( ($( $i:ident ),*), $type:ty, $value:expr ) => {
+            $(
+                 let mut $i: $type = $value;
+            )*
+        };
+    }

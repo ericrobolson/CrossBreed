@@ -1,15 +1,14 @@
 // External crates
 extern crate gl;
-extern crate nalgebra;
-use nalgebra as na;
 extern crate rmercury;
 extern crate specs;
 use specs::prelude::*;
 extern crate sdl2;
+use std::panic;
 
 // Internal crates
 #[macro_use]
-pub mod external_libs;
+pub mod cb_utility;
 
 pub mod cb_graphics;
 pub mod cb_input;
@@ -18,7 +17,7 @@ pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
 pub mod contexts;
-use cb_system::{CbEvent, GameTick, PlayerId};
+use cb_system::{GameTick, PlayerId};
 
 pub struct GameSim {}
 
@@ -29,11 +28,18 @@ impl GameSim {
 }
 
 fn main() {
+    //NOTE: this is only for dev use, to allow panics to be caught
+    let result = panic::catch_unwind(|| main_loop());
+
+    loop {}
+}
+
+fn main_loop() {
+    // Init gfx
     let mut gfx = cb_graphics::CbGfx::new();
 
     // Init simulation data
     let mut game_tick: GameTick = 0;
-    let mut events = vec![];
     let player_id: PlayerId = 1;
     let mut game_state = cb_simulation::GameState::new();
 
@@ -46,8 +52,6 @@ fn main() {
 
     //TODO: fix up
     //   cb_simulation::assemblages::rts_assemblages::new_unit(&mut world);
-
-    // Init OpenGL
 
     loop {
         // Get Events
@@ -62,9 +66,6 @@ fn main() {
             // Camera movement
             {
                 let mut camera = gfx.camera();
-                let mut position = na::Vector3::new(0.0, 0.0, 0.0);
-                let right_vector = na::Vector3::new(x, y, z);
-
                 if movement_context.move_forward == cb_input::input_type::State::On {
                     camera.pos_x -= 0.1;
                 } else if movement_context.move_backward == cb_input::input_type::State::On {
@@ -87,22 +88,13 @@ fn main() {
                     camera.pos_y += 0.1;
                 }
             }
-
-            let input_event = CbEvent {
-                tick: game_tick + cb_system::FRAMEDELAY,
-                value: movement_context,
-            };
-
-            //TODO: translate to game events// implement a 3 tick delay for networking purposes, à la GGPO
-            //TODO: networking events
         }
 
-        // Update simulation + pump events into simulation
+        // Update simulation
         {
-            game_state = cb_simulation::update_simulation(game_tick, &events, &game_state);
+            game_state.chunk_manager.mesh(game_tick as usize);
 
-            // Clear events and increment game tick
-            events.clear();
+            // Increment game tick
             game_tick += 1;
         }
 

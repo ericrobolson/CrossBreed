@@ -1,15 +1,70 @@
-use crate::cb_math;
-use cb_math::pow;
+use crate::cb_graphics::mesh;
+use mesh::Mesh;
 
-pub const CHUNK_SIZE: usize = 8;
+mod greedy_mesher;
+
+extern crate rayon;
+use rayon::prelude::*;
+
+pub const CHUNK_SIZE: usize = 32;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
-const MAX_CHUNK_INDEX_3d: usize = CHUNK_SIZE - 1;
 
-type COORDINATE = (usize, usize, usize);
-/// Voxels are stored in a 1d array, even though they can be referenced within a 3d array
-pub const CHUNK_SIZE_1D_ARRAY: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+pub const VOXEL_SIZE: f32 = 0.5;
 
-#[derive(Debug, Copy, Clone)]
+pub const CHUNKS: usize = 6;
+pub const NUM_CHUNKS: usize = CHUNKS * CHUNKS * CHUNKS;
+
+#[derive(Debug)]
+pub struct CbChunkManager {
+    pub chunks: Vec<Vec<Vec<CbVoxelChunk>>>,
+}
+
+impl CbChunkManager {
+    pub fn new() -> Self {
+        let mut chunks = Vec::with_capacity(CHUNKS);
+        for _ in 0..CHUNKS {
+            let mut range = vec![];
+            for _ in 0..CHUNKS {
+                range.push(false);
+            }
+
+            let foo = range
+                .par_iter()
+                .map(|_| CbChunkManager::init_chunk_slice())
+                .collect();
+
+            chunks.push(foo);
+        }
+
+        // NEW CODE:
+
+        println!("Chunking finished.");
+        return Self { chunks: chunks };
+    }
+
+    fn init_chunk_slice() -> Vec<CbVoxelChunk> {
+        let mut range = vec![];
+        for _ in 0..CHUNKS {
+            range.push(false);
+        }
+
+        let chunks = range.iter().map(|_| CbVoxelChunk::new()).collect();
+
+        return chunks;
+    }
+
+    pub fn mesh(&mut self, frame: usize) {
+        for x in 0..CHUNKS {
+            for y in 0..CHUNKS {
+                for z in 0..CHUNKS {
+                    self.chunks[x][y][z].mesh(frame);
+                }
+            }
+        }
+    }
+}
+
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CbVoxelTypes {
     Default,
     Grass,
@@ -38,42 +93,60 @@ impl CbVoxel {
 
 #[derive(Debug, Clone)]
 pub struct CbVoxelChunk {
-    pub voxels: Vec<(COORDINATE, CbVoxel)>,
+    dirty: bool,
+    mesh: Option<Mesh>,
+    pub voxels: std::boxed::Box<[[[CbVoxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE]>,
 }
 
 impl CbVoxelChunk {
     pub fn new() -> Self {
-        let mut voxels = vec![];
+        let mut voxel = CbVoxel::new();
+        voxel.active = true;
+        voxel.voxel_type = CbVoxelTypes::Grass;
 
-        voxels.reserve(CHUNK_SIZE_1D_ARRAY);
-        for x in 0..CHUNK_SIZE {
-            for y in 0..CHUNK_SIZE {
-                for z in 0..CHUNK_SIZE {
-                    let coordinate = (x, y, z);
+        let voxels = Box::new([[[voxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE]);
 
-                    voxels.push((coordinate, CbVoxel::new()));
+        let mut chunk = Self {
+            voxels: voxels,
+            dirty: true,
+            mesh: None,
+        };
+
+        chunk.init_landscape();
+
+        chunk.mesh(0);
+
+        return chunk;
+    }
+
+    pub fn init_landscape(&mut self) {
+        for y in 0..CHUNK_SIZE {
+            for x in 0..y {
+                for z in 0..y {
+                    if y % 2 == 0 {
+                        self.voxels[x][y][z].voxel_type = CbVoxelTypes::Dirt;
+                    } else {
+                        self.voxels[x][y][z].active = false;
+                    }
                 }
             }
         }
-
-        return Self { voxels: voxels };
     }
 
-    pub fn voxel_1d_to_3d(i: usize) -> COORDINATE {
-        // i % max_x
-        let x = i % MAX_CHUNK_INDEX_3d;
-        // (i / max_x) % max_y
-        let y = (i / MAX_CHUNK_INDEX_3d) % MAX_CHUNK_INDEX_3d;
-        // i / (max_x * max_y)
-        let z = i / (MAX_CHUNK_INDEX_3d * MAX_CHUNK_INDEX_3d);
+    pub fn mesh(&mut self, frame: usize) -> &Mesh {
+        if !self.dirty {
+            return self.mesh.as_ref().unwrap();
+        }
 
-        return (x, y, z);
+        // Remesh and store it
+        self.dirty = false;
+        let mesh = greedy_mesher::calculate_greedy_mesh(&self, frame);
+        self.mesh = Some(mesh);
+
+        return self.mesh.as_ref().unwrap();
     }
 
-    pub fn voxel_3d_index(&self, x: usize, y: usize, z: usize) -> &CbVoxel {
-        // i = x + y * max_x + z * max_x * max_y
-        let i = x + y * MAX_CHUNK_INDEX_3d + z * MAX_CHUNK_INDEX_3d * MAX_CHUNK_INDEX_3d;
-
-        return &self.voxels[i].1;
+    pub fn get_last_mesh(&self) -> &Mesh {
+        return self.mesh.as_ref().unwrap();
     }
 }
