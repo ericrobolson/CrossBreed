@@ -74,7 +74,7 @@ pub fn draw_voxel_meshes(
                     // Only update the buffers if it's needed
                     let changed;
                     {
-                        if mesh.generated_at_frame >= buffers.last_calculated_frame {
+                        if mesh.generated_at_frame > buffers.last_calculated_frame {
                             changed = true;
 
                             // Store the frame the mesh was generated at

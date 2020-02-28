@@ -6,40 +6,6 @@ use na::Vector3;
 use crate::cb_graphics::mesh;
 use mesh::Mesh;
 
-fn get_voxel_face(chunk: &CbVoxelChunk, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
-    // NOTE: Add the following here:
-    // ** Set per face / per vertex values as well as voxel values here.
-    let voxel = chunk.voxels[x][y][z];
-
-    let mut transparent = !voxel.active;
-
-    // Check neighbors to see if obscured and cull if so
-    if (x != 0 && x != MAX_CHUNK_INDEX)
-        && (y != 0 && y != MAX_CHUNK_INDEX)
-        && (z != 0 && z != MAX_CHUNK_INDEX)
-    {
-        // above layer
-        let obscured_above = chunk.voxels[x][y][z - 1].active;
-        // same layer
-        let obscured_same = chunk.voxels[x][y + 1][z].active
-            && chunk.voxels[x][y - 1][z].active
-            && chunk.voxels[x + 1][y][z].active
-            && chunk.voxels[x - 1][y][z].active;
-        // below layer
-        let obscured_below = chunk.voxels[x][y][z + 1].active;
-
-        if !transparent && obscured_above && obscured_same && obscured_below {
-            transparent = true;
-        }
-    }
-
-    return VoxelFace {
-        transparent: transparent,
-        vf_type: voxel.voxel_type,
-        side: side,
-    };
-}
-
 pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
     const SOUTH: usize = 0;
     const NORTH: usize = 1;
@@ -286,6 +252,40 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
     }
 
     return Mesh::merge(meshes);
+}
+
+fn get_voxel_face(chunk: &CbVoxelChunk, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
+    // NOTE: Add the following here:
+    // ** Set per face / per vertex values as well as voxel values here.
+    let voxel = chunk.voxels[x][y][z];
+
+    let mut transparent = !voxel.active;
+
+    // Check neighbors to see if obscured and cull if so
+    if (x != 0 && x != MAX_CHUNK_INDEX)
+        && (y != 0 && y != MAX_CHUNK_INDEX)
+        && (z != 0 && z != MAX_CHUNK_INDEX)
+    {
+        // above layer
+        let obscured_above = chunk.voxels[x][y][z - 1].active;
+        // same layer
+        let obscured_same = chunk.voxels[x][y + 1][z].active
+            && chunk.voxels[x][y - 1][z].active
+            && chunk.voxels[x + 1][y][z].active
+            && chunk.voxels[x - 1][y][z].active;
+        // below layer
+        let obscured_below = chunk.voxels[x][y][z + 1].active;
+
+        if !transparent && obscured_above && obscured_same && obscured_below {
+            transparent = true;
+        }
+    }
+
+    return VoxelFace {
+        transparent: transparent,
+        vf_type: voxel.voxel_type,
+        side: side,
+    };
 }
 
 type V3 = nalgebra::Matrix<

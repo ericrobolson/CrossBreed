@@ -35,10 +35,6 @@ impl CbChunkManager {
 
             chunks.push(foo);
         }
-
-        // NEW CODE:
-
-        println!("Chunking finished.");
         return Self { chunks: chunks };
     }
 
