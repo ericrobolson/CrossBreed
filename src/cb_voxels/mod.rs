@@ -4,7 +4,7 @@ use cb_math::pow;
 extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
-pub const CHUNK_SIZE: usize = 16;
+pub const CHUNK_SIZE: usize = 32;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: i32 = 1;
@@ -51,7 +51,7 @@ impl CbVoxel {
 #[derive(Debug, Clone)]
 pub struct CbVoxelChunk {
     dirty: bool,
-    mesh: Option<Vec<Mesh>>,
+    mesh: Option<Mesh>,
     pub voxels: Vec<(COORDINATE, CbVoxel)>,
 }
 
@@ -94,7 +94,7 @@ impl CbVoxelChunk {
         return chunk;
     }
 
-    pub fn mesh(&mut self) -> &Vec<Mesh> {
+    pub fn mesh(&mut self) -> &Mesh {
         if !self.dirty {
             return self.mesh.as_ref().unwrap();
         }
@@ -107,7 +107,7 @@ impl CbVoxelChunk {
         return self.mesh.as_ref().unwrap();
     }
 
-    pub fn get_last_mesh(&self) -> &Vec<Mesh> {
+    pub fn get_last_mesh(&self) -> &Mesh {
         return self.mesh.as_ref().unwrap();
     }
 
@@ -130,7 +130,6 @@ impl CbVoxelChunk {
     }
 
     fn get_voxel_face(&self, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
-        //NOTE: if adding culling, it would happen here
         // NOTE: Add the following here:
         // ** Set per face / per vertex values as well as voxel values here.
         let voxel = self.voxel_3d_index(x, y, z);
@@ -164,7 +163,7 @@ impl CbVoxelChunk {
         };
     }
 
-    fn calculate_greedy_mesh(&self) -> Vec<Mesh> {
+    fn calculate_greedy_mesh(&self) -> Mesh {
         const CHUNK_WIDTH: usize = CHUNK_SIZE;
         const CHUNK_WIDTH_I: i32 = CHUNK_WIDTH as i32;
         const CHUNK_HEIGHT: usize = CHUNK_SIZE;
@@ -403,7 +402,7 @@ impl CbVoxelChunk {
             }
         }
 
-        return meshes;
+        return Mesh::merge(meshes);
     }
 }
 
@@ -431,7 +430,7 @@ fn get_quad(
     voxel: VoxelFace,
     backface: bool,
 ) -> Mesh {
-    let voxel_size = VOXEL_SIZE as f32 / 2.0; //TODO: change this
+    let voxel_size = VOXEL_SIZE as f32 / 10.0; //TODO: change this
 
     const VALUES_IN_VERTEX: usize = 3;
     let vertices;
@@ -513,8 +512,6 @@ fn get_quad(
         COLOR_VERTEX_SIZE,
         colors,
     );
-
-    //mesh.wire_frame = true;
     return mesh;
 }
 
@@ -545,6 +542,7 @@ pub struct Mesh {
     pub colors: Vec<f32>,
     pub color_vertex_size: usize,
     pub wire_frame: bool,
+    pub disable_polygon_smooth: bool,
 }
 
 pub type CbMatrix = std::vec::Vec<
@@ -571,6 +569,7 @@ impl Mesh {
             color_vertex_size: color_vertex_size,
             colors: colors,
             wire_frame: false,
+            disable_polygon_smooth: true,
         };
     }
 
@@ -579,9 +578,8 @@ impl Mesh {
 
         if meshes.is_empty() == false {
             let mut is_first = true;
+            let mut offset = 0;
             for m in meshes.iter() {
-                let start_vertex_index = mesh.vertices.len() as i32;
-
                 if is_first {
                     mesh.vertex_size = m.vertex_size;
                     mesh.color_vertex_size = m.color_vertex_size;
@@ -600,9 +598,11 @@ impl Mesh {
                 mesh.colors.append(&mut m.colors.clone());
 
                 // do tricky shit with indices
-                for index in m.indices.iter() {
-                    mesh.indices.push(index + start_vertex_index);
-                }
+                let mut mapped_indices = m.indices.iter().map(|i| i + offset).collect();
+
+                mesh.indices.append(&mut mapped_indices);
+
+                offset += m.vertices.len() as i32 / m.vertex_size as i32;
             }
         }
 

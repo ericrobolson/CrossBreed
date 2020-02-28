@@ -24,9 +24,9 @@ pub struct CbCamera {
 impl CbCamera {
     fn new(window_width: f32, window_height: f32) -> Self {
         return Self {
-            pos_x: 4.0,
-            pos_y: 3.0,
-            pos_z: 0.0,
+            pos_x: -12.5000105,
+            pos_y: 15.800025,
+            pos_z: 2.0,
             dir_x: 0.0,
             dir_y: 0.0,
             dir_z: 0.0,
@@ -99,8 +99,7 @@ impl CbGfx {
         self.camera.cursor_x = cursor.x() as f32;
         self.camera.cursor_y = cursor.y() as f32;
 
-        self.gl_backend
-            .render(&self.camera, game_state, cursor.right());
+        self.gl_backend.render(&self.camera, game_state);
         self.window.gl_swap_window();
 
         // sdl2::sys::SDL_WarpMouseInWindow(&mut self.window.as_ptr());
