@@ -138,117 +138,140 @@ impl OpenGlBackend {
         let proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
         let proj = proj.as_matrix();
 
-        // Set MVP
-        {
-            // Model
-            let model_pos = Vector3::new(0.0, 0.0, 0.0);
+        for (x, row) in game_state.chunk_manager.chunks.iter().enumerate() {
+            for (y, column) in row.iter().enumerate() {
+                for (z, chunk) in column.iter().enumerate() {
+                    let mesh = chunk.get_last_mesh();
 
-            let model_pos = Isometry3::new(model_pos, na::zero());
+                    // Set MVP
+                    {
+                        // Model
+                        const CHUNK_OFFSET: f32 =
+                            (cb_voxels::CHUNK_SIZE) as f32 * cb_voxels::VOXEL_SIZE;
 
-            let model = model_pos.to_homogeneous() * na::Matrix4::identity();
-            // MVP
-            let mvp = proj * (view * model);
+                        let model_pos = Vector3::new(
+                            x as f32 * CHUNK_OFFSET,
+                            y as f32 * CHUNK_OFFSET,
+                            z as f32 * CHUNK_OFFSET,
+                        );
 
-            unsafe {
-                gl::UniformMatrix4fv(self.mvp_id, 1, gl::FALSE, mvp.as_ptr());
-            }
-        }
-        let mesh = game_state.voxel_chunk.get_last_mesh();
+                        let model_pos = Isometry3::new(model_pos, na::zero());
 
-        // http://nercury.github.io/rust/opengl/tutorial/2018/02/11/opengl-in-rust-from-scratch-04-triangle.html
-        // https://learnopengl.com/Getting-started/Hello-Triangle
+                        let model = model_pos.to_homogeneous() * na::Matrix4::identity();
+                        // MVP
+                        let mvp = proj * (view * model);
 
-        // TODO: look into flattening meshes/ using one buffer
-        // TODO: look into only reloading buffers if changed
-        // flatten all the data so it can be put into one buffer + draw call; look into this. Need to ensure that vertex number counts are the exact same.
-        //TODO: Ensure vertex counts are the same, if not need to figure out
+                        unsafe {
+                            gl::UniformMatrix4fv(self.mvp_id, 1, gl::FALSE, mvp.as_ptr());
+                        }
+                    }
 
-        // Render the data; iterates over each mesh; naive implementation
-        if mesh.wire_frame {
-            // Wireframes?
-            unsafe {
-                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-            }
-        }
+                    // Render the mesh
+                    {
+                        // http://nercury.github.io/rust/opengl/tutorial/2018/02/11/opengl-in-rust-from-scratch-04-triangle.html
+                        // https://learnopengl.com/Getting-started/Hello-Triangle
 
-        if mesh.disable_polygon_smooth {
-            unsafe {
-                gl::Disable(gl::POLYGON_SMOOTH);
-            }
-        }
+                        // TODO: look into flattening meshes/ using one buffer
+                        // TODO: look into only reloading buffers if changed
+                        // flatten all the data so it can be put into one buffer + draw call; look into this. Need to ensure that vertex number counts are the exact same.
+                        //TODO: Ensure vertex counts are the same, if not need to figure out
 
-        unsafe {
-            // Optimization: only update the buffer if it's needed
-            // 1
-            gl::BindVertexArray(self.voxel_vao);
+                        // Render the data; iterates over each mesh; naive implementation
+                        if mesh.wire_frame {
+                            // Wireframes?
+                            unsafe {
+                                gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
+                            }
+                        }
 
-            // 2
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.voxel_vbo);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (mesh.vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-                mesh.vertices.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW,
-            );
+                        if mesh.disable_polygon_smooth {
+                            unsafe {
+                                gl::Disable(gl::POLYGON_SMOOTH);
+                            }
+                        }
 
-            // 3
-            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.voxel_ebo);
-            gl::BufferData(
-                gl::ELEMENT_ARRAY_BUFFER,
-                (mesh.indices.len() * std::mem::size_of::<i32>()) as gl::types::GLsizeiptr,
-                mesh.indices.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW,
-            );
+                        unsafe {
+                            // Optimization: only update the buffer if it's needed
+                            // 1
+                            gl::BindVertexArray(self.voxel_vao);
 
-            gl::VertexAttribPointer(
-                0,
-                3,
-                gl::FLOAT,
-                gl::FALSE,
-                (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
-                std::ptr::null(),
-            );
+                            // 2
+                            gl::BindBuffer(gl::ARRAY_BUFFER, self.voxel_vbo);
+                            gl::BufferData(
+                                gl::ARRAY_BUFFER,
+                                (mesh.vertices.len() * std::mem::size_of::<f32>())
+                                    as gl::types::GLsizeiptr,
+                                mesh.vertices.as_ptr() as *const gl::types::GLvoid,
+                                gl::STATIC_DRAW,
+                            );
 
-            // 4 vertices
-            gl::VertexAttribPointer(
-                0,
-                mesh.vertex_size as gl::types::GLint,
-                gl::FLOAT,
-                gl::FALSE,
-                (mesh.vertex_size * std::mem::size_of::<f32>()) as gl::types::GLint,
-                std::ptr::null(),
-            );
+                            // 3
+                            gl::BindBuffer(gl::ELEMENT_ARRAY_BUFFER, self.voxel_ebo);
+                            gl::BufferData(
+                                gl::ELEMENT_ARRAY_BUFFER,
+                                (mesh.indices.len() * std::mem::size_of::<i32>())
+                                    as gl::types::GLsizeiptr,
+                                mesh.indices.as_ptr() as *const gl::types::GLvoid,
+                                gl::STATIC_DRAW,
+                            );
 
-            gl::EnableVertexAttribArray(0);
+                            gl::VertexAttribPointer(
+                                0,
+                                3,
+                                gl::FLOAT,
+                                gl::FALSE,
+                                (3 * std::mem::size_of::<f32>()) as gl::types::GLint,
+                                std::ptr::null(),
+                            );
 
-            // Colors
-            gl::EnableVertexAttribArray(1);
-            gl::BindBuffer(gl::ARRAY_BUFFER, self.voxel_color_buff);
-            gl::BufferData(
-                gl::ARRAY_BUFFER,
-                (mesh.colors.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
-                mesh.colors.as_ptr() as *const gl::types::GLvoid,
-                gl::STATIC_DRAW,
-            );
-            gl::VertexAttribPointer(
-                1,
-                mesh.color_vertex_size as gl::types::GLint,
-                gl::FLOAT,
-                gl::FALSE,
-                (mesh.color_vertex_size * std::mem::size_of::<f32>()) as gl::types::GLint,
-                std::ptr::null(),
-            );
+                            // 4 vertices
+                            gl::VertexAttribPointer(
+                                0,
+                                mesh.vertex_size as gl::types::GLint,
+                                gl::FLOAT,
+                                gl::FALSE,
+                                (mesh.vertex_size * std::mem::size_of::<f32>()) as gl::types::GLint,
+                                std::ptr::null(),
+                            );
 
-            // Render
-            {
-                gl::BindVertexArray(self.voxel_vao);
-                gl::DrawElements(
-                    gl::TRIANGLES,
-                    mesh.indices.len() as i32,
-                    gl::UNSIGNED_INT,
-                    std::ptr::null(),
-                );
-                gl::BindVertexArray(0);
+                            gl::EnableVertexAttribArray(0);
+
+                            // Colors
+                            gl::EnableVertexAttribArray(1);
+                            gl::BindBuffer(gl::ARRAY_BUFFER, self.voxel_color_buff);
+                            gl::BufferData(
+                                gl::ARRAY_BUFFER,
+                                (mesh.colors.len() * std::mem::size_of::<f32>())
+                                    as gl::types::GLsizeiptr,
+                                mesh.colors.as_ptr() as *const gl::types::GLvoid,
+                                gl::STATIC_DRAW,
+                            );
+                            gl::VertexAttribPointer(
+                                1,
+                                mesh.color_vertex_size as gl::types::GLint,
+                                gl::FLOAT,
+                                gl::FALSE,
+                                (mesh.color_vertex_size * std::mem::size_of::<f32>())
+                                    as gl::types::GLint,
+                                std::ptr::null(),
+                            );
+
+                            // Render
+                            {
+                                gl::BindVertexArray(self.voxel_vao);
+                                gl::DrawElements(
+                                    gl::TRIANGLES,
+                                    mesh.indices.len() as i32,
+                                    gl::UNSIGNED_INT,
+                                    std::ptr::null(),
+                                );
+                                gl::BindVertexArray(0);
+                            }
+                        }
+
+                        // End render mesh
+                    }
+                }
             }
         }
     }

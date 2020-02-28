@@ -6,25 +6,24 @@ use crate::cb_voxels;
 pub mod assemblages;
 pub mod components;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct GameState {
     pub current_tick: GameTick,
-    pub voxel_chunk: cb_voxels::CbVoxelChunk,
+    pub chunk_manager: cb_voxels::CbChunkManager,
 }
 
 impl GameState {
     pub fn new() -> Self {
         return GameState {
             current_tick: 0,
-            voxel_chunk: cb_voxels::CbVoxelChunk::new(),
+            chunk_manager: cb_voxels::CbChunkManager::new(),
         };
     }
-}
-
-pub fn update_simulation(
-    current_tick: GameTick,
-    events: &Vec<CbEvent<bool>>,
-    state: &GameState,
-) -> GameState {
-    return state.clone();
+    pub fn update_simulation(
+        &mut self,
+        current_tick: GameTick,
+        events: &Vec<CbEvent<bool>>,
+        state: &GameState,
+    ) {
+    }
 }

@@ -7,17 +7,50 @@ use na::{Isometry3, Perspective3, Point3, Vector3};
 pub const CHUNK_SIZE: usize = 32;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
-pub const VOXEL_SIZE: i32 = 1;
+pub const VOXEL_SIZE: f32 = 0.5;
 
 type COORDINATE = (usize, usize, usize);
 /// Voxels are stored in a 1d array, even though they can be referenced within a 3d array
 pub const CHUNK_SIZE_1D_ARRAY: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
-pub struct CbChunkManager {}
+pub const CHUNKS: usize = 6;
+
+#[derive(Debug)]
+pub struct CbChunkManager {
+    pub chunks: Vec<Vec<Vec<CbVoxelChunk>>>,
+}
 
 impl CbChunkManager {
     pub fn new() -> Self {
-        return Self {};
+        let mut chunks = Vec::with_capacity(CHUNKS);
+        for _ in 0..CHUNKS {
+            let mut foo = Vec::with_capacity(CHUNKS);
+
+            for _ in 0..CHUNKS {
+                let mut bar = Vec::with_capacity(CHUNKS);
+
+                for _ in 0..CHUNKS {
+                    bar.push(CbVoxelChunk::new());
+                }
+
+                foo.push(bar);
+            }
+
+            chunks.push(foo);
+        }
+
+        println!("Chunking finished.");
+        return Self { chunks: chunks };
+    }
+
+    pub fn mesh(&mut self) {
+        for x in 0..CHUNKS {
+            for y in 0..CHUNKS {
+                for z in 0..CHUNKS {
+                    self.chunks[x][y][z].mesh();
+                }
+            }
+        }
     }
 }
 
@@ -52,27 +85,16 @@ impl CbVoxel {
 pub struct CbVoxelChunk {
     dirty: bool,
     mesh: Option<Mesh>,
-    pub voxels: Vec<(COORDINATE, CbVoxel)>,
+    pub voxels: [[[CbVoxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
 }
 
 impl CbVoxelChunk {
     pub fn new() -> Self {
-        let mut voxels = vec![];
+        let mut voxel = CbVoxel::new();
+        voxel.active = true;
+        voxel.voxel_type = CbVoxelTypes::Grass;
 
-        voxels.reserve(CHUNK_SIZE_1D_ARRAY);
-        for x in 0..CHUNK_SIZE {
-            for y in 0..CHUNK_SIZE {
-                for z in 0..CHUNK_SIZE {
-                    let coordinate = (x, y, z);
-                    let mut voxel = CbVoxel::new();
-                    voxel.voxel_type = CbVoxelTypes::Grass;
-
-                    voxel.active = false;
-
-                    voxels.push((coordinate, voxel));
-                }
-            }
-        }
+        let voxels = [[[voxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE];
 
         let mut chunk = Self {
             voxels: voxels,
@@ -90,13 +112,11 @@ impl CbVoxelChunk {
     pub fn init_landscape(&mut self) {
         let noise = Noise::new(7, 0, CHUNK_SIZE as u32);
 
-        for x in 0..CHUNK_SIZE {
-            for z in 0..CHUNK_SIZE {
-                let height = noise.at(x, z);
-
-                for y in 0..height {
-                    self.get_mut_voxel(x, y, z).active = true;
-                    self.get_mut_voxel(x, y, z).voxel_type = CbVoxelTypes::Grass;
+        for y in 0..CHUNK_SIZE {
+            for x in 0..y {
+                for z in 0..y {
+                    self.voxels[x][y][z].active = false;
+                    self.voxels[x][y][z].voxel_type = CbVoxelTypes::Grass;
                 }
             }
         }
@@ -110,7 +130,7 @@ impl CbVoxelChunk {
         self.dirty = false;
         let mut mesh = self.calculate_greedy_mesh();
 
-        mesh.wire_frame = true;
+        //mesh.wire_frame = true;
 
         self.mesh = Some(mesh);
 
@@ -132,29 +152,10 @@ impl CbVoxelChunk {
         return (x, y, z);
     }
 
-    fn get_1d_index(&self, x: usize, y: usize, z: usize) -> usize {
-        let i = x + y * MAX_CHUNK_INDEX + z * MAX_CHUNK_INDEX * MAX_CHUNK_INDEX;
-        return i;
-    }
-
-    pub fn voxel_3d_index(&self, x: usize, y: usize, z: usize) -> &CbVoxel {
-        // i = x + y * max_x + z * max_x * max_y
-        let i = x + y * MAX_CHUNK_INDEX + z * MAX_CHUNK_INDEX * MAX_CHUNK_INDEX;
-
-        return &self.voxels[i].1;
-    }
-
-    fn get_mut_voxel(&mut self, x: usize, y: usize, z: usize) -> &mut CbVoxel {
-        // i = x + y * max_x + z * max_x * max_y
-        let i = x + y * MAX_CHUNK_INDEX + z * MAX_CHUNK_INDEX * MAX_CHUNK_INDEX;
-
-        return &mut self.voxels[i].1;
-    }
-
     fn get_voxel_face(&self, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
         // NOTE: Add the following here:
         // ** Set per face / per vertex values as well as voxel values here.
-        let voxel = self.voxel_3d_index(x, y, z);
+        let voxel = self.voxels[x][y][z];
 
         let mut transparent = !voxel.active;
 
@@ -164,14 +165,14 @@ impl CbVoxelChunk {
             && (z != 0 && z != MAX_CHUNK_INDEX)
         {
             // above layer
-            let obscured_above = self.voxel_3d_index(x, y, z - 1).active;
+            let obscured_above = self.voxels[x][y][z - 1].active;
             // same layer
-            let obscured_same = self.voxel_3d_index(x, y + 1, z).active
-                && self.voxel_3d_index(x, y - 1, z).active
-                && self.voxel_3d_index(x + 1, y, z).active
-                && self.voxel_3d_index(x - 1, y, z).active;
+            let obscured_same = self.voxels[x][y + 1][z].active
+                && self.voxels[x][y - 1][z].active
+                && self.voxels[x + 1][y][z].active
+                && self.voxels[x - 1][y][z].active;
             // below layer
-            let obscured_below = self.voxel_3d_index(x, y, z + 1).active;
+            let obscured_below = self.voxels[x][y][z + 1].active;
 
             if !transparent && obscured_above && obscured_same && obscured_below {
                 transparent = true;
@@ -452,8 +453,6 @@ fn get_quad(
     voxel: VoxelFace,
     backface: bool,
 ) -> Mesh {
-    let voxel_size = VOXEL_SIZE as f32 / 5.0; //TODO: change this
-
     const VALUES_IN_VERTEX: usize = 3;
     let vertices;
     let indices;
@@ -489,7 +488,7 @@ fn get_quad(
         }
     }
 
-    let vertices = vertices.iter().map(|n| n * voxel_size).collect();
+    let vertices = vertices.iter().map(|n| n * VOXEL_SIZE).collect();
 
     // Colors
     const COLOR_CAPACITY: usize = 9;
@@ -555,7 +554,7 @@ impl VoxelFace {
     TODO: move into gfx land
 */
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     pub indices: Vec<i32>,
     /// The number of values each vertex is composed of. Can be 1, 2, 3, or 4. TODO: make this some sort of static, fixed thing.

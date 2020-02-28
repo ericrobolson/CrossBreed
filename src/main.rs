@@ -90,11 +90,6 @@ fn main_loop() {
                 } else if movement_context.running == cb_input::input_type::State::On {
                     camera.pos_y += 0.1;
                 }
-
-                println!(
-                    "camera pos: (x: {}, y: {}, z: {})",
-                    camera.pos_x, camera.pos_y, camera.pos_z
-                );
             }
 
             let input_event = CbEvent {
@@ -110,7 +105,7 @@ fn main_loop() {
         {
             //game_state = cb_simulation::update_simulation(game_tick, &events, &game_state);
 
-            game_state.voxel_chunk.mesh();
+            game_state.chunk_manager.mesh();
 
             // Clear events and increment game tick
             game_tick += 1;

@@ -44,11 +44,28 @@ impl Noise {
         // Populate matrix with randomly assigned max / min values
         // step through, interpolating the layers the each time until there is no more interpolation left to do
 
-        let density = 4;
+        let mut i = 0;
+        let density = 97;
+
+        let mut flipped = false;
 
         for x in 0..diff {
             for y in 0..diff {
                 //TODO: implement noise
+                if i < density {
+                    i += 1;
+                } else {
+                    i = 0;
+
+                    if flipped {
+                        values[x][y] = max_value as usize;
+                    } else {
+                        values[x][y] = min_value as usize;
+                    }
+
+                    flipped = !flipped;
+                }
+
                 //values[x][y] = 3;
             }
         }
