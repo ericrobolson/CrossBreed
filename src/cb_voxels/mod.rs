@@ -1,5 +1,5 @@
 use crate::cb_math;
-use cb_math::pow;
+use cb_math::{pow, Noise};
 
 extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
@@ -88,10 +88,16 @@ impl CbVoxelChunk {
     }
 
     pub fn init_landscape(&mut self) {
-        for ((x, y, z), voxel) in self.voxels.iter_mut() {
-            if x == y && y == z {
-                voxel.active = true;
-                voxel.voxel_type = CbVoxelTypes::Grass;
+        let noise = Noise::new(7, 0, CHUNK_SIZE as u32);
+
+        for x in 0..CHUNK_SIZE {
+            for z in 0..CHUNK_SIZE {
+                let height = noise.at(x, z);
+
+                for y in 0..height {
+                    self.get_mut_voxel(x, y, z).active = true;
+                    self.get_mut_voxel(x, y, z).voxel_type = CbVoxelTypes::Grass;
+                }
             }
         }
     }
@@ -102,7 +108,9 @@ impl CbVoxelChunk {
         }
 
         self.dirty = false;
-        let mesh = self.calculate_greedy_mesh();
+        let mut mesh = self.calculate_greedy_mesh();
+
+        mesh.wire_frame = true;
 
         self.mesh = Some(mesh);
 
@@ -134,6 +142,13 @@ impl CbVoxelChunk {
         let i = x + y * MAX_CHUNK_INDEX + z * MAX_CHUNK_INDEX * MAX_CHUNK_INDEX;
 
         return &self.voxels[i].1;
+    }
+
+    fn get_mut_voxel(&mut self, x: usize, y: usize, z: usize) -> &mut CbVoxel {
+        // i = x + y * max_x + z * max_x * max_y
+        let i = x + y * MAX_CHUNK_INDEX + z * MAX_CHUNK_INDEX * MAX_CHUNK_INDEX;
+
+        return &mut self.voxels[i].1;
     }
 
     fn get_voxel_face(&self, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
