@@ -6,6 +6,8 @@ use sdl2::video::GLProfile;
 mod open_gl_backend;
 use open_gl_backend::OpenGlBackend;
 
+pub mod mesh;
+
 use crate::cb_simulation;
 use cb_simulation::GameState;
 

@@ -1,7 +1,5 @@
 // External crates
 extern crate gl;
-extern crate nalgebra;
-use nalgebra as na;
 extern crate rmercury;
 extern crate specs;
 use specs::prelude::*;
@@ -19,7 +17,7 @@ pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
 pub mod contexts;
-use cb_system::{CbEvent, GameTick, PlayerId};
+use cb_system::{GameTick, PlayerId};
 
 pub struct GameSim {}
 
@@ -37,6 +35,7 @@ fn main() {
 }
 
 fn main_loop() {
+    // Init gfx
     let mut gfx = cb_graphics::CbGfx::new();
 
     // Init simulation data
@@ -53,8 +52,6 @@ fn main_loop() {
 
     //TODO: fix up
     //   cb_simulation::assemblages::rts_assemblages::new_unit(&mut world);
-
-    // Init OpenGL
 
     loop {
         // Get Events
@@ -91,23 +88,13 @@ fn main_loop() {
                     camera.pos_y += 0.1;
                 }
             }
-
-            let input_event = CbEvent {
-                tick: game_tick + cb_system::FRAMEDELAY,
-                value: movement_context,
-            };
-
-            //TODO: translate to game events// implement a 3 tick delay for networking purposes, à la GGPO
-            //TODO: networking events
         }
 
-        // Update simulation + pump events into simulation
+        // Update simulation
         {
-            //game_state = cb_simulation::update_simulation(game_tick, &events, &game_state);
+            game_state.chunk_manager.mesh(game_tick as usize);
 
-            game_state.chunk_manager.mesh();
-
-            // Clear events and increment game tick
+            // Increment game tick
             game_tick += 1;
         }
 
