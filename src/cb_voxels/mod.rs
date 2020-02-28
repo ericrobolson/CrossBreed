@@ -11,7 +11,7 @@ pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 0.5;
 
-pub const CHUNKS: usize = 6;
+pub const CHUNKS: usize = 8;
 pub const NUM_CHUNKS: usize = CHUNKS * CHUNKS * CHUNKS;
 
 #[derive(Debug)]
@@ -21,42 +21,63 @@ pub struct CbChunkManager {
 
 impl CbChunkManager {
     pub fn new() -> Self {
-        let mut chunks = Vec::with_capacity(CHUNKS);
-        for _ in 0..CHUNKS {
-            let mut range = vec![];
-            for _ in 0..CHUNKS {
-                range.push(false);
-            }
+        println!("Chunks init");
 
-            let foo = range
-                .par_iter()
-                .map(|_| CbChunkManager::init_chunk_slice())
-                .collect();
-
-            chunks.push(foo);
-        }
-        return Self { chunks: chunks };
-    }
-
-    fn init_chunk_slice() -> Vec<CbVoxelChunk> {
         let mut range = vec![];
         for _ in 0..CHUNKS {
             range.push(false);
         }
 
-        let chunks = range.iter().map(|_| CbVoxelChunk::new()).collect();
+        let chunks = range
+            .par_iter()
+            .enumerate()
+            .map(|(i, _)| {
+                let mut range2 = vec![];
+                for _ in 0..CHUNKS {
+                    range2.push(false);
+                }
+
+                let foo = range2
+                    .par_iter()
+                    .enumerate()
+                    .map(|(i, _)| CbChunkManager::init_chunk_slice(i))
+                    .collect();
+
+                println!("** chunk set finished: {}", i);
+
+                return foo;
+            })
+            .collect();
+
+        println!("Chunks created");
+        let mut manager = Self { chunks: chunks };
+        manager.mesh(0);
+        return manager;
+    }
+
+    fn init_chunk_slice(i: usize) -> Vec<CbVoxelChunk> {
+        let mut range = vec![];
+        for _ in 0..CHUNKS {
+            range.push(false);
+        }
+
+        let chunks = range.par_iter().map(|_| CbVoxelChunk::new()).collect();
+
+        println!("* {}: chunk slice finished", i);
 
         return chunks;
     }
 
     pub fn mesh(&mut self, frame: usize) {
-        for x in 0..CHUNKS {
-            for y in 0..CHUNKS {
-                for z in 0..CHUNKS {
-                    self.chunks[x][y][z].mesh(frame);
-                }
-            }
-        }
+        self.chunks
+            .par_iter_mut()
+            .flatten()
+            .flatten()
+            .for_each(|chunk| {
+                chunk.mesh(frame);
+
+                println!("finished chunk");
+            });
     }
 }
 
@@ -109,8 +130,6 @@ impl CbVoxelChunk {
         };
 
         chunk.init_landscape();
-
-        chunk.mesh(0);
 
         return chunk;
     }

@@ -40,6 +40,8 @@ pub fn draw_voxel_meshes(
     for (x, row) in game_state.chunk_manager.chunks.iter().enumerate() {
         for (y, column) in row.iter().enumerate() {
             for (z, chunk) in column.iter().enumerate() {
+                //TODO: optimization: batch up multiple chunks
+
                 let mesh = chunk.get_last_mesh();
 
                 // Set MVP
@@ -74,7 +76,10 @@ pub fn draw_voxel_meshes(
                     // Only update the buffers if it's needed
                     let changed;
                     {
-                        if mesh.generated_at_frame > buffers.last_calculated_frame {
+                        // Only copy over the mesh if it's the first frame or it's been updated
+                        if mesh.generated_at_frame > buffers.last_calculated_frame
+                            || mesh.generated_at_frame == 0
+                        {
                             changed = true;
 
                             // Store the frame the mesh was generated at
@@ -148,6 +153,8 @@ pub fn draw_voxel_meshes(
                                     as gl::types::GLint,
                                 std::ptr::null(),
                             );
+
+                            gl::BindVertexArray(0);
                         }
                     }
 

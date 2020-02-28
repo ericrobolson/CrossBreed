@@ -29,8 +29,7 @@ impl GameSim {
 
 fn main() {
     //NOTE: this is only for dev use, to allow panics to be caught
-    let result = panic::catch_unwind(|| main_loop());
-
+    main_loop();
     loop {}
 }
 
