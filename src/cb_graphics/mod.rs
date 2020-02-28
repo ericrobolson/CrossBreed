@@ -99,7 +99,8 @@ impl CbGfx {
         self.camera.cursor_x = cursor.x() as f32;
         self.camera.cursor_y = cursor.y() as f32;
 
-        self.gl_backend.render(&self.camera, game_state);
+        self.gl_backend
+            .render(&self.camera, game_state, cursor.right());
         self.window.gl_swap_window();
 
         // sdl2::sys::SDL_WarpMouseInWindow(&mut self.window.as_ptr());

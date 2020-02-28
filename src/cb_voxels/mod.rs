@@ -4,7 +4,7 @@ use cb_math::pow;
 extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
-pub const CHUNK_SIZE: usize = 8;
+pub const CHUNK_SIZE: usize = 16;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: i32 = 1;
@@ -67,12 +67,15 @@ impl CbVoxelChunk {
                     let mut voxel = CbVoxel::new();
 
                     if x < CHUNK_SIZE / 2 && y < CHUNK_SIZE / 2 && z < CHUNK_SIZE / 2 {
-                        //voxel.active = false;
-                        //voxel.voxel_type = CbVoxelTypes::Grass;
+                        voxel.voxel_type = CbVoxelTypes::Grass;
                     }
 
                     if x % 2 == 0 && y % 2 == 0 && z % 2 == 0 {
-                        voxel.voxel_type = CbVoxelTypes::Grass;
+                        voxel.voxel_type = CbVoxelTypes::Dirt;
+                    }
+
+                    if x % 3 == 0 && y % 3 == 0 && z % 3 == 0 {
+                        voxel.active = false;
                     }
 
                     voxels.push((coordinate, voxel));
@@ -100,8 +103,6 @@ impl CbVoxelChunk {
         let mesh = self.calculate_greedy_mesh();
 
         self.mesh = Some(mesh);
-
-        println!("Greedy quads: {}", self.mesh.as_ref().unwrap().len());
 
         return self.mesh.as_ref().unwrap();
     }
@@ -131,11 +132,30 @@ impl CbVoxelChunk {
     fn get_voxel_face(&self, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
         //NOTE: if adding culling, it would happen here
         // NOTE: Add the following here:
-        // ** Culling
         // ** Set per face / per vertex values as well as voxel values here.
         let voxel = self.voxel_3d_index(x, y, z);
 
-        let transparent = !voxel.active;
+        let mut transparent = !voxel.active;
+
+        // Check neighbors to see if obscured and cull if so
+        if (x != 0 && x != MAX_CHUNK_INDEX)
+            && (y != 0 && y != MAX_CHUNK_INDEX)
+            && (z != 0 && z != MAX_CHUNK_INDEX)
+        {
+            // above layer
+            let obscured_above = self.voxel_3d_index(x, y, z - 1).active;
+            // same layer
+            let obscured_same = self.voxel_3d_index(x, y + 1, z).active
+                && self.voxel_3d_index(x, y - 1, z).active
+                && self.voxel_3d_index(x + 1, y, z).active
+                && self.voxel_3d_index(x - 1, y, z).active;
+            // below layer
+            let obscured_below = self.voxel_3d_index(x, y, z + 1).active;
+
+            if !transparent && obscured_above && obscured_same && obscured_below {
+                transparent = true;
+            }
+        }
 
         return VoxelFace {
             transparent: transparent,
@@ -145,13 +165,6 @@ impl CbVoxelChunk {
     }
 
     fn calculate_greedy_mesh(&self) -> Vec<Mesh> {
-        const SOUTH: usize = 0;
-        const NORTH: usize = 1;
-        const EAST: usize = 2;
-        const WEST: usize = 3;
-        const TOP: usize = 4;
-        const BOTTOM: usize = 5;
-
         const CHUNK_WIDTH: usize = CHUNK_SIZE;
         const CHUNK_WIDTH_I: i32 = CHUNK_WIDTH as i32;
         const CHUNK_HEIGHT: usize = CHUNK_SIZE;
@@ -357,7 +370,7 @@ impl CbVoxelChunk {
                                         w,
                                         h,
                                         mask[n].unwrap(),
-                                        !backface,
+                                        backface,
                                     );
 
                                     meshes.push(quad);
@@ -401,6 +414,13 @@ type V3 = nalgebra::Matrix<
     nalgebra::ArrayStorage<f32, nalgebra::U3, nalgebra::U1>,
 >;
 
+const SOUTH: usize = 0;
+const NORTH: usize = 1;
+const EAST: usize = 2;
+const WEST: usize = 3;
+const TOP: usize = 4;
+const BOTTOM: usize = 5;
+
 fn get_quad(
     bottom_left: V3,
     top_left: V3,
@@ -413,145 +433,80 @@ fn get_quad(
 ) -> Mesh {
     let voxel_size = VOXEL_SIZE as f32 / 2.0; //TODO: change this
 
-    let (color_x, color_y, color_z) = match voxel.vf_type {
-        CbVoxelTypes::Default => (1.0, 0.0, 0.0),
-        _ => (0.0, 0.0, 1.0),
-    };
-
-    // Order is important here
     const VALUES_IN_VERTEX: usize = 3;
-    let vertices = vec![
-        // ----
-        bottom_left.x,
-        bottom_left.y,
-        bottom_left.z,
-        // ----
-        bottom_right.x,
-        bottom_right.y,
-        bottom_right.z,
-        // ----
-        top_left.x,
-        top_left.y,
-        top_left.z,
-        // ----
-        top_right.x,
-        top_right.y,
-        top_right.z,
-    ];
-
+    let vertices;
     let indices;
-    if backface {
-        indices = vec![
-            2, 0, 1, //
-            1, 3, 2, //
+    {
+        vertices = vec![
+            // ----
+            bottom_left.x,
+            bottom_left.y,
+            bottom_left.z,
+            // ----
+            bottom_right.x,
+            bottom_right.y,
+            bottom_right.z,
+            // ----
+            top_left.x,
+            top_left.y,
+            top_left.z,
+            // ----
+            top_right.x,
+            top_right.y,
+            top_right.z,
         ];
-    } else {
-        indices = vec![
-            2, 3, 1, //
-            1, 0, 2, //
-        ];
+        if backface {
+            indices = vec![
+                2, 0, 1, //
+                1, 3, 2, //
+            ];
+        } else {
+            indices = vec![
+                2, 3, 1, //
+                1, 0, 2, //
+            ];
+        }
     }
-
-    // NEW NOTE: there's an issue where all normals are flipped
-    let mut vertices = vec![
-        // ----
-        top_right.x,
-        top_right.y,
-        top_right.z,
-        // ----
-        bottom_right.x,
-        bottom_right.y,
-        bottom_right.z,
-        // ----
-        bottom_left.x,
-        bottom_left.y,
-        bottom_left.z,
-        // ----
-        top_left.x,
-        top_left.y,
-        top_left.z,
-    ];
-
-    let mut indices;
-    if backface {
-        indices = vec![
-            2, 1, 3, //
-            1, 0, 3, //
-        ];
-    } else {
-        indices = vec![
-            0, 1, 3, //
-            1, 2, 3, //
-        ];
-    }
-
-    // actual: think this is right
-    let mut vertices = vec![
-        // ----
-        top_left.x,
-        top_left.y,
-        top_left.z,
-        // ----
-        bottom_left.x,
-        bottom_left.y,
-        bottom_left.z,
-        // ----
-        bottom_right.x,
-        bottom_right.y,
-        bottom_right.z,
-        // ----
-        top_right.x,
-        top_right.y,
-        top_right.z,
-    ];
-
-    // need to recalculate
-    let mut indices;
-    if backface {
-        indices = vec![
-            2, 1, 3, //
-            1, 0, 3, //
-        ];
-    } else {
-        indices = vec![
-            0, 1, 3, //
-            1, 2, 3, //
-        ];
-    }
-
-    // END NEW
 
     let vertices = vertices.iter().map(|n| n * voxel_size).collect();
 
-    //TODO: colors
+    // Colors
     const COLOR_CAPACITY: usize = 9;
     const COLOR_VERTEX_SIZE: usize = 3;
-    let mut colors = Vec::with_capacity(COLOR_CAPACITY);
-    for i in 0..COLOR_CAPACITY {
-        colors.push(0.0);
-    }
 
-    let mut i = 0;
-    while i < COLOR_CAPACITY {
-        match voxel.vf_type {
-            CbVoxelTypes::Default => {
-                colors[i] = 1.0;
-                colors[i + 1] = 0.0;
-                colors[i + 2] = 0.0;
-                //                colors[i + 3] = 1.0;
+    let mut colors;
+    {
+        colors = Vec::with_capacity(COLOR_CAPACITY);
+        let mut i = 0;
+        while i < COLOR_CAPACITY {
+            match voxel.vf_type {
+                CbVoxelTypes::Default => {
+                    colors.push(1.0);
+                    colors.push(0.0);
+                    colors.push(0.0);
+                }
+                CbVoxelTypes::Dirt => {
+                    colors.push(0.23);
+                    colors.push(0.168);
+                    colors.push(0.086);
+                }
+                CbVoxelTypes::Grass => {
+                    colors.push(0.0);
+                    colors.push(1.0);
+                    colors.push(0.0);
+                }
+                _ => {
+                    colors.push(0.0);
+                    colors.push(0.0);
+                    colors.push(1.0);
+                }
             }
-            _ => {
-                colors[i] = 0.0;
-                colors[i + 1] = 0.0;
-                colors[i + 2] = 1.0;
-                //          colors[i + 3] = 1.0;
-            }
+
+            i += COLOR_VERTEX_SIZE;
         }
-
-        i += COLOR_VERTEX_SIZE;
     }
 
-    let mut mesh = Mesh::new(
+    let mesh = Mesh::new(
         VALUES_IN_VERTEX,
         vertices,
         indices,
@@ -617,5 +572,40 @@ impl Mesh {
             colors: colors,
             wire_frame: false,
         };
+    }
+
+    pub fn merge(meshes: Vec<Mesh>) -> Mesh {
+        let mut mesh = Mesh::new(0, vec![], vec![], 0, vec![]);
+
+        if meshes.is_empty() == false {
+            let mut is_first = true;
+            for m in meshes.iter() {
+                let start_vertex_index = mesh.vertices.len() as i32;
+
+                if is_first {
+                    mesh.vertex_size = m.vertex_size;
+                    mesh.color_vertex_size = m.color_vertex_size;
+                    is_first = false;
+                }
+
+                if mesh.vertex_size != m.vertex_size {
+                    panic!("Unable to merge meshes! Mesh vertex sizes differ.");
+                }
+
+                if mesh.color_vertex_size != m.color_vertex_size {
+                    panic!("Unable to merge meshes! Mesh color vertex sizes differ.");
+                }
+
+                mesh.vertices.append(&mut m.vertices.clone());
+                mesh.colors.append(&mut m.colors.clone());
+
+                // do tricky shit with indices
+                for index in m.indices.iter() {
+                    mesh.indices.push(index + start_vertex_index);
+                }
+            }
+        }
+
+        return mesh;
     }
 }
