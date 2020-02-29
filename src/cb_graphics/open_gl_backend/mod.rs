@@ -27,7 +27,7 @@ pub struct MeshBuffers {
 
 pub struct OpenGlBackend {
     basic_mesh_program: render_gl::Program,
-    chunk_mesh_buffers: Vec<MeshBuffers>,
+    chunk_mesh_buffers: MeshBuffers,
     mvp_id: i32,
     frame: usize,
     voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher,
@@ -93,7 +93,7 @@ impl OpenGlBackend {
         {
             renderer.basic_mesh_program.set_used();
 
-            let voxel_meshes = renderer.voxel_mesher.mesh(game_state, frame);
+            let voxel_meshes = renderer.voxel_mesher.mesh(&game_state.chunk_manager, frame);
             r_voxel_render::draw_voxel_meshes(renderer, camera, &voxel_meshes);
         }
         renderer.frame += 1;

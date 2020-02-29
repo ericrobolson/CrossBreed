@@ -64,7 +64,9 @@ impl Mesh {
 
                 mesh.indices.append(&mut mapped_indices);
 
-                offset += m.vertices.len() as i32 / m.vertex_size as i32;
+                if m.vertex_size != 0 {
+                    offset += m.vertices.len() as i32 / m.vertex_size as i32;
+                }
 
                 if m.generated_at_frame > mesh.generated_at_frame {
                     mesh.generated_at_frame = m.generated_at_frame;

@@ -9,7 +9,7 @@ use mesh::Mesh;
 use crate::cb_voxels;
 use cb_voxels::*;
 
-pub fn calculate_greedy_mesh(voxels: &VOXEL_STORAGE, frame: usize, chunk_size: usize) -> Mesh {
+pub fn calculate_greedy_mesh(voxels: &Vec<CbVoxel>, frame: usize, chunk_size: usize) -> Mesh {
     const SOUTH: usize = 0;
     const NORTH: usize = 1;
     const EAST: usize = 2;
@@ -107,6 +107,7 @@ pub fn calculate_greedy_mesh(voxels: &VOXEL_STORAGE, frame: usize, chunk_size: u
                                     x[2] as usize,
                                     side,
                                     chunk_size - 1,
+                                    chunk_size,
                                 ));
                             } else {
                                 voxel_face = None;
@@ -120,6 +121,7 @@ pub fn calculate_greedy_mesh(voxels: &VOXEL_STORAGE, frame: usize, chunk_size: u
                                     (x[2] + q[2]) as usize,
                                     side,
                                     chunk_size - 1,
+                                    chunk_size,
                                 ));
                             } else {
                                 voxel_face1 = None;
@@ -261,30 +263,46 @@ pub fn calculate_greedy_mesh(voxels: &VOXEL_STORAGE, frame: usize, chunk_size: u
 }
 
 fn get_voxel_face(
-    voxels: &VOXEL_STORAGE,
+    voxels: &Vec<CbVoxel>,
     x: usize,
     y: usize,
     z: usize,
     side: usize,
+    chunk_size: usize,
     max_index: usize,
 ) -> VoxelFace {
     // NOTE: Add the following here:
     // ** Set per face / per vertex values as well as voxel values here.
-    let voxel = voxels[x][y][z];
+    let chunk_size_squared = chunk_size * chunk_size;
 
-    let mut transparent = !voxel.active;
+    let index = x + y * chunk_size + z * chunk_size_squared;
+    let voxel = voxels[index];
+    let voxel_active = voxel.0;
+    let voxel_type = voxel.1;
+
+    let mut transparent = !voxel_active;
 
     // Check neighbors to see if obscured and cull if so
     if (x != 0 && x != max_index) && (y != 0 && y != max_index) && (z != 0 && z != max_index) {
         // above layer
-        let obscured_above = voxels[x][y][z - 1].active;
+        let i = x + y * chunk_size + (z - 1) * chunk_size_squared;
+
+        let (obscured_above, _) = voxels[i]; //  let obscured_above = voxels[x][y][z - 1].active;
+
         // same layer
-        let obscured_same = voxels[x][y + 1][z].active
-            && voxels[x][y - 1][z].active
-            && voxels[x + 1][y][z].active
-            && voxels[x - 1][y][z].active;
+        let i1 = x + (y + 1) * chunk_size + z * chunk_size_squared;
+        let i2 = x + (y - 1) * chunk_size + z * chunk_size_squared;
+        let i3 = (x + 1) + y * chunk_size + z * chunk_size_squared;
+        let i4 = (x - 1) + y * chunk_size + z * chunk_size_squared;
+
+        let obscured_same = voxels[i1].0 // voxels[x][y + 1][z].active
+            && voxels[i2].0 // voxels[x][y - 1][z].active
+            && voxels[i3].0 // voxels[x + 1][y][z].active
+            && voxels[i4].0; // voxels[x - 1][y][z].active;
+
         // below layer
-        let obscured_below = voxels[x][y][z + 1].active;
+        let i = x + y * chunk_size + (z + 1) * chunk_size_squared;
+        let (obscured_below, _) = voxels[i];
 
         if !transparent && obscured_above && obscured_same && obscured_below {
             transparent = true;
@@ -293,7 +311,7 @@ fn get_voxel_face(
 
     return VoxelFace {
         transparent: transparent,
-        vf_type: voxel.voxel_type,
+        vf_type: voxel_type,
         side: side,
     };
 }
@@ -363,45 +381,25 @@ fn get_quad(
         let mut i = 0;
         while i < COLOR_CAPACITY {
             match voxel.vf_type {
-                CbVoxelTypes::Default => {
+                VOXEL_TYPE_DEFAULT => {
                     colors.push(1.0);
                     colors.push(0.0);
                     colors.push(0.0);
                 }
-                CbVoxelTypes::Dirt => {
+                VOXEL_TYPE_DIRT => {
                     colors.push(0.23);
                     colors.push(0.168);
                     colors.push(0.086);
                 }
-                CbVoxelTypes::Grass => {
+                VOXEL_TYPE_GRASS => {
                     colors.push(0.0);
                     colors.push(1.0);
                     colors.push(0.0);
                 }
-                CbVoxelTypes::Water => {
+                _ => {
                     colors.push(0.0);
                     colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Stone => {
                     colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Wood => {
-                    colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Sand => {
-                    colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Metal => {
-                    colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
                 }
             }
 
@@ -424,7 +422,7 @@ fn get_quad(
 #[derive(Debug, Copy, Clone)]
 struct VoxelFace {
     pub transparent: bool,
-    pub vf_type: CbVoxelTypes,
+    pub vf_type: u8,
     pub side: usize,
 }
 

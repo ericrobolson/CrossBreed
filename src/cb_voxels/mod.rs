@@ -1,142 +1,87 @@
-use crate::cb_graphics::mesh;
-use mesh::Mesh;
+use crate::cb_math;
+use cb_math::index_1d_to_3d;
 
 extern crate rayon;
 use rayon::prelude::*;
+
+use time::{Duration, Instant};
 
 // NOTE: Voxel size is about 6 inches
 // Human is about 6ft, or 12 voxels
 
 pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
+pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
+
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 0.05;
 
 pub const CHUNKS: usize = 32;
-pub const NUM_CHUNKS: usize = CHUNKS * CHUNKS * CHUNKS;
+pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
+pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
+
+/// A voxel contains two pieces of info, whether it's active, and it's type.
+pub type CbVoxel = (bool, u8);
 
 #[derive(Debug)]
 pub struct CbChunkManager {
     dirty: bool,
-    pub chunks: Vec<Vec<Vec<CbVoxelChunk>>>,
+    pub chunks: Vec<CbVoxelChunk>,
 }
 
 impl CbChunkManager {
     pub fn new() -> Self {
         println!("Chunks init");
+        let start = Instant::now();
 
-        let mut range = vec![];
-        for _ in 0..CHUNKS {
-            range.push(false);
-        }
-
-        let chunks = range
+        let mut chunks: Vec<CbVoxelChunk> = (0..CHUNKS_CUBED)
+            .collect::<Vec<usize>>()
             .par_iter()
             .enumerate()
             .map(|(i, _)| {
-                let mut range2 = vec![];
-                for _ in 0..CHUNKS {
-                    range2.push(false);
-                }
-
-                let foo = range2
-                    .par_iter()
-                    .enumerate()
-                    .map(|(i, _)| CbChunkManager::init_chunk_slice(i))
-                    .collect();
-                return foo;
+                return CbVoxelChunk::new();
             })
             .collect();
 
-        println!("Chunks created");
-        let mut manager = Self {
+        let end = Instant::now() - start;
+
+        println!("Chunks created in: {:?}", end);
+        return Self {
             chunks: chunks,
             dirty: true,
         };
-
-        return manager;
-    }
-
-    fn init_chunk_slice(i: usize) -> Vec<CbVoxelChunk> {
-        let mut range = vec![];
-        for _ in 0..CHUNKS {
-            range.push(false);
-        }
-
-        let chunks = range.par_iter().map(|_| CbVoxelChunk::new()).collect();
-
-        return chunks;
     }
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub enum CbVoxelTypes {
-    Default,
-    Grass,
-    Dirt,
-    Water,
-    Stone,
-    Wood,
-    Sand,
-    Metal,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub struct CbVoxel {
-    pub active: bool,
-    pub voxel_type: CbVoxelTypes,
-}
-
-impl CbVoxel {
-    pub fn new() -> Self {
-        return CbVoxel {
-            active: true,
-            voxel_type: CbVoxelTypes::Default,
-        };
-    }
-}
-
-pub type VOXEL_STORAGE = [[[CbVoxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE];
+pub const VOXEL_TYPE_DEFAULT: u8 = 0;
+pub const VOXEL_TYPE_GRASS: u8 = 1;
+pub const VOXEL_TYPE_DIRT: u8 = 2;
 
 #[derive(Debug, Clone)]
 pub struct CbVoxelChunk {
     dirty: bool,
-    pub voxels: std::boxed::Box<VOXEL_STORAGE>,
+    pub voxel_vec: Vec<CbVoxel>,
 }
 
 impl CbVoxelChunk {
     pub fn new() -> Self {
-        let mut voxel = CbVoxel::new();
-        voxel.active = true;
-        voxel.voxel_type = CbVoxelTypes::Grass;
-
-        let voxels = Box::new([[[voxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE]);
+        let voxel_vec = (0..CHUNK_SIZE_CUBED)
+            .collect::<Vec<usize>>()
+            .iter()
+            .map(|_| {
+                return (true, VOXEL_TYPE_GRASS);
+            })
+            .collect();
 
         let mut chunk = Self {
-            voxels: voxels,
+            voxel_vec: voxel_vec,
             dirty: true,
         };
-
-        chunk.init_landscape();
-
         return chunk;
     }
 
     pub fn set_dirty(&mut self) {
         self.dirty = true;
-    }
-
-    pub fn init_landscape(&mut self) {
-        for y in 0..CHUNK_SIZE {
-            for x in 0..y {
-                for z in 0..y {
-                    if y % 2 == 0 {
-                        self.voxels[x][y][z].voxel_type = CbVoxelTypes::Dirt;
-                    } else {
-                        self.voxels[x][y][z].active = false;
-                    }
-                }
-            }
-        }
     }
 }

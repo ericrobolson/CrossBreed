@@ -3,12 +3,12 @@ use super::*;
 use crate::cb_graphics::mesh;
 use mesh::Mesh;
 
-pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
-    let mut chunk_buffers = vec![];
+use crate::cb_voxels;
+use cb_voxels::*;
 
+pub fn init_voxel_mesh_buffers() -> MeshBuffers {
     // For each voxel chunk, add a buffer to write to
     {
-        //for _ in 0..cb_voxels::NUM_CHUNKS {
         let mut vao: gl::types::GLuint = 0;
         let mut vbo: gl::types::GLuint = 0;
         let mut ebo: gl::types::GLuint = 0;
@@ -20,16 +20,14 @@ pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
             gl::GenBuffers(1, &mut color_buff);
         }
 
-        chunk_buffers.push(MeshBuffers {
+        return MeshBuffers {
             vao: vao,
             vbo: vbo,
             ebo: ebo,
             color_buff: color_buff,
             last_calculated_frame: 0,
-        });
+        };
     }
-
-    return chunk_buffers;
 }
 
 pub fn draw_voxel_meshes(
@@ -40,21 +38,19 @@ pub fn draw_voxel_meshes(
     // Camera / MVP
     let (proj, view) = get_proj_view(camera);
 
-    let mut chunk_buff_index = 0;
-
-    draw_mesh(&mesh, 0, 0, 0, proj, view, backend, chunk_buff_index);
+    draw_mesh(0, 0, 0, proj, view, backend);
 }
 
 fn draw_mesh(
-    mesh: &Mesh,
     x: usize,
     y: usize,
     z: usize,
     proj: CbProjection,
     view: CbView,
     backend: &mut OpenGlBackend,
-    chunk_buff_index: usize,
 ) {
+    let mesh = &backend.voxel_mesher.mesh;
+
     // Set MVP
     {
         // Model
@@ -80,7 +76,7 @@ fn draw_mesh(
     // Render the mesh
     {
         // Load the buffers
-        let buffers = &mut backend.chunk_mesh_buffers[chunk_buff_index];
+        let buffers = &mut backend.chunk_mesh_buffers;
 
         // Only update the buffers if it's needed
         let changed;

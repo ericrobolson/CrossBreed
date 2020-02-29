@@ -9,6 +9,17 @@ pub fn pow(num: usize, pow: usize) -> usize {
     return value;
 }
 
+pub fn index_1d_to_3d(index: usize, x_max: usize, y_max: usize) -> (usize, usize, usize) {
+    let mut i = index;
+
+    let z = i / (x_max * y_max);
+    i -= (z * x_max * y_max);
+    let y = i / x_max;
+    let x = i % x_max;
+
+    return (x, y, z);
+}
+
 pub struct Noise {
     values: Vec<Vec<usize>>,
     min_value: u32,
