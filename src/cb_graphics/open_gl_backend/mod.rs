@@ -91,9 +91,10 @@ impl OpenGlBackend {
 
         // Draw voxels
         {
-            renderer.basic_mesh_program.set_used();
-
+            // First mesh them
             renderer.voxel_mesher.mesh(&game_state.chunk_manager, frame);
+
+            renderer.basic_mesh_program.set_used();
             r_voxel_render::draw_voxel_meshes(renderer, camera);
         }
         renderer.frame += 1;

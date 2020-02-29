@@ -47,12 +47,12 @@ impl VoxelMesher {
         //TODO: note, it's expensive to mesh every chunk. Instead, start with the outside chunks of the chunk manager, then mesh those.
         // Afterwards, spiral inward to determine which other chunks to mesh if they're visible.
 
-        if self.dirty {
-            let x = self.chunk_x_index;
-            let y = self.chunk_y_index;
-            let z = self.chunk_z_index;
+        self.lod_scale = CHUNKS / 2;
 
-            let meshes: Vec<Mesh> = chunk_manager
+        if self.dirty {
+            //TODO: look into splitting out down sampling + meshing. In that if the a down sampled chunk is totally obscured, don't mesh it.
+
+            self.meshes = chunk_manager
                 .chunks
                 .par_iter()
                 .enumerate()
@@ -158,7 +158,7 @@ impl VoxelMesher {
                 })
                 .collect();
 
-            self.meshes = meshes;
+            //self.meshes = meshes;
             self.dirty = false;
 
             if self.lod_scale == 1 {

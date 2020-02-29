@@ -69,8 +69,12 @@ impl CbVoxelChunk {
         let voxel_vec = (0..CHUNK_SIZE_CUBED)
             .collect::<Vec<usize>>()
             .iter()
-            .map(|_| {
-                return (true, VOXEL_TYPE_GRASS);
+            .map(|i| {
+                if i % 8 == 0 {
+                    return (true, VOXEL_TYPE_DIRT);
+                }
+
+                return (false, VOXEL_TYPE_GRASS);
             })
             .collect();
 
