@@ -6,16 +6,21 @@ mod greedy_mesher;
 extern crate rayon;
 use rayon::prelude::*;
 
+// NOTE: Voxel size is about 6 inches
+// Human is about 6ft, or 12 voxels
+
 pub const CHUNK_SIZE: usize = 32;
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
-pub const VOXEL_SIZE: f32 = 0.5;
+pub const VOXEL_SIZE: f32 = 0.05;
 
 pub const CHUNKS: usize = 8;
 pub const NUM_CHUNKS: usize = CHUNKS * CHUNKS * CHUNKS;
 
 #[derive(Debug)]
 pub struct CbChunkManager {
+    gen_mesh: Option<Mesh>,
+    dirty: bool,
     pub chunks: Vec<Vec<Vec<CbVoxelChunk>>>,
 }
 
@@ -42,16 +47,19 @@ impl CbChunkManager {
                     .enumerate()
                     .map(|(i, _)| CbChunkManager::init_chunk_slice(i))
                     .collect();
-
-                println!("** chunk set finished: {}", i);
-
                 return foo;
             })
             .collect();
 
         println!("Chunks created");
-        let mut manager = Self { chunks: chunks };
+        let mut manager = Self {
+            gen_mesh: None,
+            chunks: chunks,
+            dirty: true,
+        };
+        println!("meshing begin");
         manager.mesh(0);
+        println!("meshing end");
         return manager;
     }
 
@@ -63,21 +71,65 @@ impl CbChunkManager {
 
         let chunks = range.par_iter().map(|_| CbVoxelChunk::new()).collect();
 
-        println!("* {}: chunk slice finished", i);
-
         return chunks;
     }
 
     pub fn mesh(&mut self, frame: usize) {
+        if self.dirty == false {
+            return;
+        }
+        self.dirty = false;
         self.chunks
             .par_iter_mut()
             .flatten()
             .flatten()
             .for_each(|chunk| {
                 chunk.mesh(frame);
-
-                println!("finished chunk");
             });
+        let mut meshes = vec![];
+
+        for (ix, x) in self.chunks.iter().enumerate() {
+            for (iy, y) in x.iter().enumerate() {
+                for (iz, chunk) in y.iter().enumerate() {
+                    let mut mesh = chunk.get_last_mesh().clone();
+
+                    // Modify the offsets so that the mesh is done properly
+                    const X_VALUE: usize = 0;
+                    const Y_VALUE: usize = 1;
+                    const Z_VALUE: usize = 2;
+
+                    const CHUNK_VERTEX_OFFSET: f32 = VOXEL_SIZE * CHUNK_SIZE as f32;
+
+                    const VALUES_IN_VERTEX: usize = 3;
+                    mesh.vertices
+                        .iter_mut()
+                        .enumerate()
+                        .for_each(|(i, mut vert)| {
+                            let value_type = i % VALUES_IN_VERTEX;
+
+                            if value_type == X_VALUE {
+                                // add modified x offset
+                                *vert += CHUNK_VERTEX_OFFSET * ix as f32;
+                            } else if value_type == Y_VALUE {
+                                // add modified y offset
+                                *vert += CHUNK_VERTEX_OFFSET * iy as f32;
+                            } else if value_type == Z_VALUE {
+                                // add modified z offset
+                                *vert += CHUNK_VERTEX_OFFSET * iz as f32;
+                            }
+                        });
+
+                    meshes.push(mesh);
+                }
+            }
+        }
+
+        let mut mesh = Mesh::merge(meshes);
+        self.gen_mesh = Some(mesh);
+    }
+
+    pub fn last_mesh(&self) -> Mesh {
+        return self.gen_mesh.as_ref().unwrap().clone();
     }
 }
 
@@ -113,6 +165,12 @@ pub struct CbVoxelChunk {
     dirty: bool,
     mesh: Option<Mesh>,
     pub voxels: std::boxed::Box<[[[CbVoxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE]>,
+    pub top_empty: bool,
+    pub bottom_empty: bool,
+    pub north_empty: bool,
+    pub south_empty: bool,
+    pub east_empty: bool,
+    pub west_empty: bool,
 }
 
 impl CbVoxelChunk {
@@ -127,6 +185,12 @@ impl CbVoxelChunk {
             voxels: voxels,
             dirty: true,
             mesh: None,
+            top_empty: false,
+            bottom_empty: false,
+            north_empty: false,
+            south_empty: false,
+            east_empty: false,
+            west_empty: false,
         };
 
         chunk.init_landscape();
@@ -157,6 +221,8 @@ impl CbVoxelChunk {
         self.dirty = false;
         let mesh = greedy_mesher::calculate_greedy_mesh(&self, frame);
         self.mesh = Some(mesh);
+
+        //TODO: calculate if top, bot, N, S, E, W are empty; used for determining whether to mesh chunks or not
 
         return self.mesh.as_ref().unwrap();
     }
