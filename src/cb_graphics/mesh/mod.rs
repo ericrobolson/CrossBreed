@@ -1,3 +1,6 @@
+pub mod greedy_mesher;
+pub mod voxel_mesher;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Mesh {
     pub indices: Vec<i32>,

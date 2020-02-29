@@ -95,13 +95,13 @@ impl CbGfx {
         return &mut self.camera;
     }
 
-    pub fn render(&mut self, game_state: &GameState) {
+    pub fn render(&mut self, game_state: &GameState, frame: usize) {
         let cursor = sdl2::mouse::MouseState::new(self.event_pump());
 
         self.camera.cursor_x = cursor.x() as f32;
         self.camera.cursor_y = cursor.y() as f32;
 
-        self.gl_backend.render(&self.camera, game_state);
+        OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, frame);
         self.window.gl_swap_window();
 
         // sdl2::sys::SDL_WarpMouseInWindow(&mut self.window.as_ptr());

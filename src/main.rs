@@ -38,7 +38,7 @@ fn main_loop() {
     let mut gfx = cb_graphics::CbGfx::new();
 
     // Init simulation data
-    let mut game_tick: GameTick = 0;
+    let mut game_tick: usize = 0;
     let player_id: PlayerId = 1;
     let mut game_state = cb_simulation::GameState::new();
 
@@ -91,14 +91,12 @@ fn main_loop() {
 
         // Update simulation
         {
-            game_state.chunk_manager.mesh(game_tick as usize);
-
             // Increment game tick
             game_tick += 1;
         }
 
         // Run gfx
-        gfx.render(&game_state);
+        gfx.render(&game_state, game_tick);
     }
 
     // Cleanup

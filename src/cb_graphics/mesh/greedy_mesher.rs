@@ -6,7 +6,10 @@ use na::Vector3;
 use crate::cb_graphics::mesh;
 use mesh::Mesh;
 
-pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
+use crate::cb_voxels;
+use cb_voxels::*;
+
+pub fn calculate_greedy_mesh(voxels: &VOXEL_STORAGE, frame: usize, chunk_size: usize) -> Mesh {
     const SOUTH: usize = 0;
     const NORTH: usize = 1;
     const EAST: usize = 2;
@@ -14,10 +17,10 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
     const TOP: usize = 4;
     const BOTTOM: usize = 5;
 
-    const CHUNK_WIDTH: usize = CHUNK_SIZE;
-    const CHUNK_WIDTH_I: i32 = CHUNK_WIDTH as i32;
-    const CHUNK_HEIGHT: usize = CHUNK_SIZE;
-    const CHUNK_HEIGHT_I: i32 = CHUNK_HEIGHT as i32;
+    let chunk_width: usize = chunk_size;
+    let chunk_width_i: i32 = chunk_width as i32;
+    let chunk_height: usize = chunk_size;
+    let chunk_height_i: i32 = chunk_height as i32;
 
     let mut meshes = vec![];
 
@@ -28,8 +31,8 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
     let_mut_for![(x, q, du, dv), Vector3<i32>, Vector3::new(0, 0, 0)];
 
     // Create a mask of matching voxel faces as we go through the chunk in 6 directions, once for each face
-    let mut mask = Vec::with_capacity(CHUNK_WIDTH * CHUNK_HEIGHT);
-    for _ in 0..CHUNK_WIDTH * CHUNK_HEIGHT {
+    let mut mask = Vec::with_capacity(chunk_width * chunk_height);
+    for _ in 0..chunk_width * chunk_height {
         mask.push(None);
     }
 
@@ -44,6 +47,7 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
         backface = !backface;
 
         // Sweep over the 3 dimensions to mesh it.
+
         for d in 0..3 {
             // Set variables
             {
@@ -85,35 +89,37 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
 
             // Move through the dimension from front to back
             x[d] = -1;
-            while x[d] < CHUNK_WIDTH_I {
+            while x[d] < chunk_width_i {
                 // Compute the mask
                 {
                     n = 0;
 
                     x[v] = 0;
-                    while x[v] < CHUNK_HEIGHT_I {
+                    while x[v] < chunk_height_i {
                         x[u] = 0;
-                        while x[u] < CHUNK_WIDTH_I {
+                        while x[u] < chunk_width_i {
                             // Retrieve the two voxel faces to compare.
                             if x[d] >= 0 {
                                 voxel_face = Some(get_voxel_face(
-                                    chunk,
+                                    voxels,
                                     x[0] as usize,
                                     x[1] as usize,
                                     x[2] as usize,
                                     side,
+                                    chunk_size - 1,
                                 ));
                             } else {
                                 voxel_face = None;
                             }
 
-                            if x[d] < CHUNK_WIDTH_I - 1 {
+                            if x[d] < chunk_width_i - 1 {
                                 voxel_face1 = Some(get_voxel_face(
-                                    chunk,
+                                    voxels,
                                     (x[0] + q[0]) as usize,
                                     (x[1] + q[1]) as usize,
                                     (x[2] + q[2]) as usize,
                                     side,
+                                    chunk_size - 1,
                                 ));
                             } else {
                                 voxel_face1 = None;
@@ -143,13 +149,13 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
                 // Now generate the mesh for the mask
                 n = 0;
                 j = 0;
-                while j < CHUNK_HEIGHT {
+                while j < chunk_height {
                     i = 0;
-                    while i < CHUNK_WIDTH {
+                    while i < chunk_width {
                         if mask[n].is_some() {
                             // Compute the width
                             w = 1;
-                            while i + w < CHUNK_WIDTH
+                            while i + w < chunk_width
                                 && mask[n + w].is_some()
                                 && mask[n + w].unwrap().equals(&mask[n].unwrap())
                             {
@@ -160,11 +166,11 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
                             let mut done = false;
 
                             h = 1;
-                            while j + h < CHUNK_HEIGHT {
+                            while j + h < chunk_height {
                                 k = 0;
                                 while k < w {
-                                    if mask[n + k + h * CHUNK_WIDTH].is_none()
-                                        || !mask[n + k + h * CHUNK_WIDTH]
+                                    if mask[n + k + h * chunk_width].is_none()
+                                        || !mask[n + k + h * chunk_width]
                                             .unwrap()
                                             .equals(&mask[n].unwrap())
                                     {
@@ -229,7 +235,7 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
                             while l < h {
                                 k = 0;
                                 while k < w {
-                                    mask[n + k + l * CHUNK_WIDTH] = None;
+                                    mask[n + k + l * chunk_width] = None;
 
                                     k += 1;
                                 }
@@ -254,27 +260,31 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
     return Mesh::merge(meshes);
 }
 
-fn get_voxel_face(chunk: &CbVoxelChunk, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
+fn get_voxel_face(
+    voxels: &VOXEL_STORAGE,
+    x: usize,
+    y: usize,
+    z: usize,
+    side: usize,
+    max_index: usize,
+) -> VoxelFace {
     // NOTE: Add the following here:
     // ** Set per face / per vertex values as well as voxel values here.
-    let voxel = chunk.voxels[x][y][z];
+    let voxel = voxels[x][y][z];
 
     let mut transparent = !voxel.active;
 
     // Check neighbors to see if obscured and cull if so
-    if (x != 0 && x != MAX_CHUNK_INDEX)
-        && (y != 0 && y != MAX_CHUNK_INDEX)
-        && (z != 0 && z != MAX_CHUNK_INDEX)
-    {
+    if (x != 0 && x != max_index) && (y != 0 && y != max_index) && (z != 0 && z != max_index) {
         // above layer
-        let obscured_above = chunk.voxels[x][y][z - 1].active;
+        let obscured_above = voxels[x][y][z - 1].active;
         // same layer
-        let obscured_same = chunk.voxels[x][y + 1][z].active
-            && chunk.voxels[x][y - 1][z].active
-            && chunk.voxels[x + 1][y][z].active
-            && chunk.voxels[x - 1][y][z].active;
+        let obscured_same = voxels[x][y + 1][z].active
+            && voxels[x][y - 1][z].active
+            && voxels[x + 1][y][z].active
+            && voxels[x - 1][y][z].active;
         // below layer
-        let obscured_below = chunk.voxels[x][y][z + 1].active;
+        let obscured_below = voxels[x][y][z + 1].active;
 
         if !transparent && obscured_above && obscured_same && obscured_below {
             transparent = true;

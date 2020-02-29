@@ -34,34 +34,14 @@ pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
 pub fn draw_voxel_meshes(
     backend: &mut OpenGlBackend,
     camera: &cb_graphics::CbCamera,
-    game_state: &GameState,
+    mesh: &cb_graphics::mesh::Mesh,
 ) {
     // Camera / MVP
     let (proj, view) = get_proj_view(camera);
 
     let mut chunk_buff_index = 0;
 
-    let batch_all_meshes_into_one = true;
-
-    if batch_all_meshes_into_one {
-        let super_mesh = game_state.chunk_manager.last_mesh();
-
-        draw_mesh(&super_mesh, 0, 0, 0, proj, view, backend, chunk_buff_index);
-    } else {
-        // Render each chunk individually
-        for (x, row) in game_state.chunk_manager.chunks.iter().enumerate() {
-            for (y, column) in row.iter().enumerate() {
-                for (z, chunk) in column.iter().enumerate() {
-                    //TODO: optimization: batch up multiple chunks
-
-                    let mesh = chunk.get_last_mesh();
-                    draw_mesh(mesh, x, y, z, proj, view, backend, chunk_buff_index);
-
-                    chunk_buff_index += 1;
-                }
-            }
-        }
-    }
+    draw_mesh(&mesh, 0, 0, 0, proj, view, backend, chunk_buff_index);
 }
 
 fn draw_mesh(

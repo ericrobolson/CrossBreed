@@ -28,7 +28,7 @@ impl ShooterMovementContext {
 }
 
 pub fn get_shooter_movement_context(
-    game_tick: GameTick,
+    game_tick: usize,
     events: &Vec<sdl2::event::Event>,
     previous_context: &ShooterMovementContext,
 ) -> ShooterMovementContext {

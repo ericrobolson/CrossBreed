@@ -11,9 +11,11 @@ use crate::cb_graphics;
 
 use crate::cb_voxels;
 
-mod r_voxel_meshes;
+mod r_voxel_render;
 
 pub mod render_gl;
+
+use cb_graphics::mesh;
 
 pub struct MeshBuffers {
     pub vao: gl::types::GLuint,
@@ -28,6 +30,7 @@ pub struct OpenGlBackend {
     chunk_mesh_buffers: Vec<MeshBuffers>,
     mvp_id: i32,
     frame: usize,
+    voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher,
 }
 
 impl OpenGlBackend {
@@ -68,22 +71,32 @@ impl OpenGlBackend {
 
         return Self {
             basic_mesh_program: mesh_program,
-            chunk_mesh_buffers: r_voxel_meshes::init_voxel_mesh_buffers(),
+            chunk_mesh_buffers: r_voxel_render::init_voxel_mesh_buffers(),
             mvp_id: mvp_id,
             frame: 0,
+            voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher::new(),
         };
     }
 
-    pub fn render(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
+    pub fn render(
+        renderer: &mut Self,
+        camera: &cb_graphics::CbCamera,
+        game_state: &GameState,
+        frame: usize,
+    ) {
         unsafe {
             gl::ClearColor(1.0, 1.0, 1.0, 0.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        self.basic_mesh_program.set_used();
-        r_voxel_meshes::draw_voxel_meshes(self, camera, game_state);
+        // Draw voxels
+        {
+            renderer.basic_mesh_program.set_used();
 
-        self.frame += 1;
+            let voxel_meshes = renderer.voxel_mesher.mesh(game_state, frame);
+            r_voxel_render::draw_voxel_meshes(renderer, camera, &voxel_meshes);
+        }
+        renderer.frame += 1;
     }
 }
 
