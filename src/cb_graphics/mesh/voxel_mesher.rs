@@ -43,7 +43,7 @@ impl VoxelMesher {
         };
     }
 
-    pub fn mesh(&mut self, chunk_manager: &cb_voxels::CbChunkManager, frame: usize) -> Mesh {
+    pub fn mesh(&mut self, chunk_manager: &cb_voxels::CbChunkManager, frame: usize) -> &Mesh {
         //TODO: note, it's expensive to mesh every chunk. Instead, start with the outside chunks of the chunk manager, then mesh those.
         // Afterwards, spiral inward to determine which other chunks to mesh if they're visible.
 
@@ -61,7 +61,8 @@ impl VoxelMesher {
                     let voxels = &chunk.voxel_vec;
 
                     // Downsample voxels
-                    let mut sampled_voxels = vec![];
+                    let sampled_voxels;
+                    let mut working_vec = vec![];
 
                     if scaling_factor != 1 {
                         let range = CHUNK_SIZE / scaling_factor;
@@ -105,13 +106,15 @@ impl VoxelMesher {
                                     // If any voxels are active, draw it
                                     let avg_active = active_count.len() > 0;
 
-                                    sampled_voxels.push((avg_active, avg_type));
+                                    working_vec.push((avg_active, avg_type));
                                 }
                             }
                         }
+
+                        sampled_voxels = &working_vec;
                     } else {
                         // No sampling, so just regular voxels
-                        sampled_voxels = voxels.clone();
+                        sampled_voxels = &voxels;
                     }
 
                     let mut mesh =
@@ -164,11 +167,10 @@ impl VoxelMesher {
                 self.lod_scale = self.lod_scale / 2;
             }
 
-            let mut mesh = Mesh::merge(self.meshes.clone());
-            mesh.wire_frame = true;
+            let mut mesh = Mesh::merge(&self.meshes);
             self.mesh = mesh;
         }
 
-        return self.mesh.clone();
+        return &self.mesh;
     }
 }

@@ -93,8 +93,8 @@ impl OpenGlBackend {
         {
             renderer.basic_mesh_program.set_used();
 
-            let voxel_meshes = renderer.voxel_mesher.mesh(&game_state.chunk_manager, frame);
-            r_voxel_render::draw_voxel_meshes(renderer, camera, &voxel_meshes);
+            renderer.voxel_mesher.mesh(&game_state.chunk_manager, frame);
+            r_voxel_render::draw_voxel_meshes(renderer, camera);
         }
         renderer.frame += 1;
     }

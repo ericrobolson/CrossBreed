@@ -35,7 +35,7 @@ impl Mesh {
         };
     }
 
-    pub fn merge(meshes: Vec<Mesh>) -> Mesh {
+    pub fn merge(meshes: &Vec<Mesh>) -> Mesh {
         let mut mesh = Mesh::new(0, vec![], vec![], 0, vec![], 0);
 
         if meshes.is_empty() == false {

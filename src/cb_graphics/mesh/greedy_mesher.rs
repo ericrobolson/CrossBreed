@@ -259,7 +259,7 @@ pub fn calculate_greedy_mesh(voxels: &Vec<CbVoxel>, frame: usize, chunk_size: us
         }
     }
 
-    return Mesh::merge(meshes);
+    return Mesh::merge(&meshes);
 }
 
 fn get_voxel_face(

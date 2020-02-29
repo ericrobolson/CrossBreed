@@ -30,14 +30,9 @@ pub fn init_voxel_mesh_buffers() -> MeshBuffers {
     }
 }
 
-pub fn draw_voxel_meshes(
-    backend: &mut OpenGlBackend,
-    camera: &cb_graphics::CbCamera,
-    mesh: &cb_graphics::mesh::Mesh,
-) {
+pub fn draw_voxel_meshes(backend: &mut OpenGlBackend, camera: &cb_graphics::CbCamera) {
     // Camera / MVP
     let (proj, view) = get_proj_view(camera);
-
     draw_mesh(0, 0, 0, proj, view, backend);
 }
 
