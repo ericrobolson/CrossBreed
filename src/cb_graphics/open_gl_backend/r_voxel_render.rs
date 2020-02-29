@@ -7,7 +7,8 @@ pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
     let mut chunk_buffers = vec![];
 
     // For each voxel chunk, add a buffer to write to
-    for _ in 0..cb_voxels::NUM_CHUNKS {
+    {
+        //for _ in 0..cb_voxels::NUM_CHUNKS {
         let mut vao: gl::types::GLuint = 0;
         let mut vbo: gl::types::GLuint = 0;
         let mut ebo: gl::types::GLuint = 0;

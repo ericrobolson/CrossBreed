@@ -24,6 +24,8 @@ impl VoxelMesher {
         //TODO: note, it's expensive to mesh every chunk. Instead, start with the outside chunks of the chunk manager, then mesh those.
         // Afterwards, spiral inward to determine which other chunks to mesh if they're visible.
 
+        let mut meshes = vec![];
+
         if self.dirty {
             self.dirty = false;
             let mesh = calculate_greedy_mesh(
@@ -31,6 +33,10 @@ impl VoxelMesher {
                 frame,
                 CHUNK_SIZE,
             );
+
+            meshes.push(mesh);
+
+            let mesh = Mesh::merge(meshes);
 
             self.mesh = mesh;
         }
