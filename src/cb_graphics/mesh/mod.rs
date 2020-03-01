@@ -41,7 +41,12 @@ impl Mesh {
         };
     }
 
+    fn recursive_mesh(meshes: &Vec<Mesh>, count: usize) -> Option<Mesh> {
+        return None;
+    }
+
     pub fn merge(meshes: &Vec<Mesh>) -> Mesh {
+        //TODO: paralellize
         let mut mesh = Mesh::new(3, vec![], vec![], 3, vec![], 3, vec![], 0);
 
         if meshes.is_empty() == false {

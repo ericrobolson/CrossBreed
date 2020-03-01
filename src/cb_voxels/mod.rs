@@ -20,7 +20,7 @@ pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 0.2;
 
-pub const CHUNKS: usize = 1;
+pub const CHUNKS: usize = 2;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 
