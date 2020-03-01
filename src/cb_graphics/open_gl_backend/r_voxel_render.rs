@@ -71,6 +71,15 @@ fn draw_mesh(
         }
     }
 
+    // Set global light pos
+    {
+        let light_pos = Vector3::new(1.0 as f32, 2.0 as f32, 0.0 as f32);
+
+        unsafe {
+            gl::UniformMatrix3fv(backend.light_id, 1, gl::FALSE, light_pos.as_ptr());
+        }
+    }
+
     // Render the mesh
     {
         // Load the buffers

@@ -1,5 +1,7 @@
 #version 330 core
 
+uniform vec3 cbLightPos;  
+
 in vec3 cbMeshVertexColor;
 in vec3 cbFragPos;
 in vec3 cbNormal;
@@ -9,11 +11,10 @@ out vec4 FragColor;
 void main()
 {
     vec3 lightColor = vec3(1.0, 0.96078431372, 0.85098039215);
-    vec3 lightPos = vec3(100.0, 100.0, 100.0);
 
-    vec3 lightDir = normalize(lightPos - cbFragPos);  
+    vec3 lightDir = normalize(cbLightPos - cbFragPos);  
 
-    float ambientStrength = 0.2;
+    float ambientStrength = 0.1;
     vec3 ambient = ambientStrength * lightColor;
 
     vec3 norm = normalize(cbNormal);

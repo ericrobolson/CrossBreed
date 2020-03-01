@@ -30,6 +30,7 @@ pub struct OpenGlBackend {
     basic_mesh_program: render_gl::Program,
     chunk_mesh_buffers: MeshBuffers,
     mvp_id: i32,
+    light_id: i32,
     frame: usize,
     voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher,
 }
@@ -60,6 +61,13 @@ impl OpenGlBackend {
             mvp_id = gl::GetUniformLocation(mesh_program.id(), mvp_str.as_ptr());
         }
 
+        // Light uniform
+        let light_str = &CString::new("cbLightPos").unwrap();
+        let light_id;
+        unsafe {
+            light_id = gl::GetUniformLocation(mesh_program.id(), light_str.as_ptr());
+        }
+
         // Backface culling
         unsafe {
             gl::Enable(gl::CULL_FACE);
@@ -74,6 +82,7 @@ impl OpenGlBackend {
             basic_mesh_program: mesh_program,
             chunk_mesh_buffers: r_voxel_render::init_voxel_mesh_buffers(),
             mvp_id: mvp_id,
+            light_id: light_id,
             frame: 0,
             voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher::new(),
         };
