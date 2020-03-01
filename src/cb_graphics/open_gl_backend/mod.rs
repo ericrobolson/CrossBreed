@@ -164,7 +164,7 @@ fn get_proj_view(camera: &cb_graphics::CbCamera) -> (CbProjection, CbView) {
             mouse_target.z + camera.pos_z,
         );
         view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
-        proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
+        proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 1000.0);
     }
 
     let proj: CbProjection = *proj.as_matrix();

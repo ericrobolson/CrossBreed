@@ -14,8 +14,6 @@ pub struct Mesh {
     pub color_vertex_size: usize,
     pub normals: Vec<f32>,
     pub normal_vertex_size: usize,
-    pub wire_frame: bool,
-    pub disable_polygon_smooth: bool,
     pub generated_at_frame: usize,
 }
 
@@ -38,8 +36,6 @@ impl Mesh {
             colors: colors,
             normal_vertex_size: normal_vertex_size,
             normals: normals,
-            wire_frame: false,
-            disable_polygon_smooth: false,
             generated_at_frame: generated_at_frame,
         };
     }
@@ -47,58 +43,6 @@ impl Mesh {
     pub fn merge(meshes: &Vec<Mesh>) -> Mesh {
         //TODO: paralellize
         let mut mesh = Mesh::new(3, vec![], vec![], 3, vec![], 3, vec![], 0);
-
-        {
-            /*
-            let mut empty_mesh = Mesh::new(3, vec![], vec![], 3, vec![], 3, vec![], 0);
-
-            let meshes = Vec::<Mesh>::new();
-
-            let mesh = meshes
-                .iter()
-                .map(|x| Some(x))
-                .collect::<Option<Mesh>>()
-                .par_iter_mut()
-                .reduce(
-                    || None,
-                    |a, b| {
-                        if a.vertex_size != b.vertex_size {
-                            panic!("Unable to merge meshes! Mesh vertex sizes differ.");
-                        }
-
-                        if a.normal_vertex_size != b.normal_vertex_size {
-                            panic!("Unable to merge meshes! Mesh normal vertex sizes differ.");
-                        }
-
-                        if a.color_vertex_size != b.color_vertex_size {
-                            panic!("Unable to merge meshes! Mesh color vertex sizes differ.");
-                        }
-
-                        a.vertices.append(&mut b.vertices.clone());
-                        a.colors.append(&mut b.colors.clone());
-                        a.normals.append(&mut b.normals.clone());
-
-                        // do tricky shit with indices
-                        let offset = b.vertices.len() as i32 / b.vertex_size as i32;
-
-                        let mut mapped_indices = b.indices.iter().map(|i| i + offset).collect();
-
-                        a.indices.append(&mut mapped_indices);
-
-                        if b.vertex_size != 0 {
-                            offset += b.vertices.len() as i32 / b.vertex_size as i32;
-                        }
-
-                        if b.generated_at_frame > a.generated_at_frame {
-                            a.generated_at_frame = b.generated_at_frame;
-                        }
-
-                        return Some(a);
-                    },
-                );
-                */
-        }
-
         if meshes.is_empty() == false {
             let mut is_first = true;
             let mut offset = 0;

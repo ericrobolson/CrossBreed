@@ -43,7 +43,7 @@ impl VoxelMesher {
         let mut voxel_vec = Vec::with_capacity(CHUNK_SIZE_CUBED);
         for _ in 0..CHUNK_SIZE_CUBED {
             voxel_vec.push(VoxelMeshWrapper::new(
-                CHUNKS,
+                1,
                 Mesh::new(3, vec![], vec![], 3, vec![], 3, vec![], 0),
             ));
         }
@@ -147,7 +147,7 @@ impl VoxelMesher {
                                         let indexes: Vec<(usize, usize, usize)> =
                                             range.map(|i| (x + i, y + i, z + i)).collect();
 
-                                        let values: Vec<(bool, u8)> = indexes
+                                        let values: Vec<(bool, u8, u8)> = indexes
                                             .iter()
                                             .map(|(x, y, z)| {
                                                 let i1 =
@@ -158,11 +158,11 @@ impl VoxelMesher {
                                             .collect();
 
                                         let voxel_types: Vec<u8> =
-                                            values.iter().map(|(_, value)| *value).collect();
+                                            values.iter().map(|(_, value, _)| *value).collect();
 
                                         let active_count: Vec<bool> = values
                                             .iter()
-                                            .filter_map(|(active, _)| {
+                                            .filter_map(|(active, _, _)| {
                                                 if *active {
                                                     return Some(true);
                                                 }
@@ -179,7 +179,7 @@ impl VoxelMesher {
                                         // If any voxels are active, draw it
                                         let avg_active = active_count.len() > 0;
 
-                                        working_vec.push((avg_active, avg_type));
+                                        working_vec.push((avg_active, avg_type, 0));
                                     }
                                 }
                             }
@@ -187,7 +187,7 @@ impl VoxelMesher {
                             sampled_voxels = &working_vec;
                         } else {
                             // No sampling, so just regular voxels
-                            sampled_voxels = &voxels;
+                            sampled_voxels = voxels;
                         }
 
                         let mut greedy_mesh = calculate_greedy_mesh(

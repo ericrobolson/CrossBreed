@@ -282,33 +282,41 @@ fn get_voxel_face(
 
     let mut transparent = !voxel_active;
 
-    // Check neighbors to see if obscured and cull if so
-    if (x != 0 && x != max_index) && (y != 0 && y != max_index) && (z != 0 && z != max_index) {
-        // above layer
-        let i = x + y * chunk_size + (z - 1) * chunk_size_squared;
+    /*
+    NOTE: THIS PART IS BUGGY AND DOESN"T WORK
+    */
+    
+    let check_for_obscured = false;
+    if check_for_obscured {
+        /*
+        // Check neighbors to see if obscured and cull if so
+        if (x != 0 && x != max_index) && (y != 0 && y != max_index) && (z != 0 && z != max_index) {
+            // above layer
 
-        let (obscured_above, _) = voxels[i]; //  let obscured_above = voxels[x][y][z - 1].active;
+            let i = x + y * chunk_size + (z - 1) * chunk_size_squared;
 
-        // same layer
-        let i1 = x + (y + 1) * chunk_size + z * chunk_size_squared;
-        let i2 = x + (y - 1) * chunk_size + z * chunk_size_squared;
-        let i3 = (x + 1) + y * chunk_size + z * chunk_size_squared;
-        let i4 = (x - 1) + y * chunk_size + z * chunk_size_squared;
+            let (obscured_above, _) = voxels[i]; //  let obscured_above = voxels[x][y][z - 1].active;
 
-        let obscured_same = voxels[i1].0 // voxels[x][y + 1][z].active
+            // same layer
+            let i1 = x + (y + 1) * chunk_size + z * chunk_size_squared;
+            let i2 = x + (y - 1) * chunk_size + z * chunk_size_squared;
+            let i3 = (x + 1) + y * chunk_size + z * chunk_size_squared;
+            let i4 = (x - 1) + y * chunk_size + z * chunk_size_squared;
+
+            let obscured_same = voxels[i1].0 // voxels[x][y + 1][z].active
             && voxels[i2].0 // voxels[x][y - 1][z].active
             && voxels[i3].0 // voxels[x + 1][y][z].active
             && voxels[i4].0; // voxels[x - 1][y][z].active;
 
-        // below layer
-        let i = x + y * chunk_size + (z + 1) * chunk_size_squared;
-        let (obscured_below, _) = voxels[i];
+            // below layer
+            let i = x + y * chunk_size + (z + 1) * chunk_size_squared;
+            let (obscured_below, _) = voxels[i];
 
-        if !transparent && obscured_above && obscured_same && obscured_below {
-            transparent = true;
-        }
+            if !transparent && obscured_above && obscured_same && obscured_below {
+                // transparent = true;
+            }
+        }*/
     }
-
     return VoxelFace {
         transparent: transparent,
         vf_type: voxel_type,

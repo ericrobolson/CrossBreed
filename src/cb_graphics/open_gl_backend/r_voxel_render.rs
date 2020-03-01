@@ -13,7 +13,7 @@ pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
     // For each voxel chunk, add a buffer to write to
     let mut buffers = vec![];
 
-    for _ in 0..CHUNKS {
+    for _ in 0..CHUNKS_CUBED {
         let mut vao: gl::types::GLuint = 0;
         let mut vbo: gl::types::GLuint = 0;
         let mut ebo: gl::types::GLuint = 0;
@@ -92,52 +92,26 @@ fn draw_meshes(
     }
 
     // Render the meshes
-    for i in 0..CHUNKS {
+    for i in 0..CHUNKS_CUBED {
         let mut buffer = &mut backend.chunk_mesh_buffers[i];
 
         // Get the last frame the meshes were updated at
-        let most_recent_mesh_update_frame: usize;
-        {
-            let mut most_recent_mesh_update_frames: Vec<usize> = vec![];
-
-            for j in 0..CHUNKS {
-                for k in 0..CHUNKS {
-                    let index = i + j * CHUNKS + k * CHUNKS_SQUARED;
-
-                    most_recent_mesh_update_frames
-                        .push(backend.voxel_mesher.meshes[index].mesh.generated_at_frame);
-                }
-            }
-
-            most_recent_mesh_update_frame = most_recent_mesh_update_frames
-                .iter()
-                .fold(0, |a, &b| a.max(b));
-        }
-        let mut mesh = None;
+        let most_recent_mesh_update_frame: usize =
+            backend.voxel_mesher.meshes[i].mesh.generated_at_frame;
         // Only update the buffers if it's needed
+        let mut mesh = None;
         let changed;
         {
             // Only copy over the mesh if it's the first frame or it's been updated
             if most_recent_mesh_update_frame > buffer.last_calculated_frame || frame == 0 {
-                // get the meshes in question
-                let mut meshes = vec![];
-
-                for j in 0..CHUNKS {
-                    for k in 0..CHUNKS {
-                        let index = i + j * CHUNKS + k * CHUNKS_SQUARED;
-
-                        let mesh = backend.voxel_mesher.meshes[index].mesh.clone();
-                        meshes.push(mesh);
-                    }
-                }
-
+                let m = &backend.voxel_mesher.meshes[i].mesh;
                 changed = true;
-                let merged_mesh = Mesh::merge(&meshes);
-                // Store the frame the mesh was generated at
-                buffer.last_calculated_frame = merged_mesh.generated_at_frame;
-                buffer.indices_count = merged_mesh.indices.len();
 
-                mesh = Some(merged_mesh);
+                // Store the frame the mesh was generated at
+                buffer.last_calculated_frame = m.generated_at_frame;
+                buffer.indices_count = m.indices.len();
+
+                mesh = Some(m);
             } else {
                 changed = false;
             }
@@ -227,22 +201,9 @@ fn draw_meshes(
             }
         }
 
-        // Misc draw functions
-        /*
-        {
-            if mesh.wire_frame {
-                unsafe {
-                    gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
-                }
-            }
-
-            if mesh.disable_polygon_smooth {
-                unsafe {
-                    gl::Disable(gl::POLYGON_SMOOTH);
-                }
-            }
+        unsafe {
+            //    gl::PolygonMode(gl::FRONT_AND_BACK, gl::LINE);
         }
-        */
 
         // Render
         unsafe {
@@ -262,7 +223,7 @@ fn draw_meshes(
     /*
     return;
 
-    //NOTE: previously would have a buffer for each mesh, which is very bad
+    //NOTE: previously would have a buffer for each mesh, ironically, we're going that route.
     backend
         .voxel_mesher
         .meshes

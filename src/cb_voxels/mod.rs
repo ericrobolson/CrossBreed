@@ -6,30 +6,31 @@ use rayon::prelude::*;
 
 use time::{Duration, Instant};
 
-// NOTE: Voxel size is about 6 inches
-// Human is about 6ft, or 12 voxels
+// NOTE: Voxel size is about 1 foot
+// Human is about 6ft, or 6 voxels
 
 extern crate rand;
 use rand::Rng; // TODO: replace with deterministic one
 
-pub const CHUNK_SIZE: usize = 8;
+pub const CHUNK_SIZE: usize = 16;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
-pub const VOXEL_SIZE: f32 = 0.2;
+pub const VOXEL_SIZE: f32 = 1.0;
 
-pub const CHUNKS: usize = 8;
+pub const CHUNKS: usize = 16;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 
-/// A voxel contains two pieces of info, whether it's active, and it's type.
-pub type CbVoxel = (bool, u8);
+/// A voxel contains three pieces of info, whether it's active, it's type, and some misc values that may be used for different voxel types (such as health remaining on a block).
+pub type CbVoxel = (bool, u8, u8);
 
 #[derive(Debug)]
 pub struct CbChunkManager {
     dirty: bool,
+    randomizer_index: usize,
     pub chunks: Vec<CbVoxelChunk>,
 }
 
@@ -55,35 +56,23 @@ impl CbChunkManager {
         chunks.par_iter_mut().enumerate().for_each(|(i, chunk)| {
             let (chunk_x, chunk_y, chunk_z) = index_1d_to_3d(i, CHUNKS, CHUNKS);
 
-            chunk
-                .voxel_vec
-                .iter_mut()
-                .enumerate()
-                .for_each(|(i, (voxel_active, voxel_type))| {
+            chunk.voxel_vec.iter_mut().enumerate().for_each(
+                |(i, (voxel_active, voxel_type, _))| {
                     let (voxel_x, voxel_y, voxel_z) = index_1d_to_3d(i, CHUNK_SIZE, CHUNK_SIZE);
-
-                    let height = noise.at(voxel_x, voxel_z);
-
-                    //if (voxel_y) <= height
                     if voxel_y % 29 == 0 && voxel_x % 3 == 0 {
                         *voxel_active = true;
                     }
-                });
+                },
+            );
         });
-
         let end = Instant::now() - start;
 
         println!("Chunks created in: {:?}", end);
         return Self {
+            randomizer_index: 0,
             chunks: chunks,
             dirty: true,
         };
-    }
-
-    pub fn randomize(&mut self, frame: usize) {
-        self.chunks.par_iter_mut().for_each(|chunk| {
-            chunk.randomize(frame);
-        });
     }
 }
 
@@ -93,7 +82,6 @@ pub const VOXEL_TYPE_DIRT: u8 = 2;
 
 #[derive(Debug, Clone)]
 pub struct CbVoxelChunk {
-    dirty: bool,
     pub frame_updated_at: usize,
     pub voxel_vec: Vec<CbVoxel>,
 }
@@ -104,29 +92,14 @@ impl CbVoxelChunk {
             .collect::<Vec<usize>>()
             .iter()
             .map(|i| {
-                return (false, VOXEL_TYPE_GRASS);
+                return (false, VOXEL_TYPE_GRASS, 0);
             })
             .collect();
 
         let mut chunk = Self {
             frame_updated_at: 0,
             voxel_vec: voxel_vec,
-            dirty: true,
         };
         return chunk;
-    }
-
-    pub fn randomize(&mut self, frame: usize) {
-        self.frame_updated_at = frame;
-        self.voxel_vec
-            .par_iter_mut()
-            .for_each(|(active, voxel_type)| {
-                let a = *active;
-                *active = !a;
-            });
-    }
-
-    pub fn set_dirty(&mut self) {
-        self.dirty = true;
     }
 }

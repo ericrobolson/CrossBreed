@@ -92,7 +92,6 @@ fn main_loop() {
         // Update simulation
         {
             // Increment game tick
-            game_state.chunk_manager.randomize(game_tick);
             game_tick += 1;
         }
 
