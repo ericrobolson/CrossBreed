@@ -24,11 +24,12 @@ pub struct MeshBuffers {
     pub color_buff: gl::types::GLuint,
     pub normal_buff: gl::types::GLuint,
     pub last_calculated_frame: usize,
+    pub indices_count: usize,
 }
 
 pub struct OpenGlBackend {
     basic_mesh_program: render_gl::Program,
-    chunk_mesh_buffers: MeshBuffers,
+    chunk_mesh_buffers: Vec<MeshBuffers>,
     mvp_id: i32,
     light_id: i32,
     frame: usize,
@@ -102,10 +103,12 @@ impl OpenGlBackend {
         // Draw voxels
         {
             // First mesh them
-            renderer.voxel_mesher.mesh(&game_state.chunk_manager, frame);
+            renderer
+                .voxel_mesher
+                .mesh(&game_state.chunk_manager, frame, camera);
 
             renderer.basic_mesh_program.set_used();
-            r_voxel_render::draw_voxel_meshes(renderer, camera);
+            r_voxel_render::draw_voxel_meshes(renderer, camera, frame);
         }
         renderer.frame += 1;
     }
