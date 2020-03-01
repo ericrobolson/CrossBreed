@@ -149,6 +149,7 @@ version = "0.1.0"
 dependencies = [
  "gl",
  "nalgebra",
+ "rand",
  "rayon",
  "rmercury",
  "sdl2",

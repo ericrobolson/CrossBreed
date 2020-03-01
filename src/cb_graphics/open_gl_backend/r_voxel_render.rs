@@ -13,11 +13,13 @@ pub fn init_voxel_mesh_buffers() -> MeshBuffers {
         let mut vbo: gl::types::GLuint = 0;
         let mut ebo: gl::types::GLuint = 0;
         let mut color_buff: gl::types::GLuint = 0;
+        let mut normal_buff: gl::types::GLuint = 0;
         unsafe {
             gl::GenVertexArrays(1, &mut vao);
             gl::GenBuffers(1, &mut vbo);
             gl::GenBuffers(1, &mut ebo);
             gl::GenBuffers(1, &mut color_buff);
+            gl::GenBuffers(1, &mut normal_buff);
         }
 
         return MeshBuffers {
@@ -25,6 +27,7 @@ pub fn init_voxel_mesh_buffers() -> MeshBuffers {
             vbo: vbo,
             ebo: ebo,
             color_buff: color_buff,
+            normal_buff: normal_buff,
             last_calculated_frame: 0,
         };
     }
@@ -147,6 +150,24 @@ fn draw_mesh(
                     gl::FLOAT,
                     gl::FALSE,
                     (mesh.color_vertex_size * std::mem::size_of::<f32>()) as gl::types::GLint,
+                    std::ptr::null(),
+                );
+
+                // Normals
+                gl::EnableVertexAttribArray(2);
+                gl::BindBuffer(gl::ARRAY_BUFFER, buffers.normal_buff);
+                gl::BufferData(
+                    gl::ARRAY_BUFFER,
+                    (mesh.normals.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                    mesh.normals.as_ptr() as *const gl::types::GLvoid,
+                    gl::STATIC_DRAW,
+                );
+                gl::VertexAttribPointer(
+                    2,
+                    mesh.normal_vertex_size as gl::types::GLint,
+                    gl::FLOAT,
+                    gl::FALSE,
+                    (mesh.normal_vertex_size * std::mem::size_of::<f32>()) as gl::types::GLint,
                     std::ptr::null(),
                 );
 

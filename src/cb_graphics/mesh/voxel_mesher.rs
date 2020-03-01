@@ -25,11 +25,11 @@ pub struct VoxelMesher {
 
 impl VoxelMesher {
     pub fn new() -> Self {
-        let empty_mesh = Mesh::new(3, vec![], vec![], 3, vec![], 0);
+        let empty_mesh = Mesh::new(3, vec![], vec![], 3, vec![], 3, vec![], 0);
 
         let mut voxel_vec = Vec::with_capacity(CHUNK_SIZE_CUBED);
         for _ in 0..CHUNK_SIZE_CUBED {
-            voxel_vec.push(Mesh::new(3, vec![], vec![], 3, vec![], 0));
+            voxel_vec.push(Mesh::new(3, vec![], vec![], 3, vec![], 3, vec![], 0));
         }
 
         return Self {

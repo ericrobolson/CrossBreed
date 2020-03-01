@@ -1,3 +1,7 @@
+extern crate rand;
+
+use rand::Rng;
+
 /// Returns the number raised to the power
 pub fn pow(num: usize, pow: usize) -> usize {
     let mut value = 1;
@@ -24,34 +28,39 @@ pub fn index_2d_to_1d(x: usize, y: usize, array_size: usize) -> usize {
     return x + array_size * y;
 }
 
+pub fn index_1d_to_2d(index: usize, width: usize) -> (usize, usize) {
+    return (index % width, index / width);
+}
+
+const MAX_NOISE_RES: usize = 32;
+
 pub struct Noise {
-    values: Vec<u32>,
-    max_value: u32,
+    values: Vec<Vec<usize>>,
+    max_value: usize,
 }
 
 impl Noise {
     /// Create a new noise object. Uses u32's so as to be deterministic across machines
-    pub fn new(seed: usize, max_value: u32) -> Self {
-        const MIN_VALUE: u32 = 0;
+    pub fn new(max_value: usize) -> Self {
+        const MIN_VALUE: usize = 0;
 
-        // populate matrix
+        let mut rng = rand::thread_rng();
 
-        // Populate matrix with randomly assigned max / min values
-        // step through, interpolating the layers the each time until there is no more interpolation left to do
+        let mut values = vec![vec![]];
 
-        let mut i = 0;
-        let density = 97;
-
-        let mut flipped = false;
+        //TODO: interpolate the values
+        // populate matrix; making sure the edges are assigned the gradients for the opposing edges (to make it a repeating grid)
 
         return Self {
-            values: vec![],
+            values: values,
             max_value: max_value,
         };
     }
 
-    pub fn at(&self, x: usize, y: usize) -> u32 {
-        return self.values[index_2d_to_1d(x, y, self.values.len())];
+    pub fn at(&self, x: usize, y: usize) -> usize {
+        let mut rng = rand::thread_rng();
+
+        return rng.gen_range(0, self.max_value);
     }
 }
 

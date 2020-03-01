@@ -369,7 +369,8 @@ fn get_quad(
         }
     }
 
-    let vertices = vertices.iter().map(|n| n * VOXEL_SIZE).collect();
+    let vertices: Vec<f32> = vertices.iter().map(|n| n * VOXEL_SIZE).collect();
+    let indices: Vec<i32> = indices;
 
     // Colors
     const COLOR_CAPACITY: usize = 9;
@@ -407,15 +408,95 @@ fn get_quad(
         }
     }
 
+    // Normals
+    const NORMAL_VERTEX_SIZE: usize = 3;
+    let mut normals;
+    {
+        let mut triangles: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>)> = vec![]; // todo; populate triangles
+                                                                                     // map triangles
+        {
+            let num_triangles = indices.len() / VALUES_IN_VERTEX;
+
+            for i in 0..num_triangles {
+                let j = i * VALUES_IN_VERTEX;
+
+                let index_1 = j;
+                let index_2 = j + 1;
+                let index_3 = j + 2;
+
+                // Get start index of each point
+                let p1_start = indices[index_1] as usize;
+                let p2_start = indices[index_2] as usize;
+                let p3_start = indices[index_3] as usize;
+
+                // Assemble vecs of each point
+                let p1 = Vector3::<f32>::new(
+                    vertices[p1_start],
+                    vertices[p1_start + 1],
+                    vertices[p1_start + 2],
+                );
+
+                let p2 = Vector3::<f32>::new(
+                    vertices[p2_start],
+                    vertices[p2_start + 1],
+                    vertices[p2_start + 2],
+                );
+
+                let p3 = Vector3::<f32>::new(
+                    vertices[p3_start],
+                    vertices[p3_start + 1],
+                    vertices[p3_start + 2],
+                );
+
+                triangles.push((p1, p2, p3));
+            }
+        }
+
+        let mapped_normals: Vec<(f32, f32, f32)> = triangles
+            .iter()
+            .map(|(p1, p2, p3)| calculate_surface_normal_from_triangle(*p1, *p2, *p3))
+            .collect();
+
+        normals = Vec::with_capacity(mapped_normals.len() * NORMAL_VERTEX_SIZE);
+
+        mapped_normals
+            .iter()
+            .for_each(|(normal_x, normal_y, normal_z)| {
+                normals.push(*normal_x);
+                normals.push(*normal_y);
+                normals.push(*normal_z);
+            });
+    }
+    let normals = normals;
+
     let mesh = Mesh::new(
         VALUES_IN_VERTEX,
         vertices,
         indices,
         COLOR_VERTEX_SIZE,
         colors,
+        NORMAL_VERTEX_SIZE,
+        normals,
         generated_at_frame,
     );
     return mesh;
+}
+
+fn calculate_surface_normal_from_triangle(
+    p1: Vector3<f32>,
+    p2: Vector3<f32>,
+    p3: Vector3<f32>,
+) -> (f32, f32, f32) {
+    // Referenced: https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
+
+    let u = p2 - p1;
+    let v = p3 - p1;
+
+    let normal_x = (u.y * v.z) - (u.z * v.y);
+    let normal_y = (u.z * v.x) - (u.x * v.z);
+    let normal_z = (u.x * v.y) - (u.y * v.x);
+
+    return (normal_x, normal_y, normal_z);
 }
 
 /// Struct used for meshing purposes

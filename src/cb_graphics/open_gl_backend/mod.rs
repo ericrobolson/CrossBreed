@@ -22,6 +22,7 @@ pub struct MeshBuffers {
     pub vbo: gl::types::GLuint,
     pub ebo: gl::types::GLuint,
     pub color_buff: gl::types::GLuint,
+    pub normal_buff: gl::types::GLuint,
     pub last_calculated_frame: usize,
 }
 

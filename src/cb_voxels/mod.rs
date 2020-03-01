@@ -9,7 +9,10 @@ use time::{Duration, Instant};
 // NOTE: Voxel size is about 6 inches
 // Human is about 6ft, or 12 voxels
 
-pub const CHUNK_SIZE: usize = 8;
+extern crate rand;
+use rand::Rng; // TODO: replace with deterministic one
+
+pub const CHUNK_SIZE: usize = 32;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
@@ -17,7 +20,7 @@ pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 0.2;
 
-pub const CHUNKS: usize = 8;
+pub const CHUNKS: usize = 1;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 
@@ -43,6 +46,29 @@ impl CbChunkManager {
                 return CbVoxelChunk::new();
             })
             .collect();
+
+        println!("fin init");
+        println!("landscape begin");
+
+        let noise = cb_math::Noise::new(CHUNK_SIZE);
+
+        chunks.par_iter_mut().enumerate().for_each(|(i, chunk)| {
+            let (chunk_x, chunk_y, chunk_z) = index_1d_to_3d(i, CHUNKS, CHUNKS);
+
+            chunk
+                .voxel_vec
+                .iter_mut()
+                .enumerate()
+                .for_each(|(i, (voxel_active, voxel_type))| {
+                    let (voxel_x, voxel_y, voxel_z) = index_1d_to_3d(i, CHUNK_SIZE, CHUNK_SIZE);
+
+                    let height = noise.at(voxel_x, voxel_z);
+
+                    if (voxel_y) <= height {
+                        *voxel_active = true;
+                    }
+                });
+        });
 
         let end = Instant::now() - start;
 
@@ -70,13 +96,7 @@ impl CbVoxelChunk {
             .collect::<Vec<usize>>()
             .iter()
             .map(|i| {
-                if i % 11 == 0 {
-                    return (true, VOXEL_TYPE_DIRT);
-                } else if i % 13 == 0 {
-                    return (true, VOXEL_TYPE_GRASS);
-                }
-
-                return (false, VOXEL_TYPE_GRASS);
+                return (false, VOXEL_TYPE_DEFAULT);
             })
             .collect();
 
