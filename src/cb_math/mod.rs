@@ -20,37 +20,21 @@ pub fn index_1d_to_3d(index: usize, x_max: usize, y_max: usize) -> (usize, usize
     return (x, y, z);
 }
 
+pub fn index_2d_to_1d(x: usize, y: usize, array_size: usize) -> usize {
+    return x + array_size * y;
+}
+
 pub struct Noise {
-    values: Vec<Vec<usize>>,
-    min_value: u32,
+    values: Vec<u32>,
     max_value: u32,
 }
 
 impl Noise {
     /// Create a new noise object. Uses u32's so as to be deterministic across machines
-    pub fn new(seed: usize, min_value: u32, max_value: u32) -> Self {
-        if min_value >= max_value {
-            panic!("min should not equal max");
-        }
-
-        let diff = max_value - min_value;
-        let diff = diff as usize;
-
-        let avg_value = diff / 2;
-
-        let mut values = Vec::with_capacity(diff);
+    pub fn new(seed: usize, max_value: u32) -> Self {
+        const MIN_VALUE: u32 = 0;
 
         // populate matrix
-        {
-            for i in 0..diff {
-                let mut v = Vec::with_capacity(diff);
-                for j in 0..diff {
-                    v.push(avg_value);
-                }
-
-                values.push(v);
-            }
-        }
 
         // Populate matrix with randomly assigned max / min values
         // step through, interpolating the layers the each time until there is no more interpolation left to do
@@ -60,36 +44,14 @@ impl Noise {
 
         let mut flipped = false;
 
-        for x in 0..diff {
-            for y in 0..diff {
-                //TODO: implement noise
-                if i < density {
-                    i += 1;
-                } else {
-                    i = 0;
-
-                    if flipped {
-                        values[x][y] = max_value as usize;
-                    } else {
-                        values[x][y] = min_value as usize;
-                    }
-
-                    flipped = !flipped;
-                }
-
-                //values[x][y] = 3;
-            }
-        }
-
         return Self {
-            values: values,
-            min_value: min_value,
+            values: vec![],
             max_value: max_value,
         };
     }
 
-    pub fn at(&self, x: usize, y: usize) -> usize {
-        return self.values[x][y];
+    pub fn at(&self, x: usize, y: usize) -> u32 {
+        return self.values[index_2d_to_1d(x, y, self.values.len())];
     }
 }
 

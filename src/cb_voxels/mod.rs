@@ -9,15 +9,15 @@ use time::{Duration, Instant};
 // NOTE: Voxel size is about 6 inches
 // Human is about 6ft, or 12 voxels
 
-pub const CHUNK_SIZE: usize = 32;
+pub const CHUNK_SIZE: usize = 8;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
 pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
-pub const VOXEL_SIZE: f32 = 0.05;
+pub const VOXEL_SIZE: f32 = 0.2;
 
-pub const CHUNKS: usize = 32;
+pub const CHUNKS: usize = 8;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 
@@ -70,8 +70,10 @@ impl CbVoxelChunk {
             .collect::<Vec<usize>>()
             .iter()
             .map(|i| {
-                if i % 8 == 0 {
+                if i % 11 == 0 {
                     return (true, VOXEL_TYPE_DIRT);
+                } else if i % 13 == 0 {
+                    return (true, VOXEL_TYPE_GRASS);
                 }
 
                 return (false, VOXEL_TYPE_GRASS);
