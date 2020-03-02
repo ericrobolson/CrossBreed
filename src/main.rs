@@ -1,10 +1,13 @@
 // External crates
 extern crate gl;
-extern crate rmercury;
 extern crate specs;
+
 use specs::prelude::*;
 extern crate sdl2;
 use std::panic;
+
+extern crate rmercury;
+use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 
 // Internal crates
 #[macro_use]
@@ -17,6 +20,7 @@ pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
 pub mod contexts;
+use cb_simulation::{CbGameInput, CbGameInterface, CbGameState};
 use cb_system::{GameTick, PlayerId};
 
 pub struct GameSim {}
@@ -36,6 +40,15 @@ fn main() {
 fn main_loop() {
     // Init gfx
     let mut gfx = cb_graphics::CbGfx::new();
+
+    // Init RMercury
+    let mut game_interface = CbGameInterface::new();
+
+    let mut builder =
+        RMercuryBuilder::<CbGameInterface, CbGameInput, CbGameState>::new(&mut game_interface)
+            .with_type(MercuryType::Peer2Peer);
+
+    let mut r_mercury = builder.build();
 
     // Init simulation data
     let mut game_tick: usize = 0;
@@ -87,10 +100,19 @@ fn main_loop() {
                     camera.pos_y += 0.1;
                 }
             }
+
+            let mut local_input = vec![];
+            r_mercury.add_local_input(&mut local_input); // TODO
         }
 
         // Update simulation
         {
+            let result = r_mercury.execute();
+
+            if result == RMercuryExecutionResults::Executed {
+                // update game state
+            }
+
             // Increment game tick
             game_tick += 1;
         }

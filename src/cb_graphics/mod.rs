@@ -1,5 +1,4 @@
 extern crate gl;
-extern crate rmercury;
 extern crate sdl2;
 use sdl2::video::GLProfile;
 

@@ -622,7 +622,10 @@ checksum = "b28dfe3fe9badec5dbf0a79a9cccad2cfc2ab5484bdb3e44cbd1ae8b3ba2be06"
 [[package]]
 name = "rmercury"
 version = "0.0.1"
-source = "git+https://github.com/ericrobolson/RMercury#2ccf4764045e046356932f6de0c2bc165e53159e"
+source = "git+https://github.com/ericrobolson/RMercury#66f2480a4d2f28e53571094d7cba8cfd37de39d8"
+dependencies = [
+ "time",
+]
 
 [[package]]
 name = "rustc_version"
