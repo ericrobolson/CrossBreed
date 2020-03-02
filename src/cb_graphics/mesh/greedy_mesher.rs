@@ -6,7 +6,10 @@ use na::Vector3;
 use crate::cb_graphics::mesh;
 use mesh::Mesh;
 
-pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
+use crate::cb_voxels;
+use cb_voxels::*;
+
+pub fn calculate_greedy_mesh(voxels: &Vec<CbVoxel>, frame: usize, chunk_size: usize) -> Mesh {
     const SOUTH: usize = 0;
     const NORTH: usize = 1;
     const EAST: usize = 2;
@@ -14,10 +17,10 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
     const TOP: usize = 4;
     const BOTTOM: usize = 5;
 
-    const CHUNK_WIDTH: usize = CHUNK_SIZE;
-    const CHUNK_WIDTH_I: i32 = CHUNK_WIDTH as i32;
-    const CHUNK_HEIGHT: usize = CHUNK_SIZE;
-    const CHUNK_HEIGHT_I: i32 = CHUNK_HEIGHT as i32;
+    let chunk_width: usize = chunk_size;
+    let chunk_width_i: i32 = chunk_width as i32;
+    let chunk_height: usize = chunk_size;
+    let chunk_height_i: i32 = chunk_height as i32;
 
     let mut meshes = vec![];
 
@@ -28,8 +31,8 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
     let_mut_for![(x, q, du, dv), Vector3<i32>, Vector3::new(0, 0, 0)];
 
     // Create a mask of matching voxel faces as we go through the chunk in 6 directions, once for each face
-    let mut mask = Vec::with_capacity(CHUNK_WIDTH * CHUNK_HEIGHT);
-    for _ in 0..CHUNK_WIDTH * CHUNK_HEIGHT {
+    let mut mask = Vec::with_capacity(chunk_width * chunk_height);
+    for _ in 0..chunk_width * chunk_height {
         mask.push(None);
     }
 
@@ -44,6 +47,7 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
         backface = !backface;
 
         // Sweep over the 3 dimensions to mesh it.
+
         for d in 0..3 {
             // Set variables
             {
@@ -85,35 +89,39 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
 
             // Move through the dimension from front to back
             x[d] = -1;
-            while x[d] < CHUNK_WIDTH_I {
+            while x[d] < chunk_width_i {
                 // Compute the mask
                 {
                     n = 0;
 
                     x[v] = 0;
-                    while x[v] < CHUNK_HEIGHT_I {
+                    while x[v] < chunk_height_i {
                         x[u] = 0;
-                        while x[u] < CHUNK_WIDTH_I {
+                        while x[u] < chunk_width_i {
                             // Retrieve the two voxel faces to compare.
                             if x[d] >= 0 {
                                 voxel_face = Some(get_voxel_face(
-                                    chunk,
+                                    voxels,
                                     x[0] as usize,
                                     x[1] as usize,
                                     x[2] as usize,
                                     side,
+                                    chunk_size - 1,
+                                    chunk_size,
                                 ));
                             } else {
                                 voxel_face = None;
                             }
 
-                            if x[d] < CHUNK_WIDTH_I - 1 {
+                            if x[d] < chunk_width_i - 1 {
                                 voxel_face1 = Some(get_voxel_face(
-                                    chunk,
+                                    voxels,
                                     (x[0] + q[0]) as usize,
                                     (x[1] + q[1]) as usize,
                                     (x[2] + q[2]) as usize,
                                     side,
+                                    chunk_size - 1,
+                                    chunk_size,
                                 ));
                             } else {
                                 voxel_face1 = None;
@@ -143,13 +151,13 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
                 // Now generate the mesh for the mask
                 n = 0;
                 j = 0;
-                while j < CHUNK_HEIGHT {
+                while j < chunk_height {
                     i = 0;
-                    while i < CHUNK_WIDTH {
+                    while i < chunk_width {
                         if mask[n].is_some() {
                             // Compute the width
                             w = 1;
-                            while i + w < CHUNK_WIDTH
+                            while i + w < chunk_width
                                 && mask[n + w].is_some()
                                 && mask[n + w].unwrap().equals(&mask[n].unwrap())
                             {
@@ -160,11 +168,11 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
                             let mut done = false;
 
                             h = 1;
-                            while j + h < CHUNK_HEIGHT {
+                            while j + h < chunk_height {
                                 k = 0;
                                 while k < w {
-                                    if mask[n + k + h * CHUNK_WIDTH].is_none()
-                                        || !mask[n + k + h * CHUNK_WIDTH]
+                                    if mask[n + k + h * chunk_width].is_none()
+                                        || !mask[n + k + h * chunk_width]
                                             .unwrap()
                                             .equals(&mask[n].unwrap())
                                     {
@@ -229,7 +237,7 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
                             while l < h {
                                 k = 0;
                                 while k < w {
-                                    mask[n + k + l * CHUNK_WIDTH] = None;
+                                    mask[n + k + l * chunk_width] = None;
 
                                     k += 1;
                                 }
@@ -251,39 +259,67 @@ pub fn calculate_greedy_mesh(chunk: &CbVoxelChunk, frame: usize) -> Mesh {
         }
     }
 
-    return Mesh::merge(meshes);
+    return Mesh::merge(&meshes);
 }
 
-fn get_voxel_face(chunk: &CbVoxelChunk, x: usize, y: usize, z: usize, side: usize) -> VoxelFace {
+fn get_voxel_face(
+    voxels: &Vec<CbVoxel>,
+    x: usize,
+    y: usize,
+    z: usize,
+    side: usize,
+    chunk_size: usize,
+    max_index: usize,
+) -> VoxelFace {
     // NOTE: Add the following here:
     // ** Set per face / per vertex values as well as voxel values here.
-    let voxel = chunk.voxels[x][y][z];
+    let chunk_size_squared = chunk_size * chunk_size;
 
-    let mut transparent = !voxel.active;
+    let index = x + y * chunk_size + z * chunk_size_squared;
+    let voxel = voxels[index];
+    let voxel_active = voxel.0;
+    let voxel_type = voxel.1;
 
-    // Check neighbors to see if obscured and cull if so
-    if (x != 0 && x != MAX_CHUNK_INDEX)
-        && (y != 0 && y != MAX_CHUNK_INDEX)
-        && (z != 0 && z != MAX_CHUNK_INDEX)
-    {
-        // above layer
-        let obscured_above = chunk.voxels[x][y][z - 1].active;
-        // same layer
-        let obscured_same = chunk.voxels[x][y + 1][z].active
-            && chunk.voxels[x][y - 1][z].active
-            && chunk.voxels[x + 1][y][z].active
-            && chunk.voxels[x - 1][y][z].active;
-        // below layer
-        let obscured_below = chunk.voxels[x][y][z + 1].active;
+    let mut transparent = !voxel_active;
 
-        if !transparent && obscured_above && obscured_same && obscured_below {
-            transparent = true;
-        }
+    /*
+    NOTE: THIS PART IS BUGGY AND DOESN"T WORK
+    */
+    
+    let check_for_obscured = false;
+    if check_for_obscured {
+        /*
+        // Check neighbors to see if obscured and cull if so
+        if (x != 0 && x != max_index) && (y != 0 && y != max_index) && (z != 0 && z != max_index) {
+            // above layer
+
+            let i = x + y * chunk_size + (z - 1) * chunk_size_squared;
+
+            let (obscured_above, _) = voxels[i]; //  let obscured_above = voxels[x][y][z - 1].active;
+
+            // same layer
+            let i1 = x + (y + 1) * chunk_size + z * chunk_size_squared;
+            let i2 = x + (y - 1) * chunk_size + z * chunk_size_squared;
+            let i3 = (x + 1) + y * chunk_size + z * chunk_size_squared;
+            let i4 = (x - 1) + y * chunk_size + z * chunk_size_squared;
+
+            let obscured_same = voxels[i1].0 // voxels[x][y + 1][z].active
+            && voxels[i2].0 // voxels[x][y - 1][z].active
+            && voxels[i3].0 // voxels[x + 1][y][z].active
+            && voxels[i4].0; // voxels[x - 1][y][z].active;
+
+            // below layer
+            let i = x + y * chunk_size + (z + 1) * chunk_size_squared;
+            let (obscured_below, _) = voxels[i];
+
+            if !transparent && obscured_above && obscured_same && obscured_below {
+                // transparent = true;
+            }
+        }*/
     }
-
     return VoxelFace {
         transparent: transparent,
-        vf_type: voxel.voxel_type,
+        vf_type: voxel_type,
         side: side,
     };
 }
@@ -341,7 +377,8 @@ fn get_quad(
         }
     }
 
-    let vertices = vertices.iter().map(|n| n * VOXEL_SIZE).collect();
+    let vertices: Vec<f32> = vertices.iter().map(|n| n * VOXEL_SIZE).collect();
+    let indices: Vec<i32> = indices;
 
     // Colors
     const COLOR_CAPACITY: usize = 9;
@@ -353,45 +390,25 @@ fn get_quad(
         let mut i = 0;
         while i < COLOR_CAPACITY {
             match voxel.vf_type {
-                CbVoxelTypes::Default => {
+                VOXEL_TYPE_DEFAULT => {
                     colors.push(1.0);
                     colors.push(0.0);
                     colors.push(0.0);
                 }
-                CbVoxelTypes::Dirt => {
+                VOXEL_TYPE_DIRT => {
                     colors.push(0.23);
                     colors.push(0.168);
                     colors.push(0.086);
                 }
-                CbVoxelTypes::Grass => {
+                VOXEL_TYPE_GRASS => {
                     colors.push(0.0);
                     colors.push(1.0);
                     colors.push(0.0);
                 }
-                CbVoxelTypes::Water => {
+                _ => {
                     colors.push(0.0);
                     colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Stone => {
                     colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Wood => {
-                    colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Sand => {
-                    colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
-                }
-                CbVoxelTypes::Metal => {
-                    colors.push(0.0);
-                    colors.push(0.0);
-                    colors.push(1.0);
                 }
             }
 
@@ -399,22 +416,102 @@ fn get_quad(
         }
     }
 
+    // Normals
+    const NORMAL_VERTEX_SIZE: usize = 3;
+    let mut normals;
+    {
+        let mut triangles: Vec<(Vector3<f32>, Vector3<f32>, Vector3<f32>)> = vec![]; // todo; populate triangles
+                                                                                     // map triangles
+        {
+            let num_triangles = indices.len() / VALUES_IN_VERTEX;
+
+            for i in 0..num_triangles {
+                let j = i * VALUES_IN_VERTEX;
+
+                let index_1 = j;
+                let index_2 = j + 1;
+                let index_3 = j + 2;
+
+                // Get start index of each point
+                let p1_start = indices[index_1] as usize;
+                let p2_start = indices[index_2] as usize;
+                let p3_start = indices[index_3] as usize;
+
+                // Assemble vecs of each point
+                let p1 = Vector3::<f32>::new(
+                    vertices[p1_start],
+                    vertices[p1_start + 1],
+                    vertices[p1_start + 2],
+                );
+
+                let p2 = Vector3::<f32>::new(
+                    vertices[p2_start],
+                    vertices[p2_start + 1],
+                    vertices[p2_start + 2],
+                );
+
+                let p3 = Vector3::<f32>::new(
+                    vertices[p3_start],
+                    vertices[p3_start + 1],
+                    vertices[p3_start + 2],
+                );
+
+                triangles.push((p1, p2, p3));
+            }
+        }
+
+        let mapped_normals: Vec<(f32, f32, f32)> = triangles
+            .iter()
+            .map(|(p1, p2, p3)| calculate_surface_normal_from_triangle(*p1, *p2, *p3))
+            .collect();
+
+        normals = Vec::with_capacity(mapped_normals.len() * NORMAL_VERTEX_SIZE);
+
+        mapped_normals
+            .iter()
+            .for_each(|(normal_x, normal_y, normal_z)| {
+                normals.push(*normal_x);
+                normals.push(*normal_y);
+                normals.push(*normal_z);
+            });
+    }
+    let normals = normals;
+
     let mesh = Mesh::new(
         VALUES_IN_VERTEX,
         vertices,
         indices,
         COLOR_VERTEX_SIZE,
         colors,
+        NORMAL_VERTEX_SIZE,
+        normals,
         generated_at_frame,
     );
     return mesh;
+}
+
+fn calculate_surface_normal_from_triangle(
+    p1: Vector3<f32>,
+    p2: Vector3<f32>,
+    p3: Vector3<f32>,
+) -> (f32, f32, f32) {
+    // Referenced: https://www.khronos.org/opengl/wiki/Calculating_a_Surface_Normal
+
+    let u = p2 - p1;
+    let v = p3 - p1;
+
+    let normal_x = (u.y * v.z) - (u.z * v.y);
+    let normal_y = (u.z * v.x) - (u.x * v.z);
+    let normal_z = (u.x * v.y) - (u.y * v.x);
+
+    return (normal_x, normal_y, normal_z);
 }
 
 /// Struct used for meshing purposes
 #[derive(Debug, Copy, Clone)]
 struct VoxelFace {
     pub transparent: bool,
-    pub vf_type: CbVoxelTypes,
+    pub vf_type: u8,
     pub side: usize,
 }
 

@@ -11,23 +11,29 @@ use crate::cb_graphics;
 
 use crate::cb_voxels;
 
-mod r_voxel_meshes;
+mod r_voxel_render;
 
 pub mod render_gl;
+
+use cb_graphics::mesh;
 
 pub struct MeshBuffers {
     pub vao: gl::types::GLuint,
     pub vbo: gl::types::GLuint,
     pub ebo: gl::types::GLuint,
     pub color_buff: gl::types::GLuint,
+    pub normal_buff: gl::types::GLuint,
     pub last_calculated_frame: usize,
+    pub indices_count: usize,
 }
 
 pub struct OpenGlBackend {
     basic_mesh_program: render_gl::Program,
     chunk_mesh_buffers: Vec<MeshBuffers>,
     mvp_id: i32,
+    light_id: i32,
     frame: usize,
+    voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher,
 }
 
 impl OpenGlBackend {
@@ -56,6 +62,13 @@ impl OpenGlBackend {
             mvp_id = gl::GetUniformLocation(mesh_program.id(), mvp_str.as_ptr());
         }
 
+        // Light uniform
+        let light_str = &CString::new("cbLightPos").unwrap();
+        let light_id;
+        unsafe {
+            light_id = gl::GetUniformLocation(mesh_program.id(), light_str.as_ptr());
+        }
+
         // Backface culling
         unsafe {
             gl::Enable(gl::CULL_FACE);
@@ -68,22 +81,36 @@ impl OpenGlBackend {
 
         return Self {
             basic_mesh_program: mesh_program,
-            chunk_mesh_buffers: r_voxel_meshes::init_voxel_mesh_buffers(),
+            chunk_mesh_buffers: r_voxel_render::init_voxel_mesh_buffers(),
             mvp_id: mvp_id,
+            light_id: light_id,
             frame: 0,
+            voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher::new(),
         };
     }
 
-    pub fn render(&mut self, camera: &cb_graphics::CbCamera, game_state: &GameState) {
+    pub fn render(
+        renderer: &mut Self,
+        camera: &cb_graphics::CbCamera,
+        game_state: &GameState,
+        frame: usize,
+    ) {
         unsafe {
             gl::ClearColor(1.0, 1.0, 1.0, 0.0);
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        self.basic_mesh_program.set_used();
-        r_voxel_meshes::draw_voxel_meshes(self, camera, game_state);
+        // Draw voxels
+        {
+            // First mesh them
+            renderer
+                .voxel_mesher
+                .mesh(&game_state.chunk_manager, frame, camera);
 
-        self.frame += 1;
+            renderer.basic_mesh_program.set_used();
+            r_voxel_render::draw_voxel_meshes(renderer, camera, frame);
+        }
+        renderer.frame += 1;
     }
 }
 
@@ -137,7 +164,7 @@ fn get_proj_view(camera: &cb_graphics::CbCamera) -> (CbProjection, CbView) {
             mouse_target.z + camera.pos_z,
         );
         view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
-        proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 100.0);
+        proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 1000.0);
     }
 
     let proj: CbProjection = *proj.as_matrix();
