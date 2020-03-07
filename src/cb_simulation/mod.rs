@@ -26,13 +26,14 @@ impl RMercuryInput for CbGameInput {
         return 0;
     }
     fn set_player_id(&mut self, _: usize) {
-        unimplemented!()
+        //unimplemented!()
     }
     fn to_bits(&self) -> std::vec::Vec<u8> {
-        unimplemented!()
+        return vec![];
     }
     fn from_bits(_: std::vec::Vec<u8>) -> Self {
-        unimplemented!()
+        //unimplemented!()
+        return Self {};
     }
 }
 
@@ -46,13 +47,14 @@ impl CbGameInterface {
 
 impl RMercuryGameInterface<CbGameState, CbGameInput> for CbGameInterface {
     fn load_game_state(&mut self, _: CbGameState) {
-        unimplemented!()
+        //unimplemented!()
     }
     fn log_game_state(&self) -> std::string::String {
-        unimplemented!()
+        //unimplemented!()
+        return "hello world!".to_string();
     }
     fn advance_frame(&mut self, _: std::vec::Vec<CbGameInput>) {
-        unimplemented!()
+        //unimplemented!()
     }
     fn current_game_state(&self) -> CbGameState {
         return self.game_state;

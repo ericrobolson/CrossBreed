@@ -1,0 +1,251 @@
+{
+    id: b09fdc75-beb5-4fad-8ca5-0bf7c45984c5
+    version: 0.0.1
+    name: The Faceless One
+    state_data:[
+        {
+            id: 0
+            input_string: []
+            transition_when_complete: 0
+            title: idle                                    
+            frame_data: [
+                { 
+                    frame_duration: 1
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: true
+                    hit_boxes: [
+                        {
+                            start_x: 0
+                            start_y: 0
+                            end_x: 10
+                            end_y: 10
+                        }
+                    ]
+                    hurt_boxes: [] 
+                    push_boxes: [] 
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+            ]            
+            cancels:[1,2,3,4,5]
+        }
+        {
+            id: 1
+            input_string: []
+            transition_when_complete: 1
+            title: jump                                    
+            frame_data: []            
+            cancels:[]
+        }
+        {
+            id: 2
+            input_string: [
+                {
+                    inputs: [
+                        light_punch
+                        ]
+                }
+            ]
+            transition_when_complete: 1
+            title: neutral light punch                                    
+            frame_data: [
+                # startup
+                { 
+                    frame_duration: 5
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: []
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # active frames
+                {
+                    frame_duration: 3
+                    damage: 110
+                    stun_frames: 7
+                    advantage_on_block: 1
+                    advantage_on_hit: 2                     
+                    is_cancel_window: true
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # recovery
+                {
+                    frame_duration: 10
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+            ]            
+            cancels:[3,4,5]
+        }
+        {
+            id: 3
+            transition_when_complete: 1
+            title: neutral heavy punch                           
+            frame_data: [
+                # startup
+                { 
+                    frame_duration: 4
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: []
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # active frames
+                {
+                    frame_duration: 3
+                    damage: 130
+                    stun_frames: 15
+                    advantage_on_block: -4
+                    advantage_on_hit: -2                  
+                    is_cancel_window: true
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # recovery
+                {
+                    frame_duration: 17
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+            ]            
+            cancels:[2,4,5]
+        }
+        {
+            id: 4
+            transition_when_complete: 1
+            title: neutral light kick                
+            frame_data: [
+                # startup
+                { 
+                    frame_duration: 4
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: []
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # active frames
+                {
+                    frame_duration: 4
+                    damage: 110
+                    stun_frames: 11
+                    advantage_on_block: 4
+                    advantage_on_hit: 2                  
+                    is_cancel_window: true
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # recovery
+                {
+                    frame_duration: 11
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+            ]          
+            cancels:[2,3,5]
+        }
+        {
+            id: 5
+            transition_when_complete: 1
+            title: neutral heavy kick                
+               frame_data: [
+                # startup
+                { 
+                    frame_duration: 8
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: []
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # active frames
+                {
+                    frame_duration: 4
+                    damage: 140
+                    stun_frames: 13
+                    advantage_on_block: -3
+                    advantage_on_hit: -5                  
+                    is_cancel_window: true
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+                # recovery
+                {
+                    frame_duration: 18
+                    damage: 0
+                    stun_frames: 0
+                    advantage_on_block: 0
+                    advantage_on_hit: 0                     
+                    is_cancel_window: false
+                    hit_boxes: [] #todo
+                    hurt_boxes: [] #todo
+                    push_boxes: [] #todo
+                    grab_boxes: []
+                    throw_boxes: []
+                }
+            ]          
+            cancels:[2,3,4]
+        }
+    ]
+}

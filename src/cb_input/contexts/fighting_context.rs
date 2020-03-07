@@ -16,7 +16,7 @@ pub struct FightingContext {
 
     // Misc
     pub switch_stance: Press,
-    pub light_block: State,
+    pub parry_block: State,
 }
 
 impl FightingContext {
@@ -33,7 +33,7 @@ impl FightingContext {
             kick_heavy: Press::NotPressed,
 
             switch_stance: Press::NotPressed,
-            light_block: State::Off,
+            parry_block: State::Off,
         };
     }
 }
@@ -60,7 +60,7 @@ pub fn get_fighting_context(
     let down_keycodes = vec![Keycode::S];
     let left_keycodes = vec![Keycode::A];
     let right_keycodes = vec![Keycode::D];
-    let light_block_keycodes = vec![Keycode::O];
+    let parry_block_keycodes = vec![Keycode::O];
 
     // Press keycodes
     let punch_light_keycodes = vec![Keycode::U];
@@ -99,8 +99,8 @@ pub fn get_fighting_context(
                                 context.right = state_toggle;
                             }
 
-                            if light_block_keycodes.iter().any(|k| *k == keycode) {
-                                context.light_block = state_toggle;
+                            if parry_block_keycodes.iter().any(|k| *k == keycode) {
+                                context.parry_block = state_toggle;
                             }
                         }
 
@@ -152,8 +152,8 @@ pub fn get_fighting_context(
                                 context.right = state_toggle;
                             }
 
-                            if light_block_keycodes.iter().any(|k| *k == keycode) {
-                                context.light_block = state_toggle;
+                            if parry_block_keycodes.iter().any(|k| *k == keycode) {
+                                context.parry_block = state_toggle;
                             }
                         }
                     }
