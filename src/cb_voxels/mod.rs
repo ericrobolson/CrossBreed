@@ -12,7 +12,7 @@ use time::{Duration, Instant};
 extern crate rand;
 use rand::Rng; // TODO: replace with deterministic one
 
-pub const CHUNK_SIZE: usize = 16;
+pub const CHUNK_SIZE: usize = 8;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
@@ -20,7 +20,7 @@ pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 1.0;
 
-pub const CHUNKS: usize = 16;
+pub const CHUNKS: usize = 8;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 

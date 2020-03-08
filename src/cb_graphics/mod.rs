@@ -2,8 +2,10 @@ extern crate gl;
 extern crate sdl2;
 use sdl2::video::GLProfile;
 
-mod open_gl_backend;
+pub mod open_gl_backend;
 use open_gl_backend::OpenGlBackend;
+
+pub mod cb_collada;
 
 pub mod mesh;
 

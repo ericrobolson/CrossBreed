@@ -10,12 +10,17 @@ use cb_simulation::GameState;
 use crate::cb_graphics;
 
 use crate::cb_voxels;
+pub mod sprites;
 
+mod r_collada_render;
+use r_collada_render::CbColladaRenderer;
 mod r_voxel_render;
 
 pub mod render_gl;
 
+use cb_graphics::cb_collada;
 use cb_graphics::mesh;
+use std::path::Path;
 
 pub struct MeshBuffers {
     pub vao: gl::types::GLuint,
@@ -34,10 +39,16 @@ pub struct OpenGlBackend {
     light_id: i32,
     frame: usize,
     voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher,
+    sprite_renderer: cb_graphics::open_gl_backend::sprites::SpriteRenderer,
+    collada_renderer: CbColladaRenderer,
 }
 
 impl OpenGlBackend {
     pub fn new() -> Self {
+        // Collada renderer
+        let mut collada_renderer = CbColladaRenderer::new();
+        collada_renderer.load_collada(&Path::new("./src/assets/monkey.dae"));
+
         // Basic mesh program
         let mesh_program;
         {
@@ -54,6 +65,9 @@ impl OpenGlBackend {
         }
 
         mesh_program.set_used();
+
+        // Sprites
+        let sprite_renderer = sprites::SpriteRenderer::new();
 
         // MVP uniform
         let mvp_str = &CString::new("MVP").unwrap();
@@ -86,6 +100,8 @@ impl OpenGlBackend {
             light_id: light_id,
             frame: 0,
             voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher::new(),
+            sprite_renderer: sprite_renderer,
+            collada_renderer: collada_renderer,
         };
     }
 
@@ -100,8 +116,22 @@ impl OpenGlBackend {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        // Draw voxels
+        // Draw sprites
         {
+            renderer.sprite_renderer.render(camera, frame);
+        }
+
+        // Draw collada
+        {
+            renderer
+                .collada_renderer
+                .draw(renderer.mvp_id, camera, frame);
+        }
+
+        let draw_voxels = false;
+
+        // Draw voxels
+        if draw_voxels {
             // First mesh them
             renderer
                 .voxel_mesher
