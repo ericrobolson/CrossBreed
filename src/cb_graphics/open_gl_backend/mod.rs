@@ -128,7 +128,7 @@ impl OpenGlBackend {
                 .draw(renderer.mvp_id, camera, frame);
         }
 
-        let draw_voxels = false;
+        let draw_voxels = true;
 
         // Draw voxels
         if draw_voxels {
