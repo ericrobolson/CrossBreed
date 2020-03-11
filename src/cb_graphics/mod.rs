@@ -62,8 +62,8 @@ impl CbGfx {
         gl_attr.set_context_profile(GLProfile::Core);
         gl_attr.set_context_version(3, 2);
 
-        let window_width = 1920;
-        let window_height = 1080;
+        let window_width = 1280;
+        let window_height = 720;
 
         let window = video_subsystem
             .window("Window", window_width, window_height)

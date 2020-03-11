@@ -12,7 +12,7 @@ use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 // Internal crates
 #[macro_use]
 pub mod cb_utility;
-
+pub mod cb_cmd_line;
 pub mod cb_graphics;
 pub mod cb_input;
 pub mod cb_math;
@@ -20,9 +20,9 @@ pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
 pub mod contexts;
+use cb_cmd_line::{CbCmdMenu, CbCmdMenuOption};
 use cb_simulation::{CbGameInput, CbGameInterface, CbGameState};
 use cb_system::{GameTick, PlayerId};
-
 pub struct GameSim {}
 
 impl GameSim {
@@ -38,6 +38,22 @@ fn main() {
 }
 
 fn main_loop() {
+    let top_level_menu = CbCmdMenu::root(
+        "CrossBreed.exe - Dev Kit",
+        vec!["New Voxel Model", "Load Voxel Model", "Begin Simulation"],
+    );
+
+    top_level_menu.print();
+    let choice = top_level_menu.get_menu_choice();
+
+    if choice == "1" {
+        println!("Do Voxel Editor stuff");
+    } else if choice == "2" {
+        println!("Load Voxel Model stuff");
+    } else if choice == "3" {
+        println!("Begin Simulation stuff");
+    }
+
     // Init gfx
     let mut gfx = cb_graphics::CbGfx::new();
 

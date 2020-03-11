@@ -36,9 +36,6 @@ pub struct CbChunkManager {
 
 impl CbChunkManager {
     pub fn new() -> Self {
-        println!("Chunks init");
-        let start = Instant::now();
-
         let mut chunks: Vec<CbVoxelChunk> = (0..CHUNKS_CUBED)
             .collect::<Vec<usize>>()
             .par_iter()
@@ -47,9 +44,6 @@ impl CbChunkManager {
                 return CbVoxelChunk::new();
             })
             .collect();
-
-        println!("fin init");
-        println!("landscape begin");
 
         let noise = cb_math::Noise::new(CHUNK_SIZE);
 
@@ -65,9 +59,6 @@ impl CbChunkManager {
                 },
             );
         });
-        let end = Instant::now() - start;
-
-        println!("Chunks created in: {:?}", end);
         return Self {
             randomizer_index: 0,
             chunks: chunks,

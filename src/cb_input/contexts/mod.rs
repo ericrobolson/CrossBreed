@@ -10,3 +10,4 @@ use input_type::{Press, Range, State};
 pub mod fighting_context;
 pub mod rts_context;
 pub mod shooter_context;
+pub mod voxel_editor_context;
