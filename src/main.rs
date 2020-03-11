@@ -1,3 +1,5 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 // External crates
 extern crate gl;
 extern crate specs;

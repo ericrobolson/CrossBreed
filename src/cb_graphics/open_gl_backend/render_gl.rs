@@ -1,3 +1,5 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 extern crate gl;
 
 use std::ffi::{CStr, CString};

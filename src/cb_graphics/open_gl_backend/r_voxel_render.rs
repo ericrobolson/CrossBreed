@@ -1,3 +1,5 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 use super::*;
 
 use crate::cb_graphics::mesh;
