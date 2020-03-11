@@ -1,5 +1,5 @@
 use crate::cb_simulation;
-use cb_simulation::GameState;
+use cb_simulation::CbGameState;
 
 use crate::cb_graphics;
 

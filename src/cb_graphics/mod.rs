@@ -10,7 +10,7 @@ pub mod cb_collada;
 pub mod mesh;
 
 use crate::cb_simulation;
-use cb_simulation::GameState;
+use cb_simulation::CbGameState;
 
 pub struct CbCamera {
     pub pos_x: f32,
@@ -96,7 +96,7 @@ impl CbGfx {
         return &mut self.camera;
     }
 
-    pub fn render(&mut self, game_state: &GameState, frame: usize) {
+    pub fn render(&mut self, game_state: &CbGameState, frame: usize) {
         let cursor = sdl2::mouse::MouseState::new(self.event_pump());
 
         self.camera.cursor_x = cursor.x() as f32;

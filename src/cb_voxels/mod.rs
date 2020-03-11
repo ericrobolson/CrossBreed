@@ -27,7 +27,7 @@ pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 /// A voxel contains three pieces of info, whether it's active, it's type, and some misc values that may be used for different voxel types (such as health remaining on a block).
 pub type CbVoxel = (bool, u8, u8);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CbChunkManager {
     dirty: bool,
     randomizer_index: usize,

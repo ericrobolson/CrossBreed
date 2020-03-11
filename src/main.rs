@@ -4,7 +4,6 @@ extern crate specs;
 
 use specs::prelude::*;
 extern crate sdl2;
-use std::panic;
 
 extern crate rmercury;
 use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
@@ -20,122 +19,132 @@ pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
 pub mod contexts;
-use cb_cmd_line::{CbCmdMenu, CbCmdMenuOption};
-use cb_simulation::{CbGameInput, CbGameInterface, CbGameState};
-use cb_system::{GameTick, PlayerId};
-pub struct GameSim {}
+use cb_cmd_line::CbCmdMenu;
+use cb_simulation::{CbGameInput, CbGameState, CbSimulationInterface, CbSimulationModes};
+use cb_system::PlayerId;
 
-impl GameSim {
-    pub fn new() -> Self {
-        return GameSim {};
+fn get_top_level_menu_choice(
+    top_level_menu: CbCmdMenu,
+    voxel_editor_mode: &str,
+    simulation_mode: &str,
+) -> String {
+    top_level_menu.print();
+
+    let mut mode_choice = "-1".to_string();
+    let mut done = false;
+    while !done {
+        mode_choice = top_level_menu.get_menu_choice();
+
+        if mode_choice == voxel_editor_mode {
+            println!("Do Voxel Editor stuff");
+            done = true;
+        } else if mode_choice == simulation_mode {
+            println!("Do Sim stuff");
+            done = true;
+        } else {
+            println!("Invalid choice! Try again.");
+        }
     }
+
+    return mode_choice;
 }
 
 fn main() {
-    //NOTE: this is only for dev use, to allow panics to be caught
-    main_loop();
-    loop {}
-}
-
-fn main_loop() {
     let top_level_menu = CbCmdMenu::root(
         "CrossBreed.exe - Dev Kit",
-        vec!["New Voxel Model", "Load Voxel Model", "Begin Simulation"],
+        vec!["Voxel Model Editor", "Begin Simulation"],
     );
 
-    top_level_menu.print();
-    let choice = top_level_menu.get_menu_choice();
+    const VOXEL_EDITOR_MODE: &str = "1";
+    const SIMULATION_MODE: &str = "2";
 
-    if choice == "1" {
-        println!("Do Voxel Editor stuff");
-    } else if choice == "2" {
-        println!("Load Voxel Model stuff");
-    } else if choice == "3" {
-        println!("Begin Simulation stuff");
-    }
+    let mode_choice = get_top_level_menu_choice(top_level_menu, VOXEL_EDITOR_MODE, SIMULATION_MODE);
 
     // Init gfx
     let mut gfx = cb_graphics::CbGfx::new();
 
     // Init RMercury
-    let mut game_interface = CbGameInterface::new();
+    let mut game_interface;
+    let mut builder;
+    {
+        if mode_choice == VOXEL_EDITOR_MODE {
+            game_interface = CbSimulationInterface::new(CbSimulationModes::VoxelEditor);
+        } else {
+            game_interface = CbSimulationInterface::new(CbSimulationModes::Simulation);
+        }
 
-    let mut builder =
-        RMercuryBuilder::<CbGameInterface, CbGameInput, CbGameState>::new(&mut game_interface)
-            .with_type(MercuryType::Peer2Peer);
+        builder = RMercuryBuilder::<CbSimulationInterface, CbGameInput, CbGameState>::new(
+            &mut game_interface,
+        )
+        .with_type(MercuryType::Peer2Peer);
+    }
 
     let mut r_mercury = builder.build();
 
     // Init simulation data
-    let mut game_tick: usize = 0;
     let player_id: PlayerId = 1;
-    let mut game_state = cb_simulation::GameState::new();
+    let mut game_state = r_mercury.get_game_state();
 
-    let mut movement_context = cb_input::contexts::shooter_context::ShooterMovementContext::new();
+    let mut input_context_manager = cb_input::CbInputContextManager::new();
+
+    let mut movement_context;
 
     // Init specs
     let mut world = World::new();
     let mut dispatcher = DispatcherBuilder::new().build();
     dispatcher.setup(&mut world);
 
-    //TODO: fix up
-    //   cb_simulation::assemblages::rts_assemblages::new_unit(&mut world);
-
     loop {
-        // Get Events
-        {
-            let os_events = cb_input::get_os_inputs(gfx.event_pump());
-            movement_context = cb_input::contexts::shooter_context::get_shooter_movement_context(
-                game_tick,
-                &os_events,
-                &movement_context,
-            );
-
-            // Camera movement
-            {
-                let mut camera = gfx.camera();
-                if movement_context.move_forward == cb_input::input_type::State::On {
-                    camera.pos_x -= 0.1;
-                } else if movement_context.move_backward == cb_input::input_type::State::On {
-                    camera.pos_x += 0.1;
-                }
-
-                if movement_context.move_right == cb_input::input_type::State::On
-                    && movement_context.move_left != cb_input::input_type::State::On
-                {
-                    camera.pos_z -= 0.1;
-                } else if movement_context.move_left == cb_input::input_type::State::On
-                    && movement_context.move_right != cb_input::input_type::State::On
-                {
-                    camera.pos_z += 0.1;
-                }
-
-                if movement_context.crouching == cb_input::input_type::State::On {
-                    camera.pos_y -= 0.1;
-                } else if movement_context.running == cb_input::input_type::State::On {
-                    camera.pos_y += 0.1;
-                }
-            }
-
-            let mut local_input = vec![];
-            r_mercury.add_local_input(&mut local_input); // TODO
-        }
-
         // Update simulation
         {
-            let result = r_mercury.execute();
+            // Get Local Inputs
+            {
+                if r_mercury.ready_to_run() {
+                    let os_events = input_context_manager
+                        .get_os_inputs(r_mercury.get_current_tick(), gfx.event_pump());
 
-            if result == RMercuryExecutionResults::Executed {
-                // update game state
+                    movement_context = input_context_manager.get_shooter_movement_context();
+
+                    // Camera movement - TODO: divorce this and put it in the simulation/abstract out the camera logic
+                    {
+                        let mut camera = gfx.camera();
+                        if movement_context.move_forward == cb_input::input_type::State::On {
+                            camera.pos_x -= 0.1;
+                        } else if movement_context.move_backward == cb_input::input_type::State::On
+                        {
+                            camera.pos_x += 0.1;
+                        }
+
+                        if movement_context.move_right == cb_input::input_type::State::On
+                            && movement_context.move_left != cb_input::input_type::State::On
+                        {
+                            camera.pos_z -= 0.1;
+                        } else if movement_context.move_left == cb_input::input_type::State::On
+                            && movement_context.move_right != cb_input::input_type::State::On
+                        {
+                            camera.pos_z += 0.1;
+                        }
+
+                        if movement_context.crouching == cb_input::input_type::State::On {
+                            camera.pos_y -= 0.1;
+                        } else if movement_context.running == cb_input::input_type::State::On {
+                            camera.pos_y += 0.1;
+                        }
+                    }
+                }
+
+                let mut local_input = vec![];
+                r_mercury.add_local_input(&mut local_input); // TODO
             }
 
-            // Increment game tick
-            game_tick += 1;
+            let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are
+            if result == RMercuryExecutionResults::Executed {
+                // Update game state
+                game_state = r_mercury.get_game_state();
+            }
         }
 
         // Run gfx
-        gfx.render(&game_state, game_tick);
+        gfx.render(&game_state, r_mercury.get_current_tick());
     }
-
-    // Cleanup
 }

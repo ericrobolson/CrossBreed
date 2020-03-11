@@ -10,14 +10,6 @@ extern crate rmercury;
 use rmercury::{RMercuryGameInterface, RMercuryInput};
 
 #[derive(Debug, Copy, Clone)]
-pub struct CbGameState {}
-
-#[derive(Debug, Copy, Clone)]
-pub struct CbGameInterface {
-    game_state: CbGameState,
-}
-
-#[derive(Debug, Copy, Clone)]
 pub struct CbGameInput {}
 
 impl RMercuryInput for CbGameInput {
@@ -37,15 +29,28 @@ impl RMercuryInput for CbGameInput {
     }
 }
 
-impl CbGameInterface {
-    pub fn new() -> Self {
+#[derive(Debug, Clone)]
+pub struct CbSimulationInterface {
+    game_state: CbGameState,
+    mode: CbSimulationModes,
+}
+
+#[derive(Debug, Copy, Clone)]
+pub enum CbSimulationModes {
+    VoxelEditor,
+    Simulation,
+}
+
+impl CbSimulationInterface {
+    pub fn new(mode: CbSimulationModes) -> Self {
         return Self {
-            game_state: CbGameState {},
+            game_state: CbGameState::new(),
+            mode: mode,
         };
     }
 }
 
-impl RMercuryGameInterface<CbGameState, CbGameInput> for CbGameInterface {
+impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
     fn load_game_state(&mut self, _: CbGameState) {
         //unimplemented!()
     }
@@ -57,19 +62,19 @@ impl RMercuryGameInterface<CbGameState, CbGameInput> for CbGameInterface {
         //unimplemented!()
     }
     fn current_game_state(&self) -> CbGameState {
-        return self.game_state;
+        return self.game_state.clone();
     }
 }
 
-#[derive(Debug)]
-pub struct GameState {
+#[derive(Debug, Clone)]
+pub struct CbGameState {
     pub current_tick: GameTick,
     pub chunk_manager: cb_voxels::CbChunkManager,
 }
 
-impl GameState {
+impl CbGameState {
     pub fn new() -> Self {
-        return GameState {
+        return CbGameState {
             current_tick: 0,
             chunk_manager: cb_voxels::CbChunkManager::new(),
         };
@@ -78,7 +83,7 @@ impl GameState {
         &mut self,
         current_tick: GameTick,
         events: &Vec<CbEvent<bool>>,
-        state: &GameState,
+        state: &CbGameState,
     ) {
     }
 }

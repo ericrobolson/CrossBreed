@@ -5,7 +5,7 @@ extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
 use crate::cb_simulation;
-use cb_simulation::GameState;
+use cb_simulation::CbGameState;
 
 use crate::cb_graphics;
 
@@ -108,7 +108,7 @@ impl OpenGlBackend {
     pub fn render(
         renderer: &mut Self,
         camera: &cb_graphics::CbCamera,
-        game_state: &GameState,
+        game_state: &CbGameState,
         frame: usize,
     ) {
         unsafe {
