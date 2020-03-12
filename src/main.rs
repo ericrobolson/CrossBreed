@@ -14,15 +14,17 @@ use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 #[macro_use]
 pub mod cb_utility;
 pub mod cb_cmd_line;
+pub mod cb_data_structures;
 pub mod cb_graphics;
 pub mod cb_input;
 pub mod cb_math;
 pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
-pub mod contexts;
+
 use cb_cmd_line::CbCmdMenu;
-use cb_simulation::{CbGameInput, CbGameState, CbSimulationInterface, CbSimulationModes};
+use cb_input::{CbGameInput, CbInputContextManager};
+use cb_simulation::{CbGameState, CbSimulationInterface, CbSimulationModes};
 use cb_system::PlayerId;
 
 fn get_top_level_menu_choice(
@@ -87,7 +89,7 @@ fn main() {
     let player_id: PlayerId = 1;
     let mut game_state = r_mercury.get_game_state();
 
-    let mut input_context_manager = cb_input::CbInputContextManager::new();
+    let mut input_context_manager = CbInputContextManager::new();
 
     let mut movement_context;
 
@@ -135,8 +137,8 @@ fn main() {
                     }
                 }
 
-                let mut local_input = vec![];
-                r_mercury.add_local_input(&mut local_input); // TODO
+                let mut local_input = input_context_manager.get_rmercury_inputs();
+                r_mercury.add_local_input(&mut local_input);
             }
 
             let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are

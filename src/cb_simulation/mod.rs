@@ -11,25 +11,8 @@ pub mod components;
 extern crate rmercury;
 use rmercury::{RMercuryGameInterface, RMercuryInput};
 
-#[derive(Debug, Copy, Clone)]
-pub struct CbGameInput {}
-
-impl RMercuryInput for CbGameInput {
-    fn get_player_id(&self) -> usize {
-        //unimplemented!()
-        return 0;
-    }
-    fn set_player_id(&mut self, _: usize) {
-        //unimplemented!()
-    }
-    fn to_bits(&self) -> std::vec::Vec<u8> {
-        return vec![];
-    }
-    fn from_bits(_: std::vec::Vec<u8>) -> Self {
-        //unimplemented!()
-        return Self {};
-    }
-}
+use crate::cb_input;
+use cb_input::CbGameInput;
 
 #[derive(Debug, Clone)]
 pub struct CbSimulationInterface {

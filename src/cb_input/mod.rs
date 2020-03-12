@@ -12,6 +12,9 @@ use input_type::{Press, Range, State};
 pub mod contexts;
 use contexts::shooter_context::ShooterMovementContext;
 
+pub mod cb_input;
+pub use cb_input::CbGameInput;
+
 pub fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
     let events = event_pump.poll_iter().map(|e| e).collect();
 
@@ -52,6 +55,11 @@ impl CbInputContextManager {
         self.previous_shooter_movement_context = movement_ctx;
 
         return movement_ctx;
+    }
+
+    pub fn get_rmercury_inputs(&self) -> Vec<CbGameInput> {
+        // unimplemented!()
+        return vec![];
     }
 
     pub fn add_context(&mut self) {}
