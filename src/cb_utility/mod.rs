@@ -27,3 +27,13 @@ macro_rules! let_mut_for{
             )*
         };
     }
+
+/// Declare multiple constant values, starting from zero and incrementing for each item.
+#[macro_export]
+macro_rules! const_identities{
+     ( ($( $i:ident ),*), $type:ty) => {
+            $(
+                 const $i: $type = 0;
+            )*
+        };
+    }

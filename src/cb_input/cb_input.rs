@@ -4,16 +4,22 @@ use rmercury::{RMercuryGameInterface, RMercuryInput};
 use super::*;
 use input_type::{Press, Range, State};
 
-use crate::cb_data_structures;
-use cb_data_structures::CbLinkedList;
+use contexts::CbContextManager;
+
+const MAX_NUM_ACTIVE_CONTEXTS: usize = 10;
+
+#[derive(Debug, Copy, Clone)]
+pub struct CbGameInputWrapper<T> {
+    pub context_id: usize, //NOTE: usize may be too large for networking; may need to revisit to something smaller?
+    pub action_id: usize, //NOTE: usize may be too large for networking; may need to revisit to something smaller?
+    pub networked: bool,
+    pub input: T,
+}
 
 #[derive(Debug, Copy, Clone)]
 pub struct CbGameInput {
     player_id: usize,
-    context_id: u8,
-    states: Option<CbLinkedList<State>>,
-    presses: Option<CbLinkedList<Press>>,
-    ranges: Option<CbLinkedList<Range>>,
+    context_manager: CbContextManager,
 }
 
 impl RMercuryInput for CbGameInput {
@@ -28,24 +34,18 @@ impl RMercuryInput for CbGameInput {
         let mut bits = vec![];
 
         // Unimplemented!
+        let ctx_mgr_bits = self.context_manager.to_bits();
 
         return bits;
     }
     fn from_bits(bits: std::vec::Vec<u8>) -> Self {
         let player_id = 0;
         let context_id = 0;
-        let states = None;
-        let presses = None;
-        let ranges = None;
-
         // Unimplemented!
 
         return Self {
             player_id: player_id,
-            context_id: context_id,
-            states: states,
-            presses: presses,
-            ranges: ranges,
+            context_manager: CbContextManager::from_bits(bits),
         };
     }
 }
