@@ -68,13 +68,21 @@ fn main() {
     let mut gfx = cb_graphics::CbGfx::new();
 
     // Init RMercury
+    let mut input_context_manager = CbInputContextManager::new();
+
     let mut game_interface;
     let mut builder;
     {
         if mode_choice == VOXEL_EDITOR_MODE {
             game_interface = CbSimulationInterface::new(CbSimulationModes::VoxelEditor);
+            gfx.reset_cursor = false;
+
+            input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
         } else {
             game_interface = CbSimulationInterface::new(CbSimulationModes::Simulation);
+            gfx.reset_cursor = true;
+
+            input_context_manager.add_context(cb_input::contexts::SHOOTER_CONTEXT_ID);
         }
 
         builder = RMercuryBuilder::<CbSimulationInterface, CbGameInput, CbGameState>::new(
@@ -88,8 +96,6 @@ fn main() {
     // Init simulation data
     let player_id: PlayerId = 1;
     let mut game_state = r_mercury.get_game_state();
-
-    let mut input_context_manager = CbInputContextManager::new();
 
     // Init specs
     let mut world = World::new();
@@ -118,7 +124,7 @@ fn main() {
 
             let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are
             if result == RMercuryExecutionResults::Executed {
-                // Update game state for rendererw
+                // Update game state for renderer
                 game_state = r_mercury.get_game_state();
             }
         }

@@ -27,11 +27,6 @@ version = "0.33.0"
 features = ["bundled"]
 
 
-[dependencies.sdl2-sys]
-version = "0.33.0"
-features = ["bundled"]
-
-
 [features]
 specs_ecs = [] # TODO: add in specs as a dependency in case there's platform specific compile errors
 

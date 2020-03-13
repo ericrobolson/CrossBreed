@@ -14,18 +14,6 @@ pub mod rts_context;
 pub mod shooter_context;
 pub mod voxel_editor_context;
 
-/*
-
-note: was considering using OOP for the contexts, but instead decided to experiment with an enum based approach as I can leverage pattern matching. 2020/03/12
-
-trait CbContextDeserializable {
-    fn from_context_id(context_id: usize) -> Self;
-}
-
-trait CbContextSerializable {
-    fn to_context_id(&self) -> usize;
-}
-*/
 #[derive(Debug, Copy, Clone)]
 pub enum Networked {
     On,
@@ -71,17 +59,23 @@ pub enum CbInputContexts {
         look_x: Range,
         look_y: Range,
     },
+    VoxelEditorContext {
+        networked: Networked,
+        look_x: Range,
+        look_y: Range,
+    },
 }
 
-type ContextId = u8;
+pub type ContextId = u8;
 
 //NOTE: ALWAYS ADD TO THE END TO PRESERVE BACKWARDS COMPATIBILITY!!!!
-const_identities![
+pub_const_identities![
     (
         EMPTY_CONTENTS,
         FIGHTING_CONTEXT_ID,
         RTS_CONTEXT_ID,
-        SHOOTER_CONTEXT_ID
+        SHOOTER_CONTEXT_ID,
+        VOXEL_EDITOR_CONTEXT_ID
     ),
     ContextId
 ];
@@ -125,6 +119,11 @@ pub fn get_context_id_from_context(context: CbInputContexts) -> ContextId {
             look_x: _,
             look_y: _,
         } => SHOOTER_CONTEXT_ID,
+        CbInputContexts::VoxelEditorContext {
+            networked: _,
+            look_x: _,
+            look_y: _,
+        } => VOXEL_EDITOR_CONTEXT_ID,
     }
 }
 
@@ -144,6 +143,23 @@ impl CbContextManager {
 
     pub fn get_contexts(&self) -> &[Option<CbInputContexts>; NUM_ACTIVE_CONTEXTS] {
         return &self.contexts;
+    }
+
+    pub fn get_context(&self, context_id: ContextId) -> Option<CbInputContexts> {
+        for ctx in self.contexts.iter() {
+            if ctx.is_none() {
+                continue;
+            }
+
+            let ctx = ctx.unwrap();
+
+            let id = get_context_id_from_context(ctx);
+
+            if id == context_id {
+                return Some(ctx);
+            }
+        }
+        return None;
     }
 
     pub fn add_context(&mut self, context: CbInputContexts) {

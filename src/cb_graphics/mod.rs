@@ -3,7 +3,6 @@
 extern crate gl;
 extern crate sdl2;
 use sdl2::video::GLProfile;
-extern crate sdl2_sys;
 
 pub mod open_gl_backend;
 use open_gl_backend::OpenGlBackend;

@@ -10,7 +10,9 @@ pub mod input_type;
 use input_type::{Press, Range, State};
 
 pub mod contexts;
-use contexts::CbInputContexts;
+use contexts::{
+    CbContextManager, CbInputContexts, ContextId, SHOOTER_CONTEXT_ID, VOXEL_EDITOR_CONTEXT_ID,
+};
 
 pub mod cb_input;
 pub use cb_input::CbGameInput;
@@ -25,16 +27,28 @@ fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
 }
 
 pub struct CbInputContextManager {
-    current_frame_inputs: Vec<sdl2::event::Event>,
-    previous_context: Option<CbInputContexts>,
+    active_contexts: Vec<ContextId>,
+    previous_context: Option<CbContextManager>,
 }
 
 impl CbInputContextManager {
     pub fn new() -> Self {
         return Self {
-            current_frame_inputs: vec![],
             previous_context: None,
+            active_contexts: vec![],
         };
+    }
+
+    pub fn add_context(&mut self, context_id: ContextId) {
+        let already_active_context = self.active_contexts.iter().find(|x| **x == context_id);
+
+        if already_active_context.is_none() {
+            self.active_contexts.push(context_id);
+        }
+    }
+
+    pub fn remove_context(&mut self, context_id: ContextId) {
+        self.active_contexts.retain(|i| *i != context_id);
     }
 
     pub fn read_os_inputs(&mut self, event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
@@ -44,25 +58,31 @@ impl CbInputContextManager {
     }
 
     pub fn get_rmercury_inputs(&mut self, input_interface: &Sdl2HardwareInterface) -> CbGameInput {
-        let shooter_context;
-        if self.previous_context.is_none() {
-            shooter_context = None;
-        } else {
-            shooter_context = Some(self.previous_context.unwrap());
+        let mut ctx_mgr = contexts::CbContextManager::new();
+
+        for active_context in self.active_contexts.iter() {
+            // SHOOTER CONTEXT
+            if *active_context == SHOOTER_CONTEXT_ID {
+                let shooter_context = contexts::shooter_context::get_shooter_context_from_keys(
+                    &input_interface,
+                    self.previous_context,
+                );
+
+                ctx_mgr.add_context(shooter_context);
+            }
+            // VOXEL EDITOR CONTEXT
+            else if *active_context == VOXEL_EDITOR_CONTEXT_ID {
+                let voxel_editor_context =
+                    contexts::voxel_editor_context::get_voxel_editor_context_from_keys(
+                        &input_interface,
+                        self.previous_context,
+                    );
+
+                ctx_mgr.add_context(voxel_editor_context);
+            }
         }
 
-        // TODO: need to fix this; not quite sure if this should be managed in this class?
-        let shooter_context = contexts::shooter_context::get_shooter_context_from_keys(
-            &input_interface,
-            shooter_context,
-        );
-
-        // Note: each input has one context manager, but can have many contexts
-
-        let mut ctx_mgr = contexts::CbContextManager::new();
-        ctx_mgr.add_context(shooter_context);
-
-        self.previous_context = Some(shooter_context);
+        self.previous_context = Some(ctx_mgr);
 
         let game_input = CbGameInput::new(1, ctx_mgr);
 

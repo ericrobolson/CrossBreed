@@ -23,13 +23,22 @@ fn new_shooter_context() -> CbInputContexts {
 
 pub fn get_shooter_context_from_keys(
     hardware: &Sdl2HardwareInterface,
-    previous_context: Option<CbInputContexts>,
+    previous_context: Option<CbContextManager>,
 ) -> CbInputContexts {
-    let mut ctx;
+    let ctx;
     if previous_context.is_none() {
         ctx = new_shooter_context();
     } else {
-        ctx = previous_context.unwrap();
+        // Attempt to find the previous context and use that, otherwise use a new one
+        let prev_mgr = previous_context.unwrap();
+
+        let c = prev_mgr.get_context(SHOOTER_CONTEXT_ID);
+
+        if c.is_some() {
+            ctx = c.unwrap();
+        } else {
+            ctx = new_shooter_context();
+        }
     }
 
     let mut new_jump = Press::NotPressed;

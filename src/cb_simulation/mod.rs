@@ -67,30 +67,40 @@ impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
                     } => {
                         // Camera movement - TODO: abstract out the camera logic
                         {
+                            const move_speed: i32 = 5;
+
                             if move_f == cb_input::input_type::State::On {
-                                self.game_state.camera_pos_x -= 1;
+                                self.game_state.camera_pos_x -= move_speed;
                             } else if move_b == cb_input::input_type::State::On {
-                                self.game_state.camera_pos_x += 1;
+                                self.game_state.camera_pos_x += move_speed;
                             }
 
                             if move_r == cb_input::input_type::State::On
                                 && move_l != cb_input::input_type::State::On
                             {
-                                self.game_state.camera_pos_z -= 1;
+                                self.game_state.camera_pos_z -= move_speed;
                             } else if move_l == cb_input::input_type::State::On
                                 && move_r != cb_input::input_type::State::On
                             {
-                                self.game_state.camera_pos_z += 1;
+                                self.game_state.camera_pos_z += move_speed;
                             }
 
                             if crouching == cb_input::input_type::State::On {
-                                self.game_state.camera_pos_y -= 1;
+                                self.game_state.camera_pos_y -= move_speed;
                             } else if running == cb_input::input_type::State::On {
-                                self.game_state.camera_pos_y += 1;
+                                self.game_state.camera_pos_y += move_speed;
                             }
                             self.game_state.mouse_look_x = look_x.value;
                             self.game_state.mouse_look_y = look_y.value;
                         }
+                    }
+                    cb_input::contexts::CbInputContexts::VoxelEditorContext {
+                        networked: _,
+                        look_x: look_x,
+                        look_y: look_y,
+                    } => {
+                        self.game_state.mouse_look_x = look_x.value;
+                        self.game_state.mouse_look_y = look_y.value;
                     }
                     _ => {}
                 }
