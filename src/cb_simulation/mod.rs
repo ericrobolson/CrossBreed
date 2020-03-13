@@ -62,8 +62,10 @@ impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
                         move_backward: move_b,
                         move_left: move_l,
                         move_right: move_r,
+                        look_x: look_x,
+                        look_y: look_y,
                     } => {
-                        // Camera movement - TODO: divorce this and put it in the simulation/abstract out the camera logic
+                        // Camera movement - TODO: abstract out the camera logic
                         {
                             if move_f == cb_input::input_type::State::On {
                                 println!("moved forward");
@@ -87,6 +89,8 @@ impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
                             } else if running == cb_input::input_type::State::On {
                                 self.game_state.camera_pos_y += 1;
                             }
+                            self.game_state.mouse_look_x = look_x.value;
+                            self.game_state.mouse_look_y = look_y.value;
                         }
                     }
                     _ => {}
@@ -104,6 +108,8 @@ impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
 pub struct CbGameState {
     pub current_tick: GameTick,
     pub chunk_manager: cb_voxels::CbChunkManager,
+    pub mouse_look_x: i32,
+    pub mouse_look_y: i32,
     pub camera_pos_x: i32,
     pub camera_pos_y: i32,
     pub camera_pos_z: i32,
@@ -117,13 +123,8 @@ impl CbGameState {
             camera_pos_x: 0,
             camera_pos_y: 0,
             camera_pos_z: 0,
+            mouse_look_x: 0,
+            mouse_look_y: 0,
         };
-    }
-    pub fn update_simulation(
-        &mut self,
-        current_tick: GameTick,
-        events: &Vec<CbEvent<bool>>,
-        state: &CbGameState,
-    ) {
     }
 }

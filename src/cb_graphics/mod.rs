@@ -14,6 +14,29 @@ pub mod mesh;
 use crate::cb_simulation;
 use cb_simulation::CbGameState;
 
+/// A class that is meant to congregate all platform specific code that interacts with the logic layers, so that it can easily be refactored/swapped out later on.
+/// Eventually will switch over to a trait based system when cross-platform begins.
+pub struct Sdl2HardwareInterface<'a> {
+    pub events: &'a Vec<sdl2::event::Event>,
+    pub pump: &'a sdl2::EventPump,
+}
+
+impl<'a> Sdl2HardwareInterface<'a> {
+    pub fn new(events: &'a Vec<sdl2::event::Event>, pump: &'a sdl2::EventPump) -> Self {
+        return Self {
+            events: events,
+            pump: pump,
+        };
+    }
+
+    pub fn from_gfx(gfx: &'a CbGfx, events: &'a Vec<sdl2::event::Event>) -> Self {
+        return Self {
+            events: events,
+            pump: &gfx.event_pump,
+        };
+    }
+}
+
 pub struct CbCamera {
     pub pos_x: f32,
     pub pos_y: f32,
@@ -90,7 +113,7 @@ impl CbGfx {
         };
     }
 
-    pub fn event_pump(&mut self) -> &mut sdl2::EventPump {
+    pub fn event_pump_mut(&mut self) -> &mut sdl2::EventPump {
         return &mut self.event_pump;
     }
 
@@ -99,14 +122,12 @@ impl CbGfx {
     }
 
     pub fn render(&mut self, game_state: &CbGameState, frame: usize) {
-        let cursor = sdl2::mouse::MouseState::new(self.event_pump());
+        self.camera.cursor_x = game_state.mouse_look_x as f32;
+        self.camera.cursor_y = game_state.mouse_look_y as f32;
 
-        self.camera.cursor_x = cursor.x() as f32;
-        self.camera.cursor_y = cursor.y() as f32;
-
-        self.camera.pos_x = (game_state.camera_pos_x as f32) / 10.0;
-        self.camera.pos_y = (game_state.camera_pos_y as f32) / 10.0;
-        self.camera.pos_z = (game_state.camera_pos_z as f32) / 10.0;
+        self.camera.pos_x = (game_state.camera_pos_x as f32) / 100.0;
+        self.camera.pos_y = (game_state.camera_pos_y as f32) / 100.0;
+        self.camera.pos_z = (game_state.camera_pos_z as f32) / 100.0;
 
         OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, frame);
         self.window.gl_swap_window();

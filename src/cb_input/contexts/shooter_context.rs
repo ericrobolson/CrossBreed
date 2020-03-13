@@ -2,6 +2,9 @@
 
 use super::*;
 
+use crate::cb_graphics;
+use cb_graphics::Sdl2HardwareInterface;
+
 fn new_shooter_context() -> CbInputContexts {
     return CbInputContexts::ShooterContext {
         networked: Networked::On,
@@ -13,11 +16,13 @@ fn new_shooter_context() -> CbInputContexts {
         move_backward: State::Off,
         move_left: State::Off,
         move_right: State::Off,
+        look_x: Range::new(0),
+        look_y: Range::new(0),
     };
 }
 
 pub fn get_shooter_context_from_keys(
-    events: &Vec<sdl2::event::Event>,
+    hardware: &Sdl2HardwareInterface,
     previous_context: Option<CbInputContexts>,
 ) -> CbInputContexts {
     let mut ctx;
@@ -43,6 +48,9 @@ pub fn get_shooter_context_from_keys(
         State::Off
     ];
 
+    let mut look_x = Range::new(0);
+    let mut look_y = Range::new(0);
+
     match ctx {
         CbInputContexts::ShooterContext {
             networked: _,
@@ -54,8 +62,13 @@ pub fn get_shooter_context_from_keys(
             move_backward: _,
             move_left: _,
             move_right: _,
+            look_x: ctx_look_x,
+            look_y: ctx_look_y,
         } => {
-            for event in events {
+            look_x = ctx_look_x;
+            look_y = ctx_look_y;
+
+            for event in hardware.events {
                 match event {
                     Event::Quit { .. }
                     | Event::KeyDown {
@@ -164,6 +177,12 @@ pub fn get_shooter_context_from_keys(
         _ => {}
     }
 
+    // Now apply cursor movements
+    let cursor = sdl2::mouse::MouseState::new(hardware.pump);
+
+    look_x.value = cursor.x();
+    look_y.value = cursor.y();
+
     return CbInputContexts::ShooterContext {
         networked: Networked::On,
         jump: new_jump,
@@ -174,5 +193,7 @@ pub fn get_shooter_context_from_keys(
         move_backward: new_move_backward,
         move_left: new_move_left,
         move_right: new_move_right,
+        look_x: look_x,
+        look_y: look_y,
     };
 }

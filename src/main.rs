@@ -101,16 +101,19 @@ fn main() {
         {
             // Get Local Inputs
             if r_mercury.ready_to_run() {
-                input_context_manager
-                    .read_os_inputs(r_mercury.get_current_tick(), gfx.event_pump());
+                let current_frame_inputs =
+                    input_context_manager.read_os_inputs(gfx.event_pump_mut());
 
-                let local_input = input_context_manager.get_rmercury_inputs();
+                let hardware_interface =
+                    cb_graphics::Sdl2HardwareInterface::from_gfx(&gfx, &current_frame_inputs);
+
+                let local_input = input_context_manager.get_rmercury_inputs(&hardware_interface);
                 r_mercury.add_local_input(&mut vec![local_input]);
             }
 
             let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are
             if result == RMercuryExecutionResults::Executed {
-                // Update game state
+                // Update game state for rendererw
                 game_state = r_mercury.get_game_state();
             }
         }

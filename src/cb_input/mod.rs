@@ -15,6 +15,9 @@ use contexts::CbInputContexts;
 pub mod cb_input;
 pub use cb_input::CbGameInput;
 
+use crate::cb_graphics;
+use cb_graphics::Sdl2HardwareInterface;
+
 fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
     let events = event_pump.poll_iter().map(|e| e).collect();
 
@@ -23,7 +26,6 @@ fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
 
 pub struct CbInputContextManager {
     current_frame_inputs: Vec<sdl2::event::Event>,
-    current_tick: usize,
     previous_context: Option<CbInputContexts>,
 }
 
@@ -31,21 +33,17 @@ impl CbInputContextManager {
     pub fn new() -> Self {
         return Self {
             current_frame_inputs: vec![],
-            current_tick: 0,
             previous_context: None,
         };
     }
 
-    pub fn reset(&mut self) {
-        self.current_frame_inputs.clear();
+    pub fn read_os_inputs(&mut self, event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
+        let current_frame_inputs = get_os_inputs(event_pump);
+
+        return current_frame_inputs;
     }
 
-    pub fn read_os_inputs(&mut self, game_tick: usize, event_pump: &mut sdl2::EventPump) {
-        self.current_tick = game_tick;
-        self.current_frame_inputs = get_os_inputs(event_pump);
-    }
-
-    pub fn get_rmercury_inputs(&mut self) -> CbGameInput {
+    pub fn get_rmercury_inputs(&mut self, input_interface: &Sdl2HardwareInterface) -> CbGameInput {
         let shooter_context;
         if self.previous_context.is_none() {
             shooter_context = None;
@@ -53,8 +51,9 @@ impl CbInputContextManager {
             shooter_context = Some(self.previous_context.unwrap());
         }
 
+        // TODO: need to fix this; not quite sure if this should be managed in this class?
         let shooter_context = contexts::shooter_context::get_shooter_context_from_keys(
-            &self.current_frame_inputs,
+            &input_interface,
             shooter_context,
         );
 
@@ -67,6 +66,4 @@ impl CbInputContextManager {
 
         return game_input;
     }
-
-    pub fn add_context(&mut self) {}
 }

@@ -68,6 +68,8 @@ pub enum CbInputContexts {
         move_backward: State,
         move_left: State,
         move_right: State,
+        look_x: Range,
+        look_y: Range,
     },
 }
 
@@ -120,6 +122,8 @@ pub fn get_context_id_from_context(context: CbInputContexts) -> ContextId {
             move_backward: _,
             move_left: _,
             move_right: _,
+            look_x: _,
+            look_y: _,
         } => SHOOTER_CONTEXT_ID,
     }
 }
