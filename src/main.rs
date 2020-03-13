@@ -91,8 +91,6 @@ fn main() {
 
     let mut input_context_manager = CbInputContextManager::new();
 
-    let mut movement_context;
-
     // Init specs
     let mut world = World::new();
     let mut dispatcher = DispatcherBuilder::new().build();
@@ -102,43 +100,12 @@ fn main() {
         // Update simulation
         {
             // Get Local Inputs
-            {
-                if r_mercury.ready_to_run() {
-                    let os_events = input_context_manager
-                        .get_os_inputs(r_mercury.get_current_tick(), gfx.event_pump());
+            if r_mercury.ready_to_run() {
+                input_context_manager
+                    .read_os_inputs(r_mercury.get_current_tick(), gfx.event_pump());
 
-                    movement_context = input_context_manager.get_shooter_movement_context();
-
-                    // Camera movement - TODO: divorce this and put it in the simulation/abstract out the camera logic
-                    {
-                        let mut camera = gfx.camera();
-                        if movement_context.move_forward == cb_input::input_type::State::On {
-                            camera.pos_x -= 0.1;
-                        } else if movement_context.move_backward == cb_input::input_type::State::On
-                        {
-                            camera.pos_x += 0.1;
-                        }
-
-                        if movement_context.move_right == cb_input::input_type::State::On
-                            && movement_context.move_left != cb_input::input_type::State::On
-                        {
-                            camera.pos_z -= 0.1;
-                        } else if movement_context.move_left == cb_input::input_type::State::On
-                            && movement_context.move_right != cb_input::input_type::State::On
-                        {
-                            camera.pos_z += 0.1;
-                        }
-
-                        if movement_context.crouching == cb_input::input_type::State::On {
-                            camera.pos_y -= 0.1;
-                        } else if movement_context.running == cb_input::input_type::State::On {
-                            camera.pos_y += 0.1;
-                        }
-                    }
-                }
-
-                let mut local_input = input_context_manager.get_rmercury_inputs();
-                r_mercury.add_local_input(&mut local_input);
+                let local_input = input_context_manager.get_rmercury_inputs();
+                r_mercury.add_local_input(&mut vec![local_input]);
             }
 
             let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are

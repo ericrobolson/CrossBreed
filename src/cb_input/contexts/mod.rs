@@ -46,6 +46,8 @@ pub enum CbInputContexts {
         kick_heavy: Press,
     },
     RtsContext {
+        networked: Networked,
+
         select: Press,
         target: Press,
         cancel: Press,
@@ -56,13 +58,29 @@ pub enum CbInputContexts {
         cursor_x: Range,
         cursor_y: Range,
     },
+    ShooterContext {
+        networked: Networked,
+        jump: Press,
+        crouching: State,
+        running: State,
+        prone: State,
+        move_forward: State,
+        move_backward: State,
+        move_left: State,
+        move_right: State,
+    },
 }
 
 type ContextId = u8;
 
 //NOTE: ALWAYS ADD TO THE END TO PRESERVE BACKWARDS COMPATIBILITY!!!!
 const_identities![
-    (EMPTY_CONTENTS, FIGHTING_CONTEXT_ID, RTS_CONTEXT_ID),
+    (
+        EMPTY_CONTENTS,
+        FIGHTING_CONTEXT_ID,
+        RTS_CONTEXT_ID,
+        SHOOTER_CONTEXT_ID
+    ),
     ContextId
 ];
 //END NOTE
@@ -81,6 +99,7 @@ pub fn get_context_id_from_context(context: CbInputContexts) -> ContextId {
             kick_heavy: _,
         } => FIGHTING_CONTEXT_ID,
         CbInputContexts::RtsContext {
+            networked: _,
             select: _,
             target: _,
             cancel: _,
@@ -91,6 +110,17 @@ pub fn get_context_id_from_context(context: CbInputContexts) -> ContextId {
             cursor_x: _,
             cursor_y: _,
         } => RTS_CONTEXT_ID,
+        CbInputContexts::ShooterContext {
+            networked: _,
+            jump: _,
+            crouching: _,
+            running: _,
+            prone: _,
+            move_forward: _,
+            move_backward: _,
+            move_left: _,
+            move_right: _,
+        } => SHOOTER_CONTEXT_ID,
     }
 }
 
@@ -102,8 +132,18 @@ pub struct CbContextManager {
 }
 
 impl CbContextManager {
-    fn get_contexts(&self) -> &[Option<CbInputContexts>; NUM_ACTIVE_CONTEXTS] {
+    pub fn new() -> Self {
+        return Self {
+            contexts: [None; NUM_ACTIVE_CONTEXTS],
+        };
+    }
+
+    pub fn get_contexts(&self) -> &[Option<CbInputContexts>; NUM_ACTIVE_CONTEXTS] {
         return &self.contexts;
+    }
+
+    pub fn add_context(&mut self, context: CbInputContexts) {
+        self.contexts[0] = Some(context);
     }
 
     pub fn to_bits(&self) -> Vec<u8> {

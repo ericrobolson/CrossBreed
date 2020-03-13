@@ -10,12 +10,12 @@ pub mod input_type;
 use input_type::{Press, Range, State};
 
 pub mod contexts;
-use contexts::shooter_context::ShooterMovementContext;
+use contexts::CbInputContexts;
 
 pub mod cb_input;
 pub use cb_input::CbGameInput;
 
-pub fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
+fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
     let events = event_pump.poll_iter().map(|e| e).collect();
 
     return events;
@@ -24,7 +24,7 @@ pub fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event
 pub struct CbInputContextManager {
     current_frame_inputs: Vec<sdl2::event::Event>,
     current_tick: usize,
-    previous_shooter_movement_context: ShooterMovementContext,
+    previous_context: Option<CbInputContexts>,
 }
 
 impl CbInputContextManager {
@@ -32,7 +32,7 @@ impl CbInputContextManager {
         return Self {
             current_frame_inputs: vec![],
             current_tick: 0,
-            previous_shooter_movement_context: ShooterMovementContext::new(),
+            previous_context: None,
         };
     }
 
@@ -40,26 +40,32 @@ impl CbInputContextManager {
         self.current_frame_inputs.clear();
     }
 
-    pub fn get_os_inputs(&mut self, game_tick: usize, event_pump: &mut sdl2::EventPump) {
+    pub fn read_os_inputs(&mut self, game_tick: usize, event_pump: &mut sdl2::EventPump) {
         self.current_tick = game_tick;
         self.current_frame_inputs = get_os_inputs(event_pump);
     }
 
-    pub fn get_shooter_movement_context(&mut self) -> ShooterMovementContext {
-        let movement_ctx = ShooterMovementContext::get_shooter_movement_context(
-            self.current_tick,
+    pub fn get_rmercury_inputs(&mut self) -> CbGameInput {
+        let shooter_context;
+        if self.previous_context.is_none() {
+            shooter_context = None;
+        } else {
+            shooter_context = Some(self.previous_context.unwrap());
+        }
+
+        let shooter_context = contexts::shooter_context::get_shooter_context_from_keys(
             &self.current_frame_inputs,
-            &self.previous_shooter_movement_context,
+            shooter_context,
         );
 
-        self.previous_shooter_movement_context = movement_ctx;
+        // Note: each input has one context manager, but can have many contexts
 
-        return movement_ctx;
-    }
+        let mut ctx_mgr = contexts::CbContextManager::new();
+        ctx_mgr.add_context(shooter_context);
 
-    pub fn get_rmercury_inputs(&self) -> Vec<CbGameInput> {
-        // unimplemented!()
-        return vec![];
+        let game_input = CbGameInput::new(1, ctx_mgr);
+
+        return game_input;
     }
 
     pub fn add_context(&mut self) {}

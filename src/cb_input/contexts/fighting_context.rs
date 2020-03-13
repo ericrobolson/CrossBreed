@@ -173,9 +173,4 @@ pub fn get_fighting_context_from_keys(
         kick_light: new_kick_light,
         kick_heavy: new_kick_heavy,
     };
-    /*
-
-
-    return context;
-    */
 }

@@ -19,7 +19,16 @@ pub struct CbGameInputWrapper<T> {
 #[derive(Debug, Copy, Clone)]
 pub struct CbGameInput {
     player_id: usize,
-    context_manager: CbContextManager,
+    pub context_manager: CbContextManager,
+}
+
+impl CbGameInput {
+    pub fn new(player_id: usize, context_manager: CbContextManager) -> Self {
+        return Self {
+            player_id: player_id,
+            context_manager: context_manager,
+        };
+    }
 }
 
 impl RMercuryInput for CbGameInput {

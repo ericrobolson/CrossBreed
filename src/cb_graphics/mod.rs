@@ -104,6 +104,10 @@ impl CbGfx {
         self.camera.cursor_x = cursor.x() as f32;
         self.camera.cursor_y = cursor.y() as f32;
 
+        self.camera.pos_x = (game_state.camera_pos_x as f32) / 10.0;
+        self.camera.pos_y = (game_state.camera_pos_y as f32) / 10.0;
+        self.camera.pos_z = (game_state.camera_pos_z as f32) / 10.0;
+
         OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, frame);
         self.window.gl_swap_window();
 
