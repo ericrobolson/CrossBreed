@@ -68,7 +68,6 @@ impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
                         // Camera movement - TODO: abstract out the camera logic
                         {
                             if move_f == cb_input::input_type::State::On {
-                                println!("moved forward");
                                 self.game_state.camera_pos_x -= 1;
                             } else if move_b == cb_input::input_type::State::On {
                                 self.game_state.camera_pos_x += 1;

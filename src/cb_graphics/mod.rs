@@ -3,6 +3,7 @@
 extern crate gl;
 extern crate sdl2;
 use sdl2::video::GLProfile;
+extern crate sdl2_sys;
 
 pub mod open_gl_backend;
 use open_gl_backend::OpenGlBackend;
@@ -19,20 +20,19 @@ use cb_simulation::CbGameState;
 pub struct Sdl2HardwareInterface<'a> {
     pub events: &'a Vec<sdl2::event::Event>,
     pub pump: &'a sdl2::EventPump,
+    pub window_width: i32,
+    pub window_height: i32,
+    pub reset_cursor: bool,
 }
 
 impl<'a> Sdl2HardwareInterface<'a> {
-    pub fn new(events: &'a Vec<sdl2::event::Event>, pump: &'a sdl2::EventPump) -> Self {
-        return Self {
-            events: events,
-            pump: pump,
-        };
-    }
-
     pub fn from_gfx(gfx: &'a CbGfx, events: &'a Vec<sdl2::event::Event>) -> Self {
         return Self {
             events: events,
             pump: &gfx.event_pump,
+            window_width: gfx.window_width,
+            window_height: gfx.window_height,
+            reset_cursor: gfx.reset_cursor,
         };
     }
 }
@@ -68,12 +68,15 @@ impl CbCamera {
 
 #[allow(dead_code)]
 pub struct CbGfx {
+    window_width: i32,
+    window_height: i32,
     sdl_context: sdl2::Sdl,
     event_pump: sdl2::EventPump,
     window: sdl2::video::Window,
     gl_context: sdl2::video::GLContext, // Need this to keep the OpenGL context active
     gl_backend: OpenGlBackend,
     camera: CbCamera,
+    pub reset_cursor: bool,
 }
 
 impl CbGfx {
@@ -104,6 +107,9 @@ impl CbGfx {
         let gl_backend = OpenGlBackend::new();
 
         return Self {
+            reset_cursor: true,
+            window_width: window_width as i32,
+            window_height: window_height as i32,
             sdl_context: sdl_context,
             event_pump: event_pump,
             window: window,
@@ -115,6 +121,15 @@ impl CbGfx {
 
     pub fn event_pump_mut(&mut self) -> &mut sdl2::EventPump {
         return &mut self.event_pump;
+    }
+
+    pub fn center_mouse(&mut self) {
+        let x = self.window_width / 2;
+        let y = self.window_height / 2;
+        let null_ptr = std::ptr::null_mut();
+        unsafe {
+            sdl2::sys::SDL_WarpMouseInWindow(null_ptr, x, y);
+        }
     }
 
     pub fn camera(&mut self) -> &mut CbCamera {
@@ -131,7 +146,5 @@ impl CbGfx {
 
         OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, frame);
         self.window.gl_swap_window();
-
-        // sdl2::sys::SDL_WarpMouseInWindow(&mut self.window.as_ptr());
     }
 }

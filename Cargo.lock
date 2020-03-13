@@ -147,6 +147,7 @@ dependencies = [
  "rayon",
  "rmercury",
  "sdl2",
+ "sdl2-sys",
  "specs",
  "time",
 ]

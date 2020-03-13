@@ -62,6 +62,8 @@ impl CbInputContextManager {
         let mut ctx_mgr = contexts::CbContextManager::new();
         ctx_mgr.add_context(shooter_context);
 
+        self.previous_context = Some(shooter_context);
+
         let game_input = CbGameInput::new(1, ctx_mgr);
 
         return game_input;

@@ -109,6 +109,11 @@ fn main() {
 
                 let local_input = input_context_manager.get_rmercury_inputs(&hardware_interface);
                 r_mercury.add_local_input(&mut vec![local_input]);
+
+                let center_mouse = gfx.reset_cursor;
+                if center_mouse {
+                    gfx.center_mouse();
+                }
             }
 
             let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are

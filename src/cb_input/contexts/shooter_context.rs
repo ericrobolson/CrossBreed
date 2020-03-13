@@ -51,137 +51,153 @@ pub fn get_shooter_context_from_keys(
     let mut look_x = Range::new(0);
     let mut look_y = Range::new(0);
 
-    match ctx {
-        CbInputContexts::ShooterContext {
-            networked: _,
-            jump: _,
-            crouching: _,
-            running: _,
-            prone: _,
-            move_forward: _,
-            move_backward: _,
-            move_left: _,
-            move_right: _,
-            look_x: ctx_look_x,
-            look_y: ctx_look_y,
-        } => {
-            look_x = ctx_look_x;
-            look_y = ctx_look_y;
+    // Apply key events
+    {
+        match ctx {
+            CbInputContexts::ShooterContext {
+                networked: _,
+                jump: _,
+                crouching: _,
+                running: _,
+                prone: _,
+                move_forward: _,
+                move_backward: _,
+                move_left: _,
+                move_right: _,
+                look_x: ctx_look_x,
+                look_y: ctx_look_y,
+            } => {
+                look_x = ctx_look_x;
+                look_y = ctx_look_y;
 
-            for event in hardware.events {
-                match event {
-                    Event::Quit { .. }
-                    | Event::KeyDown {
-                        keycode: Some(Keycode::Escape),
-                        ..
-                    } => {
-                        //exit = true;
+                for event in hardware.events {
+                    match event {
+                        Event::Quit { .. }
+                        | Event::KeyDown {
+                            keycode: Some(Keycode::Escape),
+                            ..
+                        } => {
+                            //exit = true;
+                        }
+                        // Presses
+                        Event::KeyDown {
+                            keycode: Some(Keycode::Space),
+                            ..
+                        } => {
+                            new_jump = Press::Pressed;
+                        }
+                        // States - on
+                        Event::KeyDown {
+                            keycode: Some(Keycode::W),
+                            ..
+                        } => {
+                            new_move_forward = State::On;
+                        }
+                        Event::KeyDown {
+                            keycode: Some(Keycode::A),
+                            ..
+                        } => {
+                            new_move_left = State::On;
+                        }
+                        Event::KeyDown {
+                            keycode: Some(Keycode::S),
+                            ..
+                        } => {
+                            new_move_backward = State::On;
+                        }
+                        Event::KeyDown {
+                            keycode: Some(Keycode::D),
+                            ..
+                        } => {
+                            new_move_right = State::On;
+                        }
+                        Event::KeyDown {
+                            keycode: Some(Keycode::C),
+                            ..
+                        } => {
+                            new_crouching = State::On;
+                        }
+                        Event::KeyDown {
+                            keycode: Some(Keycode::LCtrl),
+                            ..
+                        } => {
+                            new_prone = State::On;
+                        }
+                        Event::KeyDown {
+                            keycode: Some(Keycode::LShift),
+                            ..
+                        } => {
+                            new_running = State::On;
+                        }
+                        // States - off
+                        Event::KeyUp {
+                            keycode: Some(Keycode::W),
+                            ..
+                        } => {
+                            new_move_forward = State::Off;
+                        }
+                        Event::KeyUp {
+                            keycode: Some(Keycode::A),
+                            ..
+                        } => {
+                            new_move_left = State::Off;
+                        }
+                        Event::KeyUp {
+                            keycode: Some(Keycode::S),
+                            ..
+                        } => {
+                            new_move_backward = State::Off;
+                        }
+                        Event::KeyUp {
+                            keycode: Some(Keycode::D),
+                            ..
+                        } => {
+                            new_move_right = State::Off;
+                        }
+                        Event::KeyUp {
+                            keycode: Some(Keycode::C),
+                            ..
+                        } => {
+                            new_crouching = State::Off;
+                        }
+                        Event::KeyUp {
+                            keycode: Some(Keycode::LCtrl),
+                            ..
+                        } => {
+                            new_prone = State::Off;
+                        }
+                        Event::KeyUp {
+                            keycode: Some(Keycode::LShift),
+                            ..
+                        } => {
+                            new_running = State::Off;
+                        }
+                        _ => {}
                     }
-                    // Presses
-                    Event::KeyDown {
-                        keycode: Some(Keycode::Space),
-                        ..
-                    } => {
-                        new_jump = Press::Pressed;
-                    }
-                    // States - on
-                    Event::KeyDown {
-                        keycode: Some(Keycode::W),
-                        ..
-                    } => {
-                        new_move_forward = State::On;
-                    }
-                    Event::KeyDown {
-                        keycode: Some(Keycode::A),
-                        ..
-                    } => {
-                        new_move_left = State::On;
-                    }
-                    Event::KeyDown {
-                        keycode: Some(Keycode::S),
-                        ..
-                    } => {
-                        new_move_backward = State::On;
-                    }
-                    Event::KeyDown {
-                        keycode: Some(Keycode::D),
-                        ..
-                    } => {
-                        new_move_right = State::On;
-                    }
-                    Event::KeyDown {
-                        keycode: Some(Keycode::C),
-                        ..
-                    } => {
-                        new_crouching = State::On;
-                    }
-                    Event::KeyDown {
-                        keycode: Some(Keycode::LCtrl),
-                        ..
-                    } => {
-                        new_prone = State::On;
-                    }
-                    Event::KeyDown {
-                        keycode: Some(Keycode::LShift),
-                        ..
-                    } => {
-                        new_running = State::On;
-                    }
-                    // States - off
-                    Event::KeyUp {
-                        keycode: Some(Keycode::W),
-                        ..
-                    } => {
-                        new_move_forward = State::Off;
-                    }
-                    Event::KeyUp {
-                        keycode: Some(Keycode::A),
-                        ..
-                    } => {
-                        new_move_left = State::Off;
-                    }
-                    Event::KeyUp {
-                        keycode: Some(Keycode::S),
-                        ..
-                    } => {
-                        new_move_backward = State::Off;
-                    }
-                    Event::KeyUp {
-                        keycode: Some(Keycode::D),
-                        ..
-                    } => {
-                        new_move_right = State::Off;
-                    }
-                    Event::KeyUp {
-                        keycode: Some(Keycode::C),
-                        ..
-                    } => {
-                        new_crouching = State::Off;
-                    }
-                    Event::KeyUp {
-                        keycode: Some(Keycode::LCtrl),
-                        ..
-                    } => {
-                        new_prone = State::Off;
-                    }
-                    Event::KeyUp {
-                        keycode: Some(Keycode::LShift),
-                        ..
-                    } => {
-                        new_running = State::Off;
-                    }
-                    _ => {}
                 }
             }
+            _ => {}
         }
-        _ => {}
     }
 
     // Now apply cursor movements
-    let cursor = sdl2::mouse::MouseState::new(hardware.pump);
+    {
+        let cursor = sdl2::mouse::MouseState::new(hardware.pump);
 
-    look_x.value = cursor.x();
-    look_y.value = cursor.y();
+        let default_cursor_x = hardware.window_width / 2;
+        let default_cursor_y = hardware.window_height / 2;
+
+        if hardware.reset_cursor {
+            let xdiff = default_cursor_x - cursor.x();
+            let ydiff = default_cursor_y - cursor.y();
+
+            look_x.value -= xdiff;
+            look_y.value -= ydiff;
+        } else {
+            look_x.value += cursor.x();
+            look_y.value += cursor.y();
+        }
+    }
 
     return CbInputContexts::ShooterContext {
         networked: Networked::On,
