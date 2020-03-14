@@ -1,11 +1,6 @@
 // Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
 
 // External crates
-extern crate gl;
-extern crate specs;
-
-use specs::prelude::*;
-extern crate sdl2;
 
 extern crate rmercury;
 use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
@@ -64,9 +59,6 @@ fn main() {
 
     let mode_choice = get_top_level_menu_choice(top_level_menu, VOXEL_EDITOR_MODE, SIMULATION_MODE);
 
-    // Init gfx
-    let mut gfx = cb_graphics::CbGfx::new();
-
     // Init RMercury
     let mut input_context_manager = CbInputContextManager::new();
 
@@ -76,12 +68,12 @@ fn main() {
     {
         if mode_choice == VOXEL_EDITOR_MODE {
             game_interface = CbSimulationInterface::new(CbSimulationModes::VoxelEditor);
-            gfx.reset_cursor = false;
+            game_interface.gfx.reset_cursor = false;
 
             input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
         } else {
             game_interface = CbSimulationInterface::new(CbSimulationModes::Simulation);
-            gfx.reset_cursor = true;
+            game_interface.gfx.reset_cursor = true;
 
             input_context_manager.add_context(cb_input::contexts::SHOOTER_CONTEXT_ID);
         }
@@ -94,51 +86,37 @@ fn main() {
 
     let mut r_mercury = builder.build();
 
-    // Init simulation data
-    let player_id: PlayerId = 1;
-    let mut game_state = r_mercury.get_game_state();
-
     loop {
         // Update simulation
         {
             // Get Local Inputs
             if r_mercury.ready_to_run() {
-                let current_frame_inputs =
-                    input_context_manager.read_os_inputs(gfx.event_pump_mut());
+                let current_frame_inputs;
+                {
+                    current_frame_inputs = input_context_manager
+                        .read_os_inputs(r_mercury.get_game_interface_mut().gfx.event_pump_mut());
+                }
 
-                let hardware_interface =
-                    cb_graphics::Sdl2HardwareInterface::from_gfx(&gfx, &current_frame_inputs);
+                let hardware_interface = cb_graphics::Sdl2HardwareInterface::from_gfx(
+                    &r_mercury.get_game_interface_mut().gfx,
+                    &current_frame_inputs,
+                );
 
                 let local_input = input_context_manager.get_rmercury_inputs(&hardware_interface);
                 r_mercury.add_local_input(&mut vec![local_input]);
 
-                let center_mouse = gfx.reset_cursor;
+                let center_mouse = r_mercury.get_game_interface_mut().gfx.reset_cursor;
                 if center_mouse {
-                    gfx.center_mouse();
+                    r_mercury.get_game_interface_mut().gfx.center_mouse();
                 }
             }
 
             let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are
-            if result == RMercuryExecutionResults::Executed {
-                // Update game state for renderer
-                game_state = r_mercury.get_game_state();
-            }
         }
 
         // Run gfx
         {
             r_mercury.get_game_interface_mut().render();
-            gfx.render(&game_state, r_mercury.get_current_tick());
         }
-    }
-}
-
-struct GfxSystem;
-
-impl<'a> System<'a> for GfxSystem {
-    type SystemData = ();
-
-    fn run(&mut self, (): Self::SystemData) {
-        use specs::Join;
     }
 }

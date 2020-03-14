@@ -5,6 +5,8 @@ use cb_system::{CbEvent, GameTick};
 
 use crate::cb_voxels;
 
+use crate::cb_graphics;
+
 pub mod assemblages;
 pub mod components;
 
@@ -25,6 +27,7 @@ pub struct CbSimulationInterface<'a, 'b> {
     world: World,
     sim_dispatcher: specs::Dispatcher<'a, 'b>,
     gfx_dispatcher: specs::Dispatcher<'a, 'b>,
+    pub gfx: cb_graphics::CbGfx,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -34,6 +37,7 @@ pub enum CbSimulationModes {
 }
 
 impl<'a, 'b> CbSimulationInterface<'a, 'b> {
+    /// Create a new CbSimulation
     pub fn new(mode: CbSimulationModes) -> Self {
         let mut dispatcher = DispatcherBuilder::new().build();
         let mut gfx_dispatcher = DispatcherBuilder::new().build();
@@ -45,10 +49,14 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             sim_dispatcher: dispatcher,
             gfx_dispatcher: gfx_dispatcher,
             world: world,
+            gfx: cb_graphics::CbGfx::new(),
         };
     }
 
+    /// Render the simulation
     pub fn render(&mut self) {
+        self.gfx
+            .render(&self.game_state, self.game_state.current_tick as usize);
         self.gfx_dispatcher.dispatch(&self.world);
     }
 }
