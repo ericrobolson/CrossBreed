@@ -1,5 +1,7 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 use crate::cb_simulation;
-use cb_simulation::GameState;
+use cb_simulation::CbGameState;
 
 use crate::cb_graphics;
 

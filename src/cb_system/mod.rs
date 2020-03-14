@@ -1,3 +1,5 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 pub type GameTick = u32;
 pub type PlayerId = u8;
 

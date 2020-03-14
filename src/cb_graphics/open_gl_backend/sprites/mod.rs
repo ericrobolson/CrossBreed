@@ -11,43 +11,100 @@ use cb_math::index_1d_to_3d;
 use crate::cb_voxels;
 use cb_voxels::*;
 
-pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
-    // For each voxel chunk, add a buffer to write to
-    let mut buffers = vec![];
+use crate::cb_graphics;
+use cb_graphics::open_gl_backend::render_gl;
 
-    for _ in 0..CHUNKS_CUBED {
+pub struct SpriteRenderer {
+    vao: gl::types::GLuint,
+    vbo: gl::types::GLuint,
+    program: render_gl::Program,
+}
+
+impl SpriteRenderer {
+    pub fn new() -> Self {
         let mut vao: gl::types::GLuint = 0;
         let mut vbo: gl::types::GLuint = 0;
-        let mut ebo: gl::types::GLuint = 0;
-        let mut color_buff: gl::types::GLuint = 0;
-        let mut normal_buff: gl::types::GLuint = 0;
+
         unsafe {
             gl::GenVertexArrays(1, &mut vao);
             gl::GenBuffers(1, &mut vbo);
-            gl::GenBuffers(1, &mut ebo);
-            gl::GenBuffers(1, &mut color_buff);
-            gl::GenBuffers(1, &mut normal_buff);
         }
 
-        buffers.push(MeshBuffers {
+        const VERTEX_SIZE: usize = 4;
+
+        let vertices = vec![
+            // Pos    // Tex
+            0.0, 1.0, 0.0, 1.0, //
+            1.0, 0.0, 1.0, 0.0, //
+            0.0, 0.0, 0.0, 0.0, //
+            //////////////////////
+            0.0, 1.0, 0.0, 1.0, //
+            1.0, 1.0, 1.0, 1.0, //
+            1.0, 0.0, 1.0, 0.0, //
+        ];
+
+        unsafe {
+            gl::BindBuffer(gl::ARRAY_BUFFER, vbo);
+            gl::BufferData(
+                gl::ARRAY_BUFFER,
+                (vertices.len() * std::mem::size_of::<f32>()) as gl::types::GLsizeiptr,
+                vertices.as_ptr() as *const gl::types::GLvoid,
+                gl::STATIC_DRAW,
+            );
+        }
+
+        unsafe {
+            gl::BindVertexArray(vao);
+            gl::EnableVertexAttribArray(0);
+
+            gl::VertexAttribPointer(
+                0,
+                VERTEX_SIZE as gl::types::GLint,
+                gl::FLOAT,
+                gl::FALSE,
+                (VERTEX_SIZE * std::mem::size_of::<f32>()) as gl::types::GLint,
+                std::ptr::null(),
+            );
+
+            gl::BindBuffer(gl::ARRAY_BUFFER, 0);
+            gl::BindVertexArray(0);
+        }
+
+        let sprite_program;
+        {
+            let vert_shader = render_gl::Shader::from_vert_source(
+                &CString::new(include_str!("sprites.vert")).unwrap(),
+            )
+            .unwrap();
+
+            let frag_shader = render_gl::Shader::from_frag_source(
+                &CString::new(include_str!("sprites.frag")).unwrap(),
+            )
+            .unwrap();
+            sprite_program = render_gl::Program::from_shaders(&[vert_shader, frag_shader]).unwrap();
+        }
+
+        return Self {
             vao: vao,
             vbo: vbo,
-            ebo: ebo,
-            color_buff: color_buff,
-            normal_buff: normal_buff,
-            last_calculated_frame: 0,
-            indices_count: 0,
-        });
+            program: sprite_program,
+        };
     }
 
-    return buffers;
+    pub fn render(&self, camera: &cb_graphics::CbCamera, frame: usize) {
+        // Camera / MVP
+        let (proj, view) = get_proj_view(camera);
+
+        self.program.set_used();
+        unsafe {
+            gl::BindVertexArray(self.vao);
+            gl::DrawArrays(gl::TRIANGLES, 0, 6);
+            gl::BindVertexArray(0);
+        }
+    }
 }
 
-pub fn draw_voxel_meshes(
-    backend: &mut OpenGlBackend,
-    camera: &cb_graphics::CbCamera,
-    frame: usize,
-) {
+pub fn draw_sprites(backend: &mut OpenGlBackend, camera: &cb_graphics::CbCamera, frame: usize) {
     // Camera / MVP
     let (proj, view) = get_proj_view(camera);
     draw_meshes(0, 0, 0, proj, view, backend, frame);

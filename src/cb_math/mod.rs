@@ -1,6 +1,4 @@
-extern crate rand;
-
-use rand::Rng;
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
 
 /// Returns the number raised to the power
 pub fn pow(num: usize, pow: usize) -> usize {
@@ -44,8 +42,6 @@ impl Noise {
     pub fn new(max_value: usize) -> Self {
         const MIN_VALUE: usize = 0;
 
-        let mut rng = rand::thread_rng();
-
         let mut values = vec![vec![]];
 
         //TODO: interpolate the values
@@ -58,9 +54,7 @@ impl Noise {
     }
 
     pub fn at(&self, x: usize, y: usize) -> usize {
-        let mut rng = rand::thread_rng();
-
-        return rng.gen_range(0, self.max_value);
+        unimplemented!();
     }
 }
 

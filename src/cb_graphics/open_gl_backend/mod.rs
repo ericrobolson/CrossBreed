@@ -1,3 +1,5 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 extern crate gl;
 use std::ffi::CString;
 
@@ -5,17 +7,22 @@ extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
 use crate::cb_simulation;
-use cb_simulation::GameState;
+use cb_simulation::CbGameState;
 
 use crate::cb_graphics;
 
 use crate::cb_voxels;
+pub mod sprites;
 
+mod r_collada_render;
+use r_collada_render::CbColladaRenderer;
 mod r_voxel_render;
 
 pub mod render_gl;
 
+use cb_graphics::cb_collada;
 use cb_graphics::mesh;
+use std::path::Path;
 
 pub struct MeshBuffers {
     pub vao: gl::types::GLuint,
@@ -34,10 +41,16 @@ pub struct OpenGlBackend {
     light_id: i32,
     frame: usize,
     voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher,
+    sprite_renderer: cb_graphics::open_gl_backend::sprites::SpriteRenderer,
+    collada_renderer: CbColladaRenderer,
 }
 
 impl OpenGlBackend {
     pub fn new() -> Self {
+        // Collada renderer
+        let mut collada_renderer = CbColladaRenderer::new();
+        collada_renderer.load_collada(&Path::new("./src/assets/monkey.dae"));
+
         // Basic mesh program
         let mesh_program;
         {
@@ -54,6 +67,9 @@ impl OpenGlBackend {
         }
 
         mesh_program.set_used();
+
+        // Sprites
+        let sprite_renderer = sprites::SpriteRenderer::new();
 
         // MVP uniform
         let mvp_str = &CString::new("MVP").unwrap();
@@ -86,13 +102,15 @@ impl OpenGlBackend {
             light_id: light_id,
             frame: 0,
             voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher::new(),
+            sprite_renderer: sprite_renderer,
+            collada_renderer: collada_renderer,
         };
     }
 
     pub fn render(
         renderer: &mut Self,
         camera: &cb_graphics::CbCamera,
-        game_state: &GameState,
+        game_state: &CbGameState,
         frame: usize,
     ) {
         unsafe {
@@ -100,8 +118,22 @@ impl OpenGlBackend {
             gl::Clear(gl::COLOR_BUFFER_BIT | gl::DEPTH_BUFFER_BIT);
         }
 
-        // Draw voxels
+        // Draw sprites
         {
+            renderer.sprite_renderer.render(camera, frame);
+        }
+
+        // Draw collada
+        {
+            renderer
+                .collada_renderer
+                .draw(renderer.mvp_id, camera, frame);
+        }
+
+        let draw_voxels = true;
+
+        // Draw voxels
+        if draw_voxels {
             // First mesh them
             renderer
                 .voxel_mesher
@@ -145,26 +177,40 @@ fn get_proj_view(camera: &cb_graphics::CbCamera) -> (CbProjection, CbView) {
         let mouse_speed = 0.005; // configure to user variable?
 
         let delta_time = 1.0; //TODO: figure out
+                              /*
+                                                            let horizontal_angle = horizontal_angle
+                                                                + mouse_speed * delta_time * (camera.window_width / 2.0 - camera.cursor_x);
+                                                            let vertical_angle = vertical_angle
+                                                                + mouse_speed * delta_time * (camera.window_height / 2.0 - camera.cursor_y);
 
-        let horizontal_angle = horizontal_angle
-            + mouse_speed * delta_time * (camera.window_width / 2.0 - camera.cursor_x);
-        let vertical_angle = vertical_angle
-            + mouse_speed * delta_time * (camera.window_height / 2.0 - camera.cursor_y);
+                                                            let mouse_target = Point3::new(
+                                                                vertical_angle.cos() * horizontal_angle.sin(),
+                                                                vertical_angle.sin(),
+                                                                vertical_angle.cos() * horizontal_angle.cos(),
+                                                            );
 
-        let mouse_target = Point3::new(
-            vertical_angle.cos() * horizontal_angle.sin(),
-            vertical_angle.sin(),
-            vertical_angle.cos() * horizontal_angle.cos(),
-        );
+                                                            let target = Point3::new(
+                                  mouse_target.x + camera.pos_x,
+                                  mouse_target.y + camera.pos_y,
+                                  mouse_target.z + camera.pos_z,
+                              );
+                                                    */
+
+        //TODO: need to figure out camera pitch, yaw, roll
+        let target = Point3::new(camera.target_x, camera.target_y, camera.target_z);
 
         let eye = Point3::new(camera.pos_x, camera.pos_y, camera.pos_z);
-        let target = Point3::new(
-            mouse_target.x + camera.pos_x,
-            mouse_target.y + camera.pos_y,
-            mouse_target.z + camera.pos_z,
-        );
         view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
-        proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 1000.0);
+
+        if camera.orthographic_view {
+            const BOUNDS: f32 = 22.0;
+
+            let ortho = na::Orthographic3::new(-BOUNDS, BOUNDS, -BOUNDS, BOUNDS, 0.01, 10000.0);
+
+            proj = Perspective3::from_matrix_unchecked(*ortho.as_matrix());
+        } else {
+            proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 1000.0);
+        }
     }
 
     let proj: CbProjection = *proj.as_matrix();

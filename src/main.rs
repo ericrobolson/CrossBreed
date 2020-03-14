@@ -1,103 +1,122 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 // External crates
-extern crate gl;
+
 extern crate rmercury;
-extern crate specs;
-use specs::prelude::*;
-extern crate sdl2;
-use std::panic;
+use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 
 // Internal crates
 #[macro_use]
 pub mod cb_utility;
-
+pub mod cb_cmd_line;
+pub mod cb_data_structures;
 pub mod cb_graphics;
 pub mod cb_input;
 pub mod cb_math;
 pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
-pub mod contexts;
-use cb_system::{GameTick, PlayerId};
 
-pub struct GameSim {}
+use cb_cmd_line::CbCmdMenu;
+use cb_input::{CbGameInput, CbInputContextManager};
+use cb_simulation::{CbGameState, CbSimulationInterface, CbSimulationModes};
+use cb_system::PlayerId;
 
-impl GameSim {
-    pub fn new() -> Self {
-        return GameSim {};
+fn get_top_level_menu_choice(
+    top_level_menu: CbCmdMenu,
+    voxel_editor_mode: &str,
+    simulation_mode: &str,
+) -> String {
+    top_level_menu.print();
+
+    let mut mode_choice = "-1".to_string();
+    let mut done = false;
+    while !done {
+        mode_choice = top_level_menu.get_menu_choice();
+
+        if mode_choice == voxel_editor_mode {
+            println!("Do Voxel Editor stuff");
+            done = true;
+        } else if mode_choice == simulation_mode {
+            println!("Do Sim stuff");
+            done = true;
+        } else {
+            println!("Invalid choice! Try again.");
+        }
     }
+
+    return mode_choice;
 }
 
 fn main() {
-    //NOTE: this is only for dev use, to allow panics to be caught
-    main_loop();
-    loop {}
-}
+    let top_level_menu = CbCmdMenu::root(
+        "CrossBreed.exe - Dev Kit",
+        vec!["Voxel Model Editor", "Begin Simulation"],
+    );
 
-fn main_loop() {
-    // Init gfx
-    let mut gfx = cb_graphics::CbGfx::new();
+    const VOXEL_EDITOR_MODE: &str = "1";
+    const SIMULATION_MODE: &str = "2";
 
-    // Init simulation data
-    let mut game_tick: usize = 0;
-    let player_id: PlayerId = 1;
-    let mut game_state = cb_simulation::GameState::new();
+    let mode_choice = get_top_level_menu_choice(top_level_menu, VOXEL_EDITOR_MODE, SIMULATION_MODE);
 
-    let mut movement_context = cb_input::contexts::shooter_context::ShooterMovementContext::new();
+    // Init RMercury
+    let mut input_context_manager = CbInputContextManager::new();
 
-    // Init specs
-    let mut world = World::new();
-    let mut dispatcher = DispatcherBuilder::new().build();
-    dispatcher.setup(&mut world);
+    // Init game interface
+    let mut game_interface;
+    let mut builder;
+    {
+        if mode_choice == VOXEL_EDITOR_MODE {
+            game_interface = CbSimulationInterface::new(CbSimulationModes::VoxelEditor);
+            game_interface.gfx.reset_cursor = false;
 
-    //TODO: fix up
-    //   cb_simulation::assemblages::rts_assemblages::new_unit(&mut world);
+            input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
+        } else {
+            game_interface = CbSimulationInterface::new(CbSimulationModes::Simulation);
+            game_interface.gfx.reset_cursor = true;
 
-    loop {
-        // Get Events
-        {
-            let os_events = cb_input::get_os_inputs(gfx.event_pump());
-            movement_context = cb_input::contexts::shooter_context::get_shooter_movement_context(
-                game_tick,
-                &os_events,
-                &movement_context,
-            );
-
-            // Camera movement
-            {
-                let mut camera = gfx.camera();
-                if movement_context.move_forward == cb_input::input_type::State::On {
-                    camera.pos_x -= 0.1;
-                } else if movement_context.move_backward == cb_input::input_type::State::On {
-                    camera.pos_x += 0.1;
-                }
-
-                if movement_context.move_right == cb_input::input_type::State::On
-                    && movement_context.move_left != cb_input::input_type::State::On
-                {
-                    camera.pos_z -= 0.1;
-                } else if movement_context.move_left == cb_input::input_type::State::On
-                    && movement_context.move_right != cb_input::input_type::State::On
-                {
-                    camera.pos_z += 0.1;
-                }
-
-                if movement_context.crouching == cb_input::input_type::State::On {
-                    camera.pos_y -= 0.1;
-                } else if movement_context.running == cb_input::input_type::State::On {
-                    camera.pos_y += 0.1;
-                }
-            }
+            input_context_manager.add_context(cb_input::contexts::SHOOTER_CONTEXT_ID);
         }
 
+        builder = RMercuryBuilder::<CbSimulationInterface, CbGameInput, CbGameState>::new(
+            &mut game_interface,
+        )
+        .with_type(MercuryType::Peer2Peer);
+    }
+
+    let mut r_mercury = builder.build();
+
+    loop {
         // Update simulation
         {
-            // Increment game tick
-            game_tick += 1;
+            // Get Local Inputs
+            if r_mercury.ready_to_run() {
+                let current_frame_inputs;
+                {
+                    current_frame_inputs = input_context_manager
+                        .read_os_inputs(r_mercury.get_game_interface_mut().gfx.event_pump_mut());
+                }
+
+                let hardware_interface = cb_graphics::Sdl2HardwareInterface::from_gfx(
+                    &r_mercury.get_game_interface_mut().gfx,
+                    &current_frame_inputs,
+                );
+
+                let local_input = input_context_manager.get_rmercury_inputs(&hardware_interface);
+                r_mercury.add_local_input(&mut vec![local_input]);
+
+                let center_mouse = r_mercury.get_game_interface_mut().gfx.reset_cursor;
+                if center_mouse {
+                    r_mercury.get_game_interface_mut().gfx.center_mouse();
+                }
+            }
+
+            let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are
         }
 
         // Run gfx
-        gfx.render(&game_state, game_tick);
+        {
+            r_mercury.get_game_interface_mut().render();
+        }
     }
-
-    // Cleanup
 }

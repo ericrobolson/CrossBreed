@@ -1,3 +1,5 @@
+// Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
+
 use crate::cb_math;
 use cb_math::index_1d_to_3d;
 
@@ -9,10 +11,7 @@ use time::{Duration, Instant};
 // NOTE: Voxel size is about 1 foot
 // Human is about 6ft, or 6 voxels
 
-extern crate rand;
-use rand::Rng; // TODO: replace with deterministic one
-
-pub const CHUNK_SIZE: usize = 16;
+pub const CHUNK_SIZE: usize = 32;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
@@ -20,14 +19,14 @@ pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 1.0;
 
-pub const CHUNKS: usize = 16;
+pub const CHUNKS: usize = 1;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 
 /// A voxel contains three pieces of info, whether it's active, it's type, and some misc values that may be used for different voxel types (such as health remaining on a block).
 pub type CbVoxel = (bool, u8, u8);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct CbChunkManager {
     dirty: bool,
     randomizer_index: usize,
@@ -36,9 +35,6 @@ pub struct CbChunkManager {
 
 impl CbChunkManager {
     pub fn new() -> Self {
-        println!("Chunks init");
-        let start = Instant::now();
-
         let mut chunks: Vec<CbVoxelChunk> = (0..CHUNKS_CUBED)
             .collect::<Vec<usize>>()
             .par_iter()
@@ -47,9 +43,6 @@ impl CbChunkManager {
                 return CbVoxelChunk::new();
             })
             .collect();
-
-        println!("fin init");
-        println!("landscape begin");
 
         let noise = cb_math::Noise::new(CHUNK_SIZE);
 
@@ -65,14 +58,30 @@ impl CbChunkManager {
                 },
             );
         });
-        let end = Instant::now() - start;
-
-        println!("Chunks created in: {:?}", end);
         return Self {
             randomizer_index: 0,
             chunks: chunks,
             dirty: true,
         };
+    }
+
+    pub fn randomize(&mut self, tick: usize) {
+        self.chunks
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(i, chunk)| {
+                chunk.frame_updated_at = tick;
+                let (chunk_x, chunk_y, chunk_z) = index_1d_to_3d(i, CHUNKS, CHUNKS);
+
+                chunk.voxel_vec.iter_mut().enumerate().for_each(
+                    |(i, (voxel_active, voxel_type, _))| {
+                        let (voxel_x, voxel_y, voxel_z) = index_1d_to_3d(i, CHUNK_SIZE, CHUNK_SIZE);
+                        if (voxel_x + voxel_y + voxel_z + tick) % 7 == 0 {
+                            *voxel_active = !*voxel_active;
+                        }
+                    },
+                );
+            });
     }
 }
 
