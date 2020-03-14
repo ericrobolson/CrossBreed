@@ -70,6 +70,7 @@ fn main() {
     // Init RMercury
     let mut input_context_manager = CbInputContextManager::new();
 
+    // Init game interface
     let mut game_interface;
     let mut builder;
     {
@@ -96,11 +97,6 @@ fn main() {
     // Init simulation data
     let player_id: PlayerId = 1;
     let mut game_state = r_mercury.get_game_state();
-
-    // Init specs
-    let mut world = World::new();
-    let mut dispatcher = DispatcherBuilder::new().build();
-    dispatcher.setup(&mut world);
 
     loop {
         // Update simulation
@@ -130,6 +126,19 @@ fn main() {
         }
 
         // Run gfx
-        gfx.render(&game_state, r_mercury.get_current_tick());
+        {
+            r_mercury.get_game_interface_mut().render();
+            gfx.render(&game_state, r_mercury.get_current_tick());
+        }
+    }
+}
+
+struct GfxSystem;
+
+impl<'a> System<'a> for GfxSystem {
+    type SystemData = ();
+
+    fn run(&mut self, (): Self::SystemData) {
+        use specs::Join;
     }
 }

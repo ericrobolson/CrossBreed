@@ -8,16 +8,23 @@ use crate::cb_voxels;
 pub mod assemblages;
 pub mod components;
 
+extern crate specs;
+use specs::prelude::*;
+
 extern crate rmercury;
 use rmercury::{RMercuryGameInterface, RMercuryInput};
 
 use crate::cb_input;
 use cb_input::CbGameInput;
 
-#[derive(Debug, Clone)]
-pub struct CbSimulationInterface {
+pub mod world_builder;
+
+pub struct CbSimulationInterface<'a, 'b> {
     game_state: CbGameState,
     mode: CbSimulationModes,
+    world: World,
+    sim_dispatcher: specs::Dispatcher<'a, 'b>,
+    gfx_dispatcher: specs::Dispatcher<'a, 'b>,
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -26,12 +33,23 @@ pub enum CbSimulationModes {
     Simulation,
 }
 
-impl CbSimulationInterface {
+impl<'a, 'b> CbSimulationInterface<'a, 'b> {
     pub fn new(mode: CbSimulationModes) -> Self {
+        let mut dispatcher = DispatcherBuilder::new().build();
+        let mut gfx_dispatcher = DispatcherBuilder::new().build();
+        let mut world = world_builder::new();
+
         return Self {
             game_state: CbGameState::new(),
             mode: mode,
+            sim_dispatcher: dispatcher,
+            gfx_dispatcher: gfx_dispatcher,
+            world: world,
         };
+    }
+
+    pub fn render(&mut self) {
+        self.gfx_dispatcher.dispatch(&self.world);
     }
 }
 
@@ -177,7 +195,7 @@ fn apply_input_contexts(state: &mut CbSimulationInterface, inputs: std::vec::Vec
     }
 }
 
-impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
+impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface<'a, 'b> {
     fn load_game_state(&mut self, _: CbGameState) {
         //unimplemented!()
     }
@@ -187,7 +205,11 @@ impl RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInterface {
     }
     fn advance_frame(&mut self, inputs: std::vec::Vec<CbGameInput>) {
         apply_input_contexts(self, inputs);
-
+        // Execute world systems + maintain it
+        {
+            self.sim_dispatcher.dispatch(&mut self.world);
+            self.world.maintain();
+        }
         self.game_state.current_tick += 1;
 
         //NOTE: may need a camera for each player? maybe not
