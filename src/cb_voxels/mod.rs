@@ -67,6 +67,25 @@ impl CbChunkManager {
             dirty: true,
         };
     }
+
+    pub fn randomize(&mut self, tick: usize) {
+        self.chunks
+            .par_iter_mut()
+            .enumerate()
+            .for_each(|(i, chunk)| {
+                chunk.frame_updated_at = tick;
+                let (chunk_x, chunk_y, chunk_z) = index_1d_to_3d(i, CHUNKS, CHUNKS);
+
+                chunk.voxel_vec.iter_mut().enumerate().for_each(
+                    |(i, (voxel_active, voxel_type, _))| {
+                        let (voxel_x, voxel_y, voxel_z) = index_1d_to_3d(i, CHUNK_SIZE, CHUNK_SIZE);
+                        if (voxel_x + voxel_y + voxel_z + tick) % 7 == 0 {
+                            *voxel_active = !*voxel_active;
+                        }
+                    },
+                );
+            });
+    }
 }
 
 pub const VOXEL_TYPE_DEFAULT: u8 = 0;

@@ -37,28 +37,38 @@ impl<'a> Sdl2HardwareInterface<'a> {
 }
 
 pub struct CbCamera {
+    pub orthographic_view: bool,
+
     pub pos_x: f32,
     pub pos_y: f32,
     pub pos_z: f32,
-    pub dir_x: f32,
-    pub dir_y: f32,
-    pub dir_z: f32,
-    pub cursor_x: f32,
-    pub cursor_y: f32,
+
+    pub target_x: f32,
+    pub target_y: f32,
+    pub target_z: f32,
+
+    pub roll: f32,
+    pub pitch: f32,
+    pub yaw: f32,
+
     pub window_width: f32,
     pub window_height: f32,
 }
 impl CbCamera {
     fn new(window_width: f32, window_height: f32) -> Self {
         return Self {
+            orthographic_view: false,
+
             pos_x: -12.5000105,
             pos_y: 15.800025,
             pos_z: 2.0,
-            dir_x: 0.0,
-            dir_y: 0.0,
-            dir_z: 0.0,
-            cursor_x: 0.0,
-            cursor_y: 0.0,
+            target_x: 0.0,
+            target_y: 0.0,
+            target_z: 0.0,
+
+            roll: 0.0,
+            pitch: 0.0,
+            yaw: 0.0,
             window_width: window_width,
             window_height: window_height,
         };
@@ -136,12 +146,22 @@ impl CbGfx {
     }
 
     pub fn render(&mut self, game_state: &CbGameState, frame: usize) {
-        self.camera.cursor_x = game_state.mouse_look_x as f32;
-        self.camera.cursor_y = game_state.mouse_look_y as f32;
+        const SIZE_SCALING_FACTOR: f32 = 100.0;
+        const DEGREES_SCALING_FACTOR: f32 = 10.0;
 
-        self.camera.pos_x = (game_state.camera_pos_x as f32) / 100.0;
-        self.camera.pos_y = (game_state.camera_pos_y as f32) / 100.0;
-        self.camera.pos_z = (game_state.camera_pos_z as f32) / 100.0;
+        self.camera.orthographic_view = game_state.camera_orthographic_view;
+
+        self.camera.pitch = (game_state.camera_pitch as f32) / DEGREES_SCALING_FACTOR;
+        self.camera.roll = (game_state.camera_roll as f32) / DEGREES_SCALING_FACTOR;
+        self.camera.yaw = (game_state.camera_yaw as f32) / DEGREES_SCALING_FACTOR;
+
+        self.camera.pos_x = (game_state.camera_pos_x as f32) / SIZE_SCALING_FACTOR;
+        self.camera.pos_y = (game_state.camera_pos_y as f32) / SIZE_SCALING_FACTOR;
+        self.camera.pos_z = (game_state.camera_pos_z as f32) / SIZE_SCALING_FACTOR;
+
+        self.camera.target_x = (game_state.camera_target_x as f32) / SIZE_SCALING_FACTOR;
+        self.camera.target_y = (game_state.camera_target_y as f32) / SIZE_SCALING_FACTOR;
+        self.camera.target_z = (game_state.camera_target_z as f32) / SIZE_SCALING_FACTOR;
 
         OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, frame);
         self.window.gl_swap_window();

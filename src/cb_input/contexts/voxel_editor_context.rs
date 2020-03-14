@@ -5,10 +5,27 @@ use cb_graphics::Sdl2HardwareInterface;
 
 fn new_voxel_editor_context() -> CbInputContexts {
     return CbInputContexts::VoxelEditorContext {
-        networked: Networked::On,
-        look_x: Range::new(0),
-        look_y: Range::new(0),
+        networked: Networked::Off,
+        cursor_x: Range::new(0),
+        cursor_y: Range::new(0),
+        toggle_orthographic_view: Press::NotPressed,
+        front_view: Press::NotPressed,
+        top_view: Press::NotPressed,
+        right_view: Press::NotPressed,
+        left_view: Press::NotPressed,
+        rotate_camera_up: Press::NotPressed,
+        rotate_camera_down: Press::NotPressed,
+        rotate_camera_left: Press::NotPressed,
+        rotate_camera_right: Press::NotPressed,
+        add_voxel: Press::NotPressed,
+        remove_voxel: Press::NotPressed,
     };
+}
+
+fn get_press_from_keys(press: &mut Press, keycode: sdl2::keyboard::Keycode, keys: &Vec<Keycode>) {
+    if keys.iter().any(|k| *k == keycode) {
+        *press = Press::Pressed;
+    }
 }
 
 pub fn get_voxel_editor_context_from_keys(
@@ -31,137 +48,103 @@ pub fn get_voxel_editor_context_from_keys(
         }
     }
 
-    let mut new_jump = Press::NotPressed;
+    // Declare keys to map to
+    let toggle_orthographic_view_keys = vec![Keycode::Num0];
+    let front_view_keys = vec![Keycode::Num1];
+    let left_view_keys = vec![Keycode::Num2];
+    let right_view_keys = vec![Keycode::Num3];
+    let top_view_keys = vec![Keycode::Num4];
+
+    let rotate_camera_up_keys = vec![Keycode::Up];
+    let rotate_camera_down_keys = vec![Keycode::Down];
+    let rotate_camera_left_keys = vec![Keycode::Left];
+    let rotate_camera_right_keys = vec![Keycode::Right];
+
+    let add_voxel_keys = vec![Keycode::E];
+    let remove_voxel_keys = vec![Keycode::Q];
 
     let_mut_for![
         (
-            new_crouching,
-            new_running,
-            new_prone,
-            new_move_forward,
-            new_move_backward,
-            new_move_left,
-            new_move_right
+            toggle_orthographic_view,
+            front_view,
+            top_view,
+            right_view,
+            left_view,
+            rotate_camera_up,
+            rotate_camera_down,
+            rotate_camera_left,
+            rotate_camera_right,
+            add_voxel,
+            remove_voxel
         ),
-        State,
-        State::Off
+        Press,
+        Press::NotPressed
     ];
 
-    let mut look_x = Range::new(0);
-    let mut look_y = Range::new(0);
+    let mut cursor_x = Range::new(0);
+    let mut cursor_y = Range::new(0);
 
     // Apply key events
     {
         match ctx {
             CbInputContexts::VoxelEditorContext {
                 networked: _,
-                look_x: ctx_look_x,
-                look_y: ctx_look_y,
+                cursor_x: ctx_cursor_x,
+                cursor_y: ctx_cursor_y,
+                toggle_orthographic_view: ctx_toggle_orthographic_view,
+                front_view: ctx_front_view,
+                top_view: ctx_top_view,
+                right_view: ctx_right_view,
+                left_view: ctx_left_view,
+                rotate_camera_up: ctx_rotate_camera_up,
+                rotate_camera_down: ctx_rotate_camera_down,
+                rotate_camera_left: ctx_rotate_camera_left,
+                rotate_camera_right: ctx_rotate_camera_right,
+                add_voxel: ctx_add_voxel,
+                remove_voxel: ctx_remove_voxel,
             } => {
-                look_x = ctx_look_x;
-                look_y = ctx_look_y;
+                cursor_x = ctx_cursor_x;
+                cursor_y = ctx_cursor_y;
 
                 for event in hardware.events {
                     match event {
-                        Event::Quit { .. }
-                        | Event::KeyDown {
-                            keycode: Some(Keycode::Escape),
-                            ..
-                        } => {
-                            //exit = true;
-                        }
-                        // Presses
-                        Event::KeyDown {
-                            keycode: Some(Keycode::Space),
-                            ..
-                        } => {
-                            new_jump = Press::Pressed;
-                        }
-                        // States - on
-                        Event::KeyDown {
-                            keycode: Some(Keycode::W),
-                            ..
-                        } => {
-                            new_move_forward = State::On;
-                        }
-                        Event::KeyDown {
-                            keycode: Some(Keycode::A),
-                            ..
-                        } => {
-                            new_move_left = State::On;
-                        }
-                        Event::KeyDown {
-                            keycode: Some(Keycode::S),
-                            ..
-                        } => {
-                            new_move_backward = State::On;
-                        }
-                        Event::KeyDown {
-                            keycode: Some(Keycode::D),
-                            ..
-                        } => {
-                            new_move_right = State::On;
-                        }
-                        Event::KeyDown {
-                            keycode: Some(Keycode::C),
-                            ..
-                        } => {
-                            new_crouching = State::On;
-                        }
-                        Event::KeyDown {
-                            keycode: Some(Keycode::LCtrl),
-                            ..
-                        } => {
-                            new_prone = State::On;
-                        }
-                        Event::KeyDown {
-                            keycode: Some(Keycode::LShift),
-                            ..
-                        } => {
-                            new_running = State::On;
-                        }
-                        // States - off
-                        Event::KeyUp {
-                            keycode: Some(Keycode::W),
-                            ..
-                        } => {
-                            new_move_forward = State::Off;
-                        }
-                        Event::KeyUp {
-                            keycode: Some(Keycode::A),
-                            ..
-                        } => {
-                            new_move_left = State::Off;
-                        }
-                        Event::KeyUp {
-                            keycode: Some(Keycode::S),
-                            ..
-                        } => {
-                            new_move_backward = State::Off;
-                        }
-                        Event::KeyUp {
-                            keycode: Some(Keycode::D),
-                            ..
-                        } => {
-                            new_move_right = State::Off;
-                        }
-                        Event::KeyUp {
-                            keycode: Some(Keycode::C),
-                            ..
-                        } => {
-                            new_crouching = State::Off;
-                        }
-                        Event::KeyUp {
-                            keycode: Some(Keycode::LCtrl),
-                            ..
-                        } => {
-                            new_prone = State::Off;
-                        }
-                        Event::KeyUp {
-                            keycode: Some(Keycode::LShift),
-                            ..
-                        } => {
-                            new_running = State::Off;
+                        Event::KeyDown { keycode: a, .. } => {
+                            if a.is_some() {
+                                let keycode = a.unwrap();
+
+                                get_press_from_keys(
+                                    &mut toggle_orthographic_view,
+                                    keycode,
+                                    &toggle_orthographic_view_keys,
+                                );
+                                get_press_from_keys(&mut front_view, keycode, &front_view_keys);
+                                get_press_from_keys(&mut top_view, keycode, &top_view_keys);
+                                get_press_from_keys(&mut right_view, keycode, &right_view_keys);
+                                get_press_from_keys(&mut left_view, keycode, &left_view_keys);
+                                get_press_from_keys(
+                                    &mut rotate_camera_up,
+                                    keycode,
+                                    &rotate_camera_up_keys,
+                                );
+                                get_press_from_keys(
+                                    &mut rotate_camera_down,
+                                    keycode,
+                                    &rotate_camera_down_keys,
+                                );
+                                get_press_from_keys(
+                                    &mut rotate_camera_left,
+                                    keycode,
+                                    &rotate_camera_left_keys,
+                                );
+                                get_press_from_keys(
+                                    &mut rotate_camera_right,
+                                    keycode,
+                                    &rotate_camera_right_keys,
+                                );
+
+                                get_press_from_keys(&mut add_voxel, keycode, &add_voxel_keys);
+                                get_press_from_keys(&mut remove_voxel, keycode, &remove_voxel_keys);
+                            }
                         }
                         _ => {}
                     }
@@ -182,17 +165,28 @@ pub fn get_voxel_editor_context_from_keys(
             let xdiff = default_cursor_x - cursor.x();
             let ydiff = default_cursor_y - cursor.y();
 
-            look_x.value -= xdiff;
-            look_y.value -= ydiff;
+            cursor_x.value -= xdiff;
+            cursor_y.value -= ydiff;
         } else {
-            look_x.value += cursor.x();
-            look_y.value += cursor.y();
+            cursor_x.value += cursor.x();
+            cursor_y.value += cursor.y();
         }
     }
 
     return CbInputContexts::VoxelEditorContext {
-        networked: Networked::On,
-        look_x: look_x,
-        look_y: look_y,
+        networked: Networked::Off,
+        cursor_x: cursor_x,
+        cursor_y: cursor_y,
+        toggle_orthographic_view: toggle_orthographic_view,
+        front_view: front_view,
+        top_view: top_view,
+        right_view: right_view,
+        left_view: left_view,
+        rotate_camera_up: rotate_camera_up,
+        rotate_camera_down: rotate_camera_down,
+        rotate_camera_left: rotate_camera_left,
+        rotate_camera_right: rotate_camera_right,
+        add_voxel: add_voxel,
+        remove_voxel: remove_voxel,
     };
 }

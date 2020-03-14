@@ -61,24 +61,31 @@ pub enum CbInputContexts {
     },
     VoxelEditorContext {
         networked: Networked,
-        look_x: Range,
-        look_y: Range,
+        cursor_x: Range,
+        cursor_y: Range,
+        toggle_orthographic_view: Press,
+        front_view: Press,
+        top_view: Press,
+        right_view: Press,
+        left_view: Press,
+        rotate_camera_up: Press,
+        rotate_camera_down: Press,
+        rotate_camera_left: Press,
+        rotate_camera_right: Press,
+        add_voxel: Press,
+        remove_voxel: Press,
     },
 }
 
 pub type ContextId = u8;
 
 //NOTE: ALWAYS ADD TO THE END TO PRESERVE BACKWARDS COMPATIBILITY!!!!
-pub_const_identities![
-    (
-        EMPTY_CONTENTS,
-        FIGHTING_CONTEXT_ID,
-        RTS_CONTEXT_ID,
-        SHOOTER_CONTEXT_ID,
-        VOXEL_EDITOR_CONTEXT_ID
-    ),
-    ContextId
-];
+pub const EMPTY_CONTENTS: ContextId = 0;
+pub const FIGHTING_CONTEXT_ID: ContextId = EMPTY_CONTENTS + 1;
+pub const RTS_CONTEXT_ID: ContextId = FIGHTING_CONTEXT_ID + 1;
+pub const SHOOTER_CONTEXT_ID: ContextId = RTS_CONTEXT_ID + 1;
+pub const VOXEL_EDITOR_CONTEXT_ID: ContextId = SHOOTER_CONTEXT_ID + 1;
+
 //END NOTE
 
 pub fn get_context_id_from_context(context: CbInputContexts) -> ContextId {
@@ -121,8 +128,19 @@ pub fn get_context_id_from_context(context: CbInputContexts) -> ContextId {
         } => SHOOTER_CONTEXT_ID,
         CbInputContexts::VoxelEditorContext {
             networked: _,
-            look_x: _,
-            look_y: _,
+            cursor_x: _,
+            cursor_y: _,
+            toggle_orthographic_view: _,
+            front_view: _,
+            top_view: _,
+            right_view: _,
+            left_view: _,
+            rotate_camera_up: _,
+            rotate_camera_down: _,
+            rotate_camera_left: _,
+            rotate_camera_right: _,
+            add_voxel: _,
+            remove_voxel: _,
         } => VOXEL_EDITOR_CONTEXT_ID,
     }
 }

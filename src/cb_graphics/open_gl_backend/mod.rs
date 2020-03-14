@@ -177,26 +177,40 @@ fn get_proj_view(camera: &cb_graphics::CbCamera) -> (CbProjection, CbView) {
         let mouse_speed = 0.005; // configure to user variable?
 
         let delta_time = 1.0; //TODO: figure out
+                              /*
+                                                            let horizontal_angle = horizontal_angle
+                                                                + mouse_speed * delta_time * (camera.window_width / 2.0 - camera.cursor_x);
+                                                            let vertical_angle = vertical_angle
+                                                                + mouse_speed * delta_time * (camera.window_height / 2.0 - camera.cursor_y);
 
-        let horizontal_angle = horizontal_angle
-            + mouse_speed * delta_time * (camera.window_width / 2.0 - camera.cursor_x);
-        let vertical_angle = vertical_angle
-            + mouse_speed * delta_time * (camera.window_height / 2.0 - camera.cursor_y);
+                                                            let mouse_target = Point3::new(
+                                                                vertical_angle.cos() * horizontal_angle.sin(),
+                                                                vertical_angle.sin(),
+                                                                vertical_angle.cos() * horizontal_angle.cos(),
+                                                            );
 
-        let mouse_target = Point3::new(
-            vertical_angle.cos() * horizontal_angle.sin(),
-            vertical_angle.sin(),
-            vertical_angle.cos() * horizontal_angle.cos(),
-        );
+                                                            let target = Point3::new(
+                                  mouse_target.x + camera.pos_x,
+                                  mouse_target.y + camera.pos_y,
+                                  mouse_target.z + camera.pos_z,
+                              );
+                                                    */
+
+        //TODO: need to figure out camera pitch, yaw, roll
+        let target = Point3::new(camera.target_x, camera.target_y, camera.target_z);
 
         let eye = Point3::new(camera.pos_x, camera.pos_y, camera.pos_z);
-        let target = Point3::new(
-            mouse_target.x + camera.pos_x,
-            mouse_target.y + camera.pos_y,
-            mouse_target.z + camera.pos_z,
-        );
         view = Isometry3::look_at_rh(&eye, &target, &Vector3::y());
-        proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 1000.0);
+
+        if camera.orthographic_view {
+            const BOUNDS: f32 = 22.0;
+
+            let ortho = na::Orthographic3::new(-BOUNDS, BOUNDS, -BOUNDS, BOUNDS, 0.01, 10000.0);
+
+            proj = Perspective3::from_matrix_unchecked(*ortho.as_matrix());
+        } else {
+            proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 1000.0);
+        }
     }
 
     let proj: CbProjection = *proj.as_matrix();
