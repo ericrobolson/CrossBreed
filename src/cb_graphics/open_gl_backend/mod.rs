@@ -205,11 +205,26 @@ fn get_proj_view(camera: &cb_graphics::CbCamera) -> (CbProjection, CbView) {
         if camera.orthographic_view {
             const BOUNDS: f32 = 22.0;
 
-            let ortho = na::Orthographic3::new(-BOUNDS, BOUNDS, -BOUNDS, BOUNDS, 0.01, 10000.0);
+            let horizontal_bounds = (camera.window_width / camera.window_height) * BOUNDS; // Ensure it's properly scaled for the aspect ratio
+            let vertical_bounds = BOUNDS;
+
+            let ortho = na::Orthographic3::new(
+                -horizontal_bounds,
+                horizontal_bounds,
+                -vertical_bounds,
+                vertical_bounds,
+                0.01,
+                10000.0,
+            );
 
             proj = Perspective3::from_matrix_unchecked(*ortho.as_matrix());
         } else {
-            proj = Perspective3::new(4.0 / 3.0, 3.14 / 2.0, 0.1, 1000.0);
+            proj = Perspective3::new(
+                (camera.window_width / camera.window_height), // Ensure it's properly scaled for the aspect ratio
+                3.14 / 2.0,
+                0.1,
+                1000.0,
+            );
         }
     }
 
