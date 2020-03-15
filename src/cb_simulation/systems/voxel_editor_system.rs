@@ -102,31 +102,29 @@ impl<'a> System<'a> for VoxelEditorSystem {
                                 }
                             }
                         }
-                        // TODO: add/remove voxels
-                        if add_voxel == cb_input::input_type::Press::Pressed {
-                            for voxel_component in (&mut voxel_components).join() {
-                                let (active, voxel_type, _) = voxel_component
-                                    .chunk_manager
-                                    .get_voxel_mut(0, 0, 0, system_values.frame);
+                        //add/remove voxels
+                        {
+                            let x = cursor_x.value as usize;
+                            let y = cursor_x.value as usize;
+                            let z = 0;
 
-                                *active = true;
+                            if add_voxel == cb_input::input_type::Press::Pressed {
+                                for voxel_component in (&mut voxel_components).join() {
+                                    let (active, _, _, _) = voxel_component
+                                        .chunk_manager
+                                        .get_voxel_mut(x, y, z, system_values.frame);
+
+                                    *active = true;
+                                }
+                            } else if remove_voxel == cb_input::input_type::Press::Pressed {
+                                for voxel_component in (&mut voxel_components).join() {
+                                    let (active, _, _, _) = voxel_component
+                                        .chunk_manager
+                                        .get_voxel_mut(x, y, z, system_values.frame);
+
+                                    *active = false;
+                                }
                             }
-                        } else if remove_voxel == cb_input::input_type::Press::Pressed {
-                            for voxel_component in (&mut voxel_components).join() {
-                                let (active, voxel_type, _) = voxel_component
-                                    .chunk_manager
-                                    .get_voxel_mut(0, 0, 0, system_values.frame);
-
-                                *active = false;
-                            }
-                        }
-
-                        for voxel_component in (&mut voxel_components).join() {
-                            let (active, voxel_type, _) = voxel_component
-                                .chunk_manager
-                                .get_voxel_mut(0, 0, 0, system_values.frame);
-
-                            println!("voxel status: {}", active);
                         }
                     }
                     _ => {}

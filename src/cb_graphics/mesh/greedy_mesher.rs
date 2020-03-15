@@ -277,11 +277,9 @@ fn get_voxel_face(
     let chunk_size_squared = chunk_size * chunk_size;
 
     let index = x + y * chunk_size + z * chunk_size_squared;
-    let voxel = voxels[index];
-    let voxel_active = voxel.0;
-    let voxel_type = voxel.1;
+    let (active, visible, vf_type, _) = voxels[index];
 
-    let mut transparent = !voxel_active;
+    let mut transparent = !active;
 
     /*
     NOTE: THIS PART IS BUGGY AND DOESN"T WORK
@@ -320,7 +318,7 @@ fn get_voxel_face(
     }
     return VoxelFace {
         transparent: transparent,
-        vf_type: voxel_type,
+        vf_type: vf_type,
         side: side,
     };
 }

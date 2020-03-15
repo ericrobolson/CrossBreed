@@ -155,7 +155,7 @@ impl VoxelMesher {
                                         let indexes: Vec<(usize, usize, usize)> =
                                             range.map(|i| (x + i, y + i, z + i)).collect();
 
-                                        let values: Vec<(bool, u8, u8)> = indexes
+                                        let values: Vec<(bool, bool, u8, u8)> = indexes
                                             .iter()
                                             .map(|(x, y, z)| {
                                                 let i1 =
@@ -166,12 +166,12 @@ impl VoxelMesher {
                                             .collect();
 
                                         let voxel_types: Vec<u8> =
-                                            values.iter().map(|(_, value, _)| *value).collect();
+                                            values.iter().map(|(_, _, value, _)| *value).collect();
 
                                         let active_count: Vec<bool> = values
                                             .iter()
-                                            .filter_map(|(active, _, _)| {
-                                                if *active {
+                                            .filter_map(|(active, visible, _, _)| {
+                                                if *active && *visible {
                                                     return Some(true);
                                                 }
 
@@ -187,7 +187,7 @@ impl VoxelMesher {
                                         // If any voxels are active, draw it
                                         let avg_active = active_count.len() > 0;
 
-                                        working_vec.push((avg_active, avg_type, 0));
+                                        working_vec.push((avg_active, true, avg_type, 0));
                                     }
                                 }
                             }
