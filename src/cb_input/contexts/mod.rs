@@ -6,6 +6,8 @@ use sdl2::{event::Event, keyboard::Keycode};
 use crate::cb_system;
 use cb_system::GameTick;
 
+use crate::cb_graphics;
+
 use super::*;
 use input_type::{Press, Range, State};
 
@@ -61,6 +63,7 @@ pub enum CbInputContexts {
     },
     VoxelEditorContext {
         networked: Networked,
+        open_console: Press,
         cursor_x: Range,
         cursor_y: Range,
         toggle_orthographic_view: Press,
@@ -78,6 +81,14 @@ pub enum CbInputContexts {
 }
 
 pub type ContextId = u8;
+
+pub fn get_normalized_cursor_coordinates(hardware: &Sdl2HardwareInterface) -> (Range, Range) {
+    let cursor = sdl2::mouse::MouseState::new(hardware.pump);
+    let cursor_x = Range::new(cursor.x(), 0, hardware.window_width);
+    let cursor_y = Range::new(cursor.y(), 0, hardware.window_height);
+
+    return (cursor_x, cursor_y);
+}
 
 //NOTE: ALWAYS ADD TO THE END TO PRESERVE BACKWARDS COMPATIBILITY!!!!
 pub const EMPTY_CONTENTS: ContextId = 0;
@@ -128,6 +139,7 @@ pub fn get_context_id_from_context(context: CbInputContexts) -> ContextId {
         } => SHOOTER_CONTEXT_ID,
         CbInputContexts::VoxelEditorContext {
             networked: _,
+            open_console: _,
             cursor_x: _,
             cursor_y: _,
             toggle_orthographic_view: _,

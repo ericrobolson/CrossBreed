@@ -28,6 +28,8 @@ use cb_input::CbGameInput;
 
 pub mod world_builder;
 
+// NOTE: GAME UNITS are 1 = 1mm, using i32s
+
 #[derive(Default)]
 pub struct CbSystemValues {
     pub world_inputs: CbWorldInputs,

@@ -11,7 +11,7 @@ use time::{Duration, Instant};
 // NOTE: Voxel size is about 1 foot
 // Human is about 6ft, or 6 voxels
 
-pub const CHUNK_SIZE: usize = 3;
+pub const CHUNK_SIZE: usize = 4;
 pub const CHUNK_SIZE_SQUARED: usize = CHUNK_SIZE * CHUNK_SIZE;
 pub const CHUNK_SIZE_CUBED: usize = CHUNK_SIZE * CHUNK_SIZE * CHUNK_SIZE;
 
@@ -19,7 +19,7 @@ pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 1.0;
 
-pub const CHUNKS: usize = 3;
+pub const CHUNKS: usize = 4;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 
@@ -61,9 +61,6 @@ impl CbChunkManager {
     pub fn get_voxel_mut(&mut self, x: usize, y: usize, z: usize, frame: usize) -> &mut CbVoxel {
         // NOTE: only developing single chunks for simplicity right now
 
-        // let chunks = 3
-        // let chunksize = 4
-
         // Get the proper chunk index
         let chunk_x = x % CHUNKS;
         let chunk_y = y % CHUNKS;
@@ -71,10 +68,38 @@ impl CbChunkManager {
 
         let chunk_index = index_3d_to_1d(chunk_x, chunk_y, chunk_z, CHUNKS);
 
-        // Get the proper voxel index
-        let voxel_x = x - (chunk_x * CHUNK_SIZE);
-        let voxel_y = y - (chunk_y * CHUNK_SIZE);
-        let voxel_z = z - (chunk_z * CHUNK_SIZE);
+        // Get the proper voxel index; NOTE: Need to figure out what to do when chunk_ * CHUNK_SIZE > value
+        let voxel_x;
+        {
+            let voxels_to_remove = chunk_x * CHUNK_SIZE;
+
+            if voxels_to_remove > x {
+                voxel_x = 0;
+            } else {
+                voxel_x = x - voxels_to_remove;
+            }
+        }
+        let voxel_y;
+        {
+            let voxels_to_remove = chunk_y * CHUNK_SIZE;
+
+            if voxels_to_remove > y {
+                voxel_y = 0;
+            } else {
+                voxel_y = y - voxels_to_remove;
+            }
+        }
+
+        let voxel_z;
+        {
+            let voxels_to_remove = chunk_z * CHUNK_SIZE;
+
+            if voxels_to_remove > z {
+                voxel_z = 0;
+            } else {
+                voxel_z = z - voxels_to_remove;
+            }
+        }
 
         let voxel_index = index_3d_to_1d(voxel_x, voxel_y, voxel_z, CHUNK_SIZE);
 

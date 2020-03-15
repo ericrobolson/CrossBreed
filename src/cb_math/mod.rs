@@ -1,5 +1,8 @@
 // Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
 
+pub mod cb_matrix;
+pub mod cb_range;
+
 /// Returns the number raised to the power
 pub fn pow(num: usize, pow: usize) -> usize {
     let mut value = 1;
