@@ -37,6 +37,7 @@ pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
             normal_buff: normal_buff,
             last_calculated_frame: 0,
             indices_count: 0,
+            visible: true,
         });
     }
 
@@ -200,6 +201,9 @@ fn draw_meshes(
                 );
 
                 gl::BindVertexArray(0);
+
+                buffer.visible = !mesh.is_empty();
+                if mesh.is_empty() {}
             }
         }
 
@@ -208,15 +212,17 @@ fn draw_meshes(
         }
 
         // Render
-        unsafe {
-            gl::BindVertexArray(buffer.vao);
-            gl::DrawElements(
-                gl::TRIANGLES,
-                buffer.indices_count as i32,
-                gl::UNSIGNED_INT,
-                std::ptr::null(),
-            );
-            gl::BindVertexArray(0);
+        if buffer.visible {
+            unsafe {
+                gl::BindVertexArray(buffer.vao);
+                gl::DrawElements(
+                    gl::TRIANGLES,
+                    buffer.indices_count as i32,
+                    gl::UNSIGNED_INT,
+                    std::ptr::null(),
+                );
+                gl::BindVertexArray(0);
+            }
         }
 
         // End render mesh

@@ -22,6 +22,12 @@ pub fn index_1d_to_3d(index: usize, x_max: usize, y_max: usize) -> (usize, usize
     return (x, y, z);
 }
 
+pub fn index_3d_to_1d(x: usize, y: usize, z: usize, grid_size: usize) -> usize {
+    let index = x + y * grid_size + z * (grid_size * grid_size);
+
+    return index;
+}
+
 pub fn index_2d_to_1d(x: usize, y: usize, array_size: usize) -> usize {
     return x + array_size * y;
 }

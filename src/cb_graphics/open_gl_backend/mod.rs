@@ -6,10 +6,9 @@ use std::ffi::CString;
 extern crate nalgebra as na;
 use na::{Isometry3, Perspective3, Point3, Vector3};
 
-use crate::cb_simulation;
-use cb_simulation::CbGameState;
-
 use crate::cb_graphics;
+use crate::cb_simulation;
+use cb_simulation::{components, CbGameState};
 
 use crate::cb_voxels;
 pub mod sprites;
@@ -24,10 +23,14 @@ use cb_graphics::cb_collada;
 use cb_graphics::mesh;
 use std::path::Path;
 
+extern crate specs;
+use specs::prelude::*;
+
 pub struct MeshBuffers {
     pub vao: gl::types::GLuint,
     pub vbo: gl::types::GLuint,
     pub ebo: gl::types::GLuint,
+    visible: bool,
     pub color_buff: gl::types::GLuint,
     pub normal_buff: gl::types::GLuint,
     pub last_calculated_frame: usize,
@@ -111,6 +114,7 @@ impl OpenGlBackend {
         renderer: &mut Self,
         camera: &cb_graphics::CbCamera,
         game_state: &CbGameState,
+        world: &World,
         frame: usize,
     ) {
         unsafe {
@@ -134,10 +138,15 @@ impl OpenGlBackend {
 
         // Draw voxels
         if draw_voxels {
+            let voxel_components =
+                world.read_storage::<components::voxel_components::VoxelComponent>();
+
             // First mesh them
-            renderer
-                .voxel_mesher
-                .mesh(&game_state.chunk_manager, frame, camera);
+            for voxel in (&voxel_components).join() {
+                renderer
+                    .voxel_mesher
+                    .mesh(&voxel.chunk_manager, frame, camera);
+            }
 
             renderer.basic_mesh_program.set_used();
             r_voxel_render::draw_voxel_meshes(renderer, camera, frame);

@@ -63,6 +63,12 @@ impl VoxelMesher {
         frame: usize,
         camera: &cb_graphics::CbCamera,
     ) {
+        /*
+        XXXXXXXXXXXXXXXXXXXXXXX
+        NOTE: CURRENTLY SUPPORTS A SINGLE VOXEL CHUNK, DOES NOT TAKE INTO ACCOUNT POSITION/VELOCITY COMPONENTS YET
+        XXXXXXXXXXXXXXXXXXXXXXX
+        */
+
         let first_frame = self.first_frame; // NOTE:
 
         let camera_coords = Vector3::new(camera.pos_x, camera.pos_y, camera.pos_z);

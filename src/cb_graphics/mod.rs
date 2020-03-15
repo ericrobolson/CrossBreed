@@ -1,5 +1,8 @@
 // Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
 
+extern crate specs;
+use specs::prelude::*;
+
 extern crate gl;
 extern crate sdl2;
 use sdl2::video::GLProfile;
@@ -145,25 +148,31 @@ impl CbGfx {
         return &mut self.camera;
     }
 
-    pub fn render(&mut self, game_state: &CbGameState, frame: usize) {
+    pub fn render(&mut self, game_state: &CbGameState, world: &World, frame: usize) {
         const SIZE_SCALING_FACTOR: f32 = 100.0;
         const DEGREES_SCALING_FACTOR: f32 = 10.0;
 
-        self.camera.orthographic_view = game_state.camera_orthographic_view;
+        let camera_components =
+            world.read_storage::<cb_simulation::components::gfx_components::CameraComponent>();
 
-        self.camera.pitch = (game_state.camera_pitch as f32) / DEGREES_SCALING_FACTOR;
-        self.camera.roll = (game_state.camera_roll as f32) / DEGREES_SCALING_FACTOR;
-        self.camera.yaw = (game_state.camera_yaw as f32) / DEGREES_SCALING_FACTOR;
+        // NOTE: There really should only be one active camera at a time perhaps?
+        for camera in (&camera_components).join() {
+            self.camera.orthographic_view = camera.camera_orthographic_view;
 
-        self.camera.pos_x = (game_state.camera_pos_x as f32) / SIZE_SCALING_FACTOR;
-        self.camera.pos_y = (game_state.camera_pos_y as f32) / SIZE_SCALING_FACTOR;
-        self.camera.pos_z = (game_state.camera_pos_z as f32) / SIZE_SCALING_FACTOR;
+            self.camera.pitch = (camera.camera_pitch as f32) / DEGREES_SCALING_FACTOR;
+            self.camera.roll = (camera.camera_roll as f32) / DEGREES_SCALING_FACTOR;
+            self.camera.yaw = (camera.camera_yaw as f32) / DEGREES_SCALING_FACTOR;
 
-        self.camera.target_x = (game_state.camera_target_x as f32) / SIZE_SCALING_FACTOR;
-        self.camera.target_y = (game_state.camera_target_y as f32) / SIZE_SCALING_FACTOR;
-        self.camera.target_z = (game_state.camera_target_z as f32) / SIZE_SCALING_FACTOR;
+            self.camera.pos_x = (camera.camera_pos_x as f32) / SIZE_SCALING_FACTOR;
+            self.camera.pos_y = (camera.camera_pos_y as f32) / SIZE_SCALING_FACTOR;
+            self.camera.pos_z = (camera.camera_pos_z as f32) / SIZE_SCALING_FACTOR;
 
-        OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, frame);
+            self.camera.target_x = (camera.camera_target_x as f32) / SIZE_SCALING_FACTOR;
+            self.camera.target_y = (camera.camera_target_y as f32) / SIZE_SCALING_FACTOR;
+            self.camera.target_z = (camera.camera_target_z as f32) / SIZE_SCALING_FACTOR;
+        }
+
+        OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, world, frame);
         self.window.gl_swap_window();
     }
 }
