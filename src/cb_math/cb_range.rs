@@ -39,9 +39,9 @@ impl CbNormalizedRange {
 
     pub fn map_to_range_usize(&self, min: usize, max: usize) -> usize {
         // Map to a positive scale, as usizes are positive
-        let positive_v = CbNormalizedRange::scale_value(
-            self.value, MIN_VALUE, MAX_VALUE, min as i32, max as i32,
-        );
+        let max = (max as i32) - 1;
+        let positive_v =
+            CbNormalizedRange::scale_value(self.value, MIN_VALUE, MAX_VALUE, min as i32, max);
 
         return positive_v as usize;
     }

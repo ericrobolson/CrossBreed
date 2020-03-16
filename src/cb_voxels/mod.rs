@@ -59,51 +59,10 @@ impl CbChunkManager {
     }
 
     pub fn get_voxel_mut(&mut self, x: usize, y: usize, z: usize, frame: usize) -> &mut CbVoxel {
-        // NOTE: only developing single chunks for simplicity right now
+        let (chunk_index, voxel_index) =
+            get_chunk_and_voxel_indexes_3d_to_1d(x, y, z, CHUNKS, CHUNK_SIZE);
 
-        // Get the proper chunk index
-        let chunk_x = x % CHUNKS;
-        let chunk_y = y % CHUNKS;
-        let chunk_z = z % CHUNKS;
-
-        let chunk_index = index_3d_to_1d(chunk_x, chunk_y, chunk_z, CHUNKS);
-
-        // Get the proper voxel index; NOTE: Need to figure out what to do when chunk_ * CHUNK_SIZE > value
-        let voxel_x;
-        {
-            let voxels_to_remove = chunk_x * CHUNK_SIZE;
-
-            if voxels_to_remove > x {
-                voxel_x = 0;
-            } else {
-                voxel_x = x - voxels_to_remove;
-            }
-        }
-        let voxel_y;
-        {
-            let voxels_to_remove = chunk_y * CHUNK_SIZE;
-
-            if voxels_to_remove > y {
-                voxel_y = 0;
-            } else {
-                voxel_y = y - voxels_to_remove;
-            }
-        }
-
-        let voxel_z;
-        {
-            let voxels_to_remove = chunk_z * CHUNK_SIZE;
-
-            if voxels_to_remove > z {
-                voxel_z = 0;
-            } else {
-                voxel_z = z - voxels_to_remove;
-            }
-        }
-
-        let voxel_index = index_3d_to_1d(voxel_x, voxel_y, voxel_z, CHUNK_SIZE);
-
-        self.chunks[chunk_index].frame_updated_at = frame;
+        self.chunks[chunk_index].frame_updated_at = frame; // Since someone else is modifying the voxel, set this to updated.
 
         return &mut self.chunks[chunk_index].voxel_vec[voxel_index];
     }
@@ -153,5 +112,161 @@ impl CbVoxelChunk {
             voxel_vec: voxel_vec,
         };
         return chunk;
+    }
+}
+
+fn get_chunk_and_voxel_indexes_3d_to_1d(
+    x: usize,
+    y: usize,
+    z: usize,
+    num_chunks: usize,
+    chunk_size: usize,
+) -> (usize, usize) {
+    // Get the proper chunk index
+
+    let chunk_x;
+    {
+        if x < chunk_size {
+            chunk_x = 0;
+        } else {
+            chunk_x = x % num_chunks;
+        }
+    }
+
+    let chunk_y;
+    {
+        if y < chunk_size {
+            chunk_y = 0;
+        } else {
+            chunk_y = y % num_chunks;
+        }
+    }
+
+    let chunk_z;
+    {
+        if z < chunk_size {
+            chunk_z = 0;
+        } else {
+            chunk_z = z % num_chunks;
+        }
+    }
+
+    let chunk_index = index_3d_to_1d(chunk_x, chunk_y, chunk_z, num_chunks);
+
+    // Get the proper voxel index; NOTE: Need to figure out what to do when chunk_ * CHUNK_SIZE > value
+    let voxel_x;
+    {
+        let voxels_to_remove = chunk_x * chunk_size;
+
+        if voxels_to_remove > x {
+            voxel_x = 0;
+        } else {
+            voxel_x = x - voxels_to_remove;
+        }
+    }
+    let voxel_y;
+    {
+        let voxels_to_remove = chunk_y * chunk_size;
+
+        if voxels_to_remove > y {
+            voxel_y = 0;
+        } else {
+            voxel_y = y - voxels_to_remove;
+        }
+    }
+
+    let voxel_z;
+    {
+        let voxels_to_remove = chunk_z * chunk_size;
+
+        if voxels_to_remove > z {
+            voxel_z = 0;
+        } else {
+            voxel_z = z - voxels_to_remove;
+        }
+    }
+
+    let voxel_index = index_3d_to_1d(voxel_x, voxel_y, voxel_z, chunk_size);
+
+    return (chunk_index, voxel_index);
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn get_chunk_and_voxel_indexes_3d_to_1d_x0y0z9_n3c3_returns_0and1() {
+        let x = 0;
+        let y = 0;
+        let z = 1;
+        let num_chunks = 3;
+        let chunk_size = 3;
+
+        let actual = get_chunk_and_voxel_indexes_3d_to_1d(x, y, z, num_chunks, chunk_size);
+
+        let expected = (0, 9);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn get_chunk_and_voxel_indexes_3d_to_1d_x0y1z0_n3c3_returns_0and1() {
+        let x = 0;
+        let y = 1;
+        let z = 0;
+        let num_chunks = 3;
+        let chunk_size = 3;
+
+        let actual = get_chunk_and_voxel_indexes_3d_to_1d(x, y, z, num_chunks, chunk_size);
+
+        let expected = (0, 3);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn get_chunk_and_voxel_indexes_3d_to_1d_x1y0z0_n3c3_returns_0and1() {
+        let x = 1;
+        let y = 0;
+        let z = 0;
+        let num_chunks = 3;
+        let chunk_size = 3;
+
+        let actual = get_chunk_and_voxel_indexes_3d_to_1d(x, y, z, num_chunks, chunk_size);
+
+        let expected = (0, 1);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn get_chunk_and_voxel_indexes_3d_to_1d_x0y0z0_n1c1_returns_0and0() {
+        let x = 0;
+        let y = 0;
+        let z = 0;
+        let num_chunks = 1;
+        let chunk_size = 1;
+
+        let actual = get_chunk_and_voxel_indexes_3d_to_1d(x, y, z, num_chunks, chunk_size);
+
+        let expected = (0, 0);
+
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn get_chunk_and_voxel_indexes_3d_to_1d_x0y0z0_n3c3_returns_0and0() {
+        let x = 0;
+        let y = 0;
+        let z = 0;
+        let num_chunks = 3;
+        let chunk_size = 3;
+
+        let actual = get_chunk_and_voxel_indexes_3d_to_1d(x, y, z, num_chunks, chunk_size);
+
+        let expected = (0, 0);
+
+        assert_eq!(expected, actual);
     }
 }

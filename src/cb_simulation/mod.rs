@@ -8,7 +8,7 @@ use crate::cb_voxels;
 use crate::cb_graphics;
 
 mod systems;
-use systems::voxel_editor_system;
+use systems::{editor_system::EditorSystem, voxel_editor_system};
 
 pub mod assemblages;
 pub mod components;
@@ -57,7 +57,9 @@ pub type CbWorldInputs = std::vec::Vec<CbGameInput>;
 pub struct CbSimulationInterface<'a, 'b> {
     game_state: CbGameState,
     world: World,
+    in_editor_mode: bool,
     sim_dispatcher: specs::Dispatcher<'a, 'b>,
+    editor_dispatcher: specs::Dispatcher<'a, 'b>,
     gfx_dispatcher: specs::Dispatcher<'a, 'b>,
     pub gfx: cb_graphics::CbGfx,
 }
@@ -86,19 +88,25 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             dispatcher = builder.build();
         }
 
+        let editor_dispatcher = DispatcherBuilder::new()
+            .with(EditorSystem, "editor system", &[])
+            .build();
+
         let mut gfx_dispatcher = DispatcherBuilder::new().build();
         let mut world = world_builder::new(mode);
 
         return Self {
             game_state: CbGameState::new(),
             sim_dispatcher: dispatcher,
+            editor_dispatcher: editor_dispatcher,
             gfx_dispatcher: gfx_dispatcher,
             world: world,
             gfx: cb_graphics::CbGfx::new(),
+            in_editor_mode: false,
         };
     }
 
-    /// Render the simulation
+    /// Render the simulation; only updates the graphics systems
     pub fn render(&mut self) {
         self.gfx.render(
             &self.game_state,
@@ -124,14 +132,19 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
             self.game_state.current_tick as usize,
         ));
 
-        // Execute world systems + maintain it
-        {
-            self.sim_dispatcher.dispatch(&mut self.world);
-            self.world.maintain();
-        }
-        self.game_state.current_tick += 1;
+        if self.in_editor_mode {
+            self.editor_dispatcher.dispatch(&mut self.world);
+        } else {
+            // Execute simulation systems
 
-        //NOTE: may need a camera for each player? maybe not
+            {
+                // Execute world systems + maintain it
+                self.sim_dispatcher.dispatch(&mut self.world);
+                self.world.maintain();
+            }
+
+            self.game_state.current_tick += 1;
+        }
     }
 
     fn current_game_state(&self) -> CbGameState {

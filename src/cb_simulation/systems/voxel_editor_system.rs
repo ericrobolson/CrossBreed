@@ -191,7 +191,7 @@ impl<'a> System<'a> for VoxelEditorSystem {
                                         0,
                                         voxel_component.chunk_manager.get_voxel_width(),
                                     );
-                                    let z = 0;
+                                    let z = 0; // Z is 0, as the goal is to make it oriented by slices and have the active slice be dynamic
 
                                     let (active, _, _, _) = voxel_component
                                         .chunk_manager
@@ -211,7 +211,7 @@ impl<'a> System<'a> for VoxelEditorSystem {
                                         voxel_component.chunk_manager.get_voxel_width(),
                                     );
 
-                                    let z = 0;
+                                    let z = 0; // Z is 0, as the goal is to make it oriented by slices and have the active slice be dynamic
 
                                     let (active, _, _, _) = voxel_component
                                         .chunk_manager
