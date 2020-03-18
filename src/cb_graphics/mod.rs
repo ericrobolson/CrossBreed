@@ -11,8 +11,8 @@ pub mod open_gl_backend;
 use open_gl_backend::OpenGlBackend;
 
 pub mod cb_collada;
-
 pub mod mesh;
+pub mod sprites;
 
 use crate::cb_simulation;
 use cb_simulation::CbGameState;

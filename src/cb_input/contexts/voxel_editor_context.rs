@@ -51,7 +51,7 @@ pub fn get_voxel_editor_context_from_keys(
 
     // Declare keys to map to
     let toggle_orthographic_view_keys = vec![Keycode::Num0];
-    let open_console_keys = vec![Keycode::Backquote];
+    let open_console_keys = vec![];
     let front_view_keys = vec![Keycode::Num1];
     let left_view_keys = vec![Keycode::Num2];
     let right_view_keys = vec![Keycode::Num3];
@@ -158,7 +158,7 @@ pub fn get_voxel_editor_context_from_keys(
     let (cursor_x, cursor_y) = get_normalized_cursor_coordinates(hardware);
     return CbInputContexts::VoxelEditorContext {
         networked: Networked::Off,
-        open_console: open_console,
+        open_console: Press::NotPressed,
         cursor_x: cursor_x,
         cursor_y: cursor_y,
         toggle_orthographic_view: toggle_orthographic_view,

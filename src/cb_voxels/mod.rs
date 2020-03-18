@@ -103,7 +103,7 @@ impl CbVoxelChunk {
             .collect::<Vec<usize>>()
             .iter()
             .map(|i| {
-                return (false, true, VOXEL_TYPE_GRASS, 0);
+                return (true, true, VOXEL_TYPE_GRASS, 0);
             })
             .collect();
 

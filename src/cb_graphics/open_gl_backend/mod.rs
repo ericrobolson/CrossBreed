@@ -11,7 +11,6 @@ use crate::cb_simulation;
 use cb_simulation::{components, CbGameState};
 
 use crate::cb_voxels;
-pub mod sprites;
 
 mod r_collada_render;
 use r_collada_render::CbColladaRenderer;
@@ -21,8 +20,8 @@ pub mod render_gl;
 
 use cb_graphics::cb_collada;
 use cb_graphics::mesh;
+use cb_graphics::sprites::{CbSpriteRenderer, SpriteRenderer};
 use std::path::Path;
-
 extern crate specs;
 use specs::prelude::*;
 
@@ -40,11 +39,11 @@ pub struct MeshBuffers {
 pub struct OpenGlBackend {
     basic_mesh_program: render_gl::Program,
     chunk_mesh_buffers: Vec<MeshBuffers>,
+    sprite_renderer: CbSpriteRenderer,
     mvp_id: i32,
     light_id: i32,
     frame: usize,
     voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher,
-    sprite_renderer: cb_graphics::open_gl_backend::sprites::SpriteRenderer,
     collada_renderer: CbColladaRenderer,
 }
 
@@ -71,9 +70,6 @@ impl OpenGlBackend {
 
         mesh_program.set_used();
 
-        // Sprites
-        let sprite_renderer = sprites::SpriteRenderer::new();
-
         // MVP uniform
         let mvp_str = &CString::new("MVP").unwrap();
         let mvp_id;
@@ -99,13 +95,13 @@ impl OpenGlBackend {
         }
 
         return Self {
+            sprite_renderer: CbSpriteRenderer::new(),
             basic_mesh_program: mesh_program,
             chunk_mesh_buffers: r_voxel_render::init_voxel_mesh_buffers(),
             mvp_id: mvp_id,
             light_id: light_id,
             frame: 0,
             voxel_mesher: cb_graphics::mesh::voxel_mesher::VoxelMesher::new(),
-            sprite_renderer: sprite_renderer,
             collada_renderer: collada_renderer,
         };
     }
@@ -124,7 +120,8 @@ impl OpenGlBackend {
 
         // Draw sprites
         {
-            renderer.sprite_renderer.render(camera, frame);
+            renderer.sprite_renderer.batch();
+            renderer.sprite_renderer.render();
         }
 
         // Draw collada

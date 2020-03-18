@@ -106,6 +106,11 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
         };
     }
 
+    pub fn toggle_editor_mode(&mut self) {
+        self.in_editor_mode = !self.in_editor_mode;
+        println!("Editor Mode: {}", self.in_editor_mode);
+    }
+
     /// Render the simulation; only updates the graphics systems
     pub fn render(&mut self) {
         self.gfx.render(

@@ -95,6 +95,27 @@ fn main() {
                 {
                     current_frame_inputs = input_context_manager
                         .read_os_inputs(r_mercury.get_game_interface_mut().gfx.event_pump_mut());
+
+                    if current_frame_inputs.iter().any(|e| {
+                        match e {
+                            sdl2::event::Event::KeyDown {
+                                timestamp: _,
+                                window_id: _,
+                                keycode: keycode,
+                                scancode: _,
+                                keymod: _,
+                                repeat: _,
+                            } => {
+                                if *keycode == Some(sdl2::keyboard::Keycode::Backquote) {
+                                    return true;
+                                }
+                            }
+                            _ => {}
+                        }
+                        return false;
+                    }) {
+                        r_mercury.get_game_interface_mut().toggle_editor_mode();
+                    }
                 }
 
                 let hardware_interface = cb_graphics::Sdl2HardwareInterface::from_gfx(
