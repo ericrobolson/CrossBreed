@@ -11,7 +11,9 @@ pub fn new(world: &mut World) {
     world
         .create_entity()
         .with(VoxelComponent::new())
+        .with(components::RangePresentableTestComponent::new())
         .with(TransformComponent::new())
         .with(CameraComponent::new())
+        .with(components::EditableComponent::new(true))
         .build();
 }

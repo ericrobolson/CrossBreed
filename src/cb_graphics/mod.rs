@@ -14,6 +14,9 @@ pub mod cb_collada;
 pub mod mesh;
 pub mod sprites;
 
+use crate::cb_patterns;
+use cb_patterns::presenter::{Presenter, SliderPresenter, View};
+
 use crate::cb_simulation;
 use cb_simulation::CbGameState;
 
@@ -85,6 +88,10 @@ pub struct CbGfx {
     sdl_context: sdl2::Sdl,
     event_pump: sdl2::EventPump,
     window: sdl2::video::Window,
+    video_subsystem: sdl2::VideoSubsystem,
+    editor_window: sdl2::render::Canvas<sdl2::video::Window>,
+    editor_visible: bool,
+
     gl_context: sdl2::video::GLContext, // Need this to keep the OpenGL context active
     gl_backend: OpenGlBackend,
     camera: CbCamera,
@@ -118,17 +125,28 @@ impl CbGfx {
 
         let gl_backend = OpenGlBackend::new();
 
+        let mut editor_window = video_subsystem.window("Editor", 640, 480).build().unwrap();
+
+        let mut canvas = editor_window.into_canvas().build().unwrap();
+
         return Self {
             reset_cursor: true,
+            video_subsystem: video_subsystem,
             window_width: window_width as i32,
             window_height: window_height as i32,
             sdl_context: sdl_context,
             event_pump: event_pump,
             window: window,
+            editor_window: canvas,
+            editor_visible: true,
             gl_context: ctx,
             gl_backend: gl_backend,
             camera: CbCamera::new(window_width as f32, window_height as f32),
         };
+    }
+
+    pub fn toggle_editor_window(&mut self) {
+        //UNIMPLEMENTED!();
     }
 
     pub fn event_pump_mut(&mut self) -> &mut sdl2::EventPump {
@@ -174,5 +192,58 @@ impl CbGfx {
 
         OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, world, frame);
         self.window.gl_swap_window();
+
+        // Draw presenters/views
+        {
+            // Clear canvas
+            let canvas = &mut self.editor_window;
+            canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+            canvas.clear();
+
+            let presenter_components =
+                world.read_storage::<cb_simulation::components::RangePresentableTestComponent>();
+
+            for presenter_component in (&presenter_components).join() {
+                let presenter = &presenter_component.presenter;
+                let view_position = presenter.get_view_position();
+
+                let view_boundary = 5;
+
+                canvas.set_draw_color(sdl2::pixels::Color::RGB(255, 210, 0));
+                canvas
+                    .fill_rect(sdl2::rect::Rect::new(
+                        (view_position.x as i32),
+                        view_position.y as i32,
+                        (view_position.width + view_boundary) as u32,
+                        (view_position.height + view_boundary) as u32,
+                    ))
+                    .unwrap();
+
+                // View rendering
+                {
+                    let view = presenter.get_view();
+                    let view_objects = view.get_view_objects();
+
+                    for view_object in view_objects.iter() {
+                        match view_object.object_type {
+                            cb_patterns::presenter::ViewObjectTypes::Rectangle => {
+                                canvas.set_draw_color(sdl2::pixels::Color::RGB(210, 210, 210));
+                                canvas
+                                    .fill_rect(sdl2::rect::Rect::new(
+                                        (view_object.view_position.x as i32),
+                                        view_object.view_position.y as i32,
+                                        (view_object.view_position.width) as u32,
+                                        (view_object.view_position.height) as u32,
+                                    ))
+                                    .unwrap();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Render
+            canvas.present();
+        }
     }
 }

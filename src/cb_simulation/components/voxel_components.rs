@@ -5,6 +5,9 @@ use specs::prelude::*;
 use crate::cb_system;
 use cb_system::{Coordinate, GameUnit};
 
+use crate::cb_patterns;
+use cb_patterns::command::MacroCommand;
+
 use crate::cb_voxels;
 
 pub struct VoxelComponent {
@@ -20,3 +23,7 @@ impl VoxelComponent {
 }
 
 init_component_implementations![VoxelComponent];
+
+pub struct VoxelComponentController {
+    command_stack: MacroCommand,
+}

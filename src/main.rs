@@ -13,6 +13,7 @@ pub mod cb_data_structures;
 pub mod cb_graphics;
 pub mod cb_input;
 pub mod cb_math;
+pub mod cb_patterns;
 pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;

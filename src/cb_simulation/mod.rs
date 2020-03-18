@@ -5,6 +5,9 @@ use cb_system::{CbEvent, GameTick};
 
 use crate::cb_voxels;
 
+use crate::cb_patterns;
+use cb_patterns::presenter::{Presenter, SliderPresenter};
+
 use crate::cb_graphics;
 
 mod systems;
@@ -102,12 +105,13 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             gfx_dispatcher: gfx_dispatcher,
             world: world,
             gfx: cb_graphics::CbGfx::new(),
-            in_editor_mode: false,
+            in_editor_mode: true,
         };
     }
 
     pub fn toggle_editor_mode(&mut self) {
         self.in_editor_mode = !self.in_editor_mode;
+        self.gfx.toggle_editor_window();
         println!("Editor Mode: {}", self.in_editor_mode);
     }
 
@@ -118,6 +122,7 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             &self.world,
             self.game_state.current_tick as usize,
         );
+
         self.gfx_dispatcher.dispatch(&self.world);
     }
 }
@@ -139,7 +144,9 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
 
         if self.in_editor_mode {
             self.editor_dispatcher.dispatch(&mut self.world);
-        } else {
+        }
+        //else
+        {
             // Execute simulation systems
 
             {
