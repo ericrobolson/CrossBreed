@@ -80,12 +80,14 @@ impl View for SliderView {
 pub struct SliderPresenter {
     model: CbNormalizedRange,
     pub view_position: ViewPosition,
+    pub editing: bool,
 }
 
 impl<'callback> Presenter<'callback, CbNormalizedRange> for SliderPresenter {
     fn new() -> Self {
         let mut model = CbNormalizedRange::default(); // TODO: what should this actually map to?
         return SliderPresenter {
+            editing: false,
             model: model,
             view_position: ViewPosition {
                 x: 0,

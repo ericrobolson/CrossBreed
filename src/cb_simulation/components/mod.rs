@@ -29,6 +29,7 @@ impl EditableComponent {
 pub struct RangePresentableTestComponent {
     pub range: CbNormalizedRange,
     pub presenter: SliderPresenter,
+    editing_component: bool,
 }
 
 impl<'a> RangePresentableTestComponent {
@@ -36,18 +37,27 @@ impl<'a> RangePresentableTestComponent {
         return &mut self.range;
     }
 
-    pub fn sync_presenter(&mut self) {
+    fn sync_presenter(&mut self) {
         self.presenter.set_model(self.range);
     }
 
-    pub fn update_from_presenter(&mut self) {
+    fn update_from_presenter(&mut self) {
         self.range = self.presenter.get_model();
+    }
+
+    pub fn sync(&mut self) {
+        if self.editing_component {
+            self.update_from_presenter();
+        } else if self.presenter.editing == false {
+            self.sync_presenter();
+        }
     }
 
     pub fn new() -> Self {
         let v = Self {
             range: cb_math::cb_range::CbNormalizedRange::default(),
             presenter: SliderPresenter::new(),
+            editing_component: false,
         };
         return v;
     }

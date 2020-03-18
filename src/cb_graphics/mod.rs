@@ -98,7 +98,7 @@ pub struct CbGfx {
     pub reset_cursor: bool,
 }
 
-impl CbGfx {
+impl<'a> CbGfx {
     pub fn new() -> Self {
         let sdl_context = sdl2::init().unwrap();
         let event_pump = sdl_context.event_pump().unwrap();

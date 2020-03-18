@@ -17,7 +17,8 @@ impl<'a> System<'a> for EditorSystem {
         // TODO: add ability to create entities on the fly?
 
         for presenter_component in (&mut presentercomponents).join() {
-            presenter_component.sync_presenter();
+            presenter_component.range.value += 10; // Here to test game sim updating presenter
+            presenter_component.sync();
         }
     }
 }
