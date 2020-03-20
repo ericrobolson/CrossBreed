@@ -2,12 +2,9 @@ extern crate specs;
 use specs::prelude::*;
 
 use super::*;
-use cb_patterns;
+
 use components;
-use components::{
-    gfx_components, physics_components, voxel_components, EditableComponent,
-    RangePresentableTestComponent,
-};
+use components::{gfx_components, physics_components, voxel_components, EditableComponent};
 
 pub fn new(mode: CbSimulationModes) -> specs::World {
     let mut world = World::new();
@@ -31,7 +28,6 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
     // Misc components
     {
         world.register::<EditableComponent>();
-        world.register::<RangePresentableTestComponent>();
     }
 
     // Resources

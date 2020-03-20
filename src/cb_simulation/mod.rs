@@ -5,9 +5,6 @@ use cb_system::{CbEvent, GameTick};
 
 use crate::cb_voxels;
 
-use crate::cb_patterns;
-use cb_patterns::presenter::{Presenter, SliderPresenter};
-
 use crate::cb_graphics;
 
 mod systems;

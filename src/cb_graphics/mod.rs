@@ -16,8 +16,8 @@ pub mod sprites;
 
 use crate::cb_menu;
 
-use crate::cb_patterns;
-use cb_patterns::presenter::{Presenter, SliderPresenter, View};
+use crate::cb_menu::gfx;
+use gfx::{Color, Pallate};
 
 use crate::cb_simulation;
 use cb_simulation::CbGameState;
@@ -281,57 +281,14 @@ impl<'a> CbGfx {
         OpenGlBackend::render(&mut self.gl_backend, &self.camera, game_state, world, frame);
         self.window.gl_swap_window();
 
-        // Draw presenters/views
+        // Draw GUI editor window
         {
             // Clear canvas
             let canvas = &mut self.editor_window;
             canvas.set_draw_color(sdl2::pixels::Color::RGB(237, 237, 237));
             canvas.clear();
 
-            let presenter_components =
-                world.read_storage::<cb_simulation::components::RangePresentableTestComponent>();
-
-            for presenter_component in (&presenter_components).join() {
-                let presenter = &presenter_component.presenter;
-                let view_position = presenter.get_view_position();
-
-                let view_boundary = 5;
-                /*
-                canvas.set_draw_color(sdl2::pixels::Color::RGB(255, 210, 0));
-                canvas
-                    .fill_rect(sdl2::rect::Rect::new(
-                        (view_position.x as i32),
-                        view_position.y as i32,
-                        (view_position.width + view_boundary) as u32,
-                        (view_position.height + view_boundary) as u32,
-                    ))
-                    .unwrap();
-
-                // View rendering
-                {
-                    let view = presenter.get_view();
-                    let view_objects = view.get_view_objects();
-
-                    for view_object in view_objects.iter() {
-                        match view_object.object_type {
-                            cb_patterns::presenter::ViewObjectTypes::Rectangle => {
-                                canvas.set_draw_color(sdl2::pixels::Color::RGB(210, 210, 210));
-                                canvas
-                                    .fill_rect(sdl2::rect::Rect::new(
-                                        (view_object.view_position.x as i32),
-                                        view_object.view_position.y as i32,
-                                        (view_object.view_position.width) as u32,
-                                        (view_object.view_position.height) as u32,
-                                    ))
-                                    .unwrap();
-                            }
-                        }
-                    }
-                }*/
-            }
-
             // Render
-
             let draw_calls = self.editor_gui_env.draw();
             for draw_call in draw_calls.iter() {
                 match draw_call {
