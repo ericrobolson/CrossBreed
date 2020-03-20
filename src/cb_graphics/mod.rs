@@ -14,6 +14,8 @@ pub mod cb_collada;
 pub mod mesh;
 pub mod sprites;
 
+use crate::cb_menu;
+
 use crate::cb_patterns;
 use cb_patterns::presenter::{Presenter, SliderPresenter, View};
 
@@ -90,7 +92,11 @@ pub struct CbGfx {
     window: sdl2::video::Window,
     video_subsystem: sdl2::VideoSubsystem,
     editor_window: sdl2::render::Canvas<sdl2::video::Window>,
+    editor_gui_env: cb_menu::GuiEnvironment,
     editor_visible: bool,
+
+    main_window_id: u32,
+    editor_window_id: u32,
 
     gl_context: sdl2::video::GLContext, // Need this to keep the OpenGL context active
     gl_backend: OpenGlBackend,
@@ -118,6 +124,8 @@ impl<'a> CbGfx {
             .build()
             .unwrap();
 
+        let main_window_id = window.id();
+
         let ctx = window.gl_create_context().unwrap();
         gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
         debug_assert_eq!(gl_attr.context_profile(), GLProfile::Core);
@@ -126,6 +134,8 @@ impl<'a> CbGfx {
         let gl_backend = OpenGlBackend::new();
 
         let mut editor_window = video_subsystem.window("Editor", 640, 480).build().unwrap();
+
+        let editor_window_id = editor_window.id();
 
         let mut canvas = editor_window.into_canvas().build().unwrap();
 
@@ -137,7 +147,10 @@ impl<'a> CbGfx {
             sdl_context: sdl_context,
             event_pump: event_pump,
             window: window,
+            main_window_id: main_window_id,
+            editor_window_id: editor_window_id,
             editor_window: canvas,
+            editor_gui_env: cb_menu::GuiEnvironment::new(),
             editor_visible: true,
             gl_context: ctx,
             gl_backend: gl_backend,
@@ -149,8 +162,76 @@ impl<'a> CbGfx {
         //UNIMPLEMENTED!();
     }
 
-    pub fn event_pump_mut(&mut self) -> &mut sdl2::EventPump {
-        return &mut self.event_pump;
+    pub fn get_events(&mut self) -> Vec<sdl2::event::Event> {
+        let events: Vec<sdl2::event::Event> = self.event_pump.poll_iter().map(|e| e).collect();
+
+        let mut editor_window_events = vec![];
+        let mut main_window_events = vec![];
+
+        events.iter().for_each(|e| {
+            match e {
+                sdl2::event::Event::MouseMotion {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mousestate: _,
+                    x: _,
+                    y: _,
+                    xrel: _,
+                    yrel: _,
+                } => {
+                    let is_editor = *window_id == self.editor_window_id;
+                    if is_editor {
+                        editor_window_events.push(e.clone());
+                    } else {
+                        main_window_events.push(e.clone());
+                    }
+                }
+                sdl2::event::Event::MouseButtonDown {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mouse_btn: _,
+                    clicks: _,
+                    x: _,
+                    y: _,
+                } => {
+                    let is_editor = *window_id == self.editor_window_id;
+                    if is_editor {
+                        editor_window_events.push(e.clone());
+                    } else {
+                        main_window_events.push(e.clone());
+                    }
+                }
+                sdl2::event::Event::MouseButtonUp {
+                    timestamp: _,
+                    window_id,
+                    which: _,
+                    mouse_btn: _,
+                    clicks: _,
+                    x: _,
+                    y: _,
+                } => {
+                    let is_editor = *window_id == self.editor_window_id;
+                    if is_editor {
+                        editor_window_events.push(e.clone());
+                    } else {
+                        main_window_events.push(e.clone());
+                    }
+                }
+                _ => {
+                    main_window_events.push(e.clone());
+                }
+            };
+        });
+
+        // Update editor GUI?
+        let editor_window_events = editor_window_events;
+        self.editor_gui_env.update(editor_window_events);
+
+        let main_window_events = main_window_events;
+
+        return main_window_events;
     }
 
     pub fn center_mouse(&mut self) {
@@ -243,6 +324,9 @@ impl<'a> CbGfx {
             }
 
             // Render
+
+            self.editor_gui_env.draw();
+
             canvas.present();
         }
     }

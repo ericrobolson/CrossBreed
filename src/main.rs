@@ -5,14 +5,16 @@
 extern crate rmercury;
 use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 
-// Internal crates
+// Macro-enabled Internal Crates
 #[macro_use]
 pub mod cb_utility;
+// Non-macro Internal Crates
 pub mod cb_cmd_line;
 pub mod cb_data_structures;
 pub mod cb_graphics;
 pub mod cb_input;
 pub mod cb_math;
+pub mod cb_menu;
 pub mod cb_patterns;
 pub mod cb_simulation;
 pub mod cb_system;
@@ -94,8 +96,7 @@ fn main() {
             if r_mercury.ready_to_run() {
                 let current_frame_inputs;
                 {
-                    current_frame_inputs = input_context_manager
-                        .read_os_inputs(r_mercury.get_game_interface_mut().gfx.event_pump_mut());
+                    current_frame_inputs = r_mercury.get_game_interface_mut().gfx.get_events();
 
                     if current_frame_inputs.iter().any(|e| {
                         match e {

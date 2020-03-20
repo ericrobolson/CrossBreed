@@ -13,7 +13,6 @@ pub trait Presenter<'callback, T> {
     fn set_model(&mut self, value: T);
     fn get_view(&self) -> SliderView;
 }
-
 pub enum ViewObjectTypes {
     Rectangle,
 }
@@ -63,7 +62,13 @@ impl View for SliderView {
 
             let actual_height = self.model.map_to_range_usize(0, max_height as usize);
 
-            let y_diff = max_height - actual_height;
+            let mut y_diff = max_height as i32 - actual_height as i32;
+
+            if y_diff <= 0 {
+                y_diff = 0;
+            }
+
+            let y_diff = y_diff as usize;
 
             slider_pos.y += y_diff;
 
