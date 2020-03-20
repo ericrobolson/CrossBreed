@@ -4,20 +4,23 @@ use crate::cb_menu::gfx;
 use gfx::{Color, Palette};
 
 #[derive(Clone)]
-pub struct CbButton {
+pub struct CbButtonToggle {
     children: Vec<Box<dyn Form>>,
     palette: Palette,
+
+    pub value: bool,
 
     form_position: FormPosition,
     outline_color: Option<Color>,
     fill_color: Option<Color>,
 }
 
-impl CbButton {
+impl CbButtonToggle {
     pub fn new(palette: Palette) -> Self {
-        return CbButton {
+        return CbButtonToggle {
             children: vec![],
             palette: palette,
+            value: true,
             outline_color: Some(palette.quaternary),
             fill_color: Some(palette.primary),
             form_position: FormPosition {
@@ -28,9 +31,17 @@ impl CbButton {
             },
         };
     }
+
+    fn set_fill_color(&mut self) {
+        if self.value {
+            self.fill_color = Some(self.palette.tertiary);
+        } else {
+            self.fill_color = Some(self.palette.background);
+        }
+    }
 }
 
-impl Form for CbButton {
+impl Form for CbButtonToggle {
     fn set_position(&mut self, form_position: FormPosition) {
         self.form_position = form_position;
     }
@@ -54,18 +65,17 @@ impl Form for CbButton {
     }
 
     fn on_unhover(&mut self) {
-        self.fill_color = Some(self.palette.primary);
+        self.set_fill_color();
 
         for child in self.children.iter_mut() {
             child.on_unhover();
         }
     }
 
-    fn on_click(&mut self) {
-        println!("button clicked!");
-    }
+    fn on_click(&mut self) {}
     fn on_release(&mut self) {
-        println!("button released!");
+        self.value = !self.value;
+        self.set_fill_color();
     }
 
     fn draw(&self) -> Vec<CbMenuDrawVirtualMachine> {

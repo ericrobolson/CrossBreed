@@ -26,6 +26,9 @@ use rmercury::{RMercuryGameInterface, RMercuryInput};
 use crate::cb_input;
 use cb_input::CbGameInput;
 
+use crate::cb_menu;
+use cb_menu::Form;
+
 pub mod world_builder;
 
 // NOTE: GAME UNITS are 1 = 1mm, using i32s
@@ -140,6 +143,7 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
         ));
 
         if self.in_editor_mode {
+            self.gfx.build_menus(&mut self.world);
             self.editor_dispatcher.dispatch(&mut self.world);
         }
         //else

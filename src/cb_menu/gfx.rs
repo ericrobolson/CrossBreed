@@ -16,21 +16,23 @@ impl Color {
 
 /// A simplified way to keep consistent pallates.
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Pallate {
+pub struct Palette {
     pub primary: Color,
     pub secondary: Color,
     pub tertiary: Color,
     pub quaternary: Color,
+    pub background: Color,
     pub accent: Color,
 }
 
-impl Pallate {
+impl Palette {
     pub fn new() -> Self {
         return Self {
             primary: Color::new(222, 113, 25),
             secondary: Color::new(222, 227, 226),
             tertiary: Color::new(17, 105, 121),
             quaternary: Color::new(0, 0, 0),
+            background: Color::new(255, 255, 255),
             accent: Color::new(24, 176, 176),
         };
     }

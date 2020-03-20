@@ -9,12 +9,19 @@ impl<'a> System<'a> for EditorSystem {
     type SystemData = (
         Read<'a, CbSystemValues>,
         WriteStorage<'a, components::EditableComponent>,
+        WriteStorage<'a, components::voxel_components::VoxelComponent>,
     );
 
-    fn run(&mut self, (sys_values, mut editable_components): Self::SystemData) {
+    fn run(
+        &mut self,
+        (sys_values, mut editable_components, mut voxel_components): Self::SystemData,
+    ) {
         // If no entity selected, wait for selection
         // TODO: add ability to create entities on the fly?
 
-        for editable in (&mut editable_components).join() {}
+        for (editable, voxel) in (&mut editable_components, &mut voxel_components).join() {
+
+            // sync stuff
+        }
     }
 }

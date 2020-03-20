@@ -4,15 +4,24 @@ pub use form::{Form, FormPosition};
 pub mod cb_form;
 use cb_form::CbForm;
 
+pub mod cb_form_column;
+use cb_form_column::CbFormColumn;
+
+pub mod cb_form_row;
+use cb_form_row::CbFormRow;
+
 pub mod cb_button;
-use cb_button::CbFormButton;
+use cb_button::CbButton;
+
+pub mod cb_button_toggle;
+use cb_button_toggle::CbButtonToggle;
 
 pub mod gfx;
-pub use gfx::{CbMenuDrawVirtualMachine, Pallate};
+pub use gfx::{CbMenuDrawVirtualMachine, Palette};
 
 #[derive(Clone)]
 pub struct GuiEnvironment {
-    root_form: Box<dyn Form>,
+    root_form: Box<CbForm>,
     width: usize,
     height: usize,
     mouse_x: usize,
@@ -22,22 +31,22 @@ pub struct GuiEnvironment {
 
 impl GuiEnvironment {
     pub fn new(width: usize, height: usize) -> Self {
-        let pallate = Pallate::new();
-
-        let mut root_form = CbForm::new(pallate);
-
-        let mut button = CbFormButton::new(pallate);
-
-        root_form.add_child(Box::new(button));
-
         return Self {
             mouse_x: width / 2,
             mouse_y: height / 2,
             width: width,
             height: height,
-            root_form: Box::new(root_form),
+            root_form: Box::new(CbForm::new(Palette::new())),
             clicked_at_xy: None,
         };
+    }
+
+    pub fn add_form(&mut self, form: Box<Form>) {
+        self.root_form.add_child(form);
+    }
+
+    pub fn reset(&mut self) {
+        self.root_form.reset();
     }
 
     pub fn update(&mut self, events: Vec<sdl2::event::Event>) {

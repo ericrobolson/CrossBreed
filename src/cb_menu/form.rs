@@ -19,8 +19,6 @@ impl FormPosition {
 pub trait Form: FormClone {
     fn set_position(&mut self, form_position: FormPosition);
     fn get_position(&self) -> FormPosition;
-    fn set_pallate(&mut self, pallate: Pallate);
-    fn get_pallate(&self) -> Pallate;
     fn update(&mut self);
     fn on_hover(&mut self);
     fn on_unhover(&mut self);
@@ -34,8 +32,8 @@ pub trait Form: FormClone {
         let self_pos = self.get_position();
         let mut child_pos = child.get_position();
 
-        child_pos.width = self_pos.width / 2;
-        child_pos.width = self_pos.height / 2;
+        child_pos.width = self_pos.width;
+        child_pos.width = self_pos.height;
         child_pos.x = self_pos.x;
         child_pos.y = self_pos.y;
 

@@ -17,7 +17,7 @@ pub mod sprites;
 use crate::cb_menu;
 
 use crate::cb_menu::gfx;
-use gfx::{Color, Pallate};
+use gfx::{Color, Palette};
 
 use crate::cb_simulation;
 use cb_simulation::CbGameState;
@@ -92,7 +92,7 @@ pub struct CbGfx {
     window: sdl2::video::Window,
     video_subsystem: sdl2::VideoSubsystem,
     editor_window: sdl2::render::Canvas<sdl2::video::Window>,
-    editor_gui_env: cb_menu::GuiEnvironment,
+    pub editor_gui_env: cb_menu::GuiEnvironment,
     editor_visible: bool,
 
     main_window_id: u32,
@@ -167,6 +167,24 @@ impl<'a> CbGfx {
 
     pub fn toggle_editor_window(&mut self) {
         //UNIMPLEMENTED!();
+    }
+
+    pub fn build_menus(&mut self, world: &mut World) {
+        let mut editable_components =
+            world.write_storage::<cb_simulation::components::EditableComponent>();
+
+        let mut voxel_components =
+            world.write_storage::<cb_simulation::components::voxel_components::VoxelComponent>();
+
+        for (editable, voxel) in (&mut editable_components, &mut voxel_components).join() {
+            if voxel.editor.editing {
+                if !voxel.editor.created_menu {
+                    let menu = voxel.start_editing();
+                    self.editor_gui_env.add_form(menu);
+                }
+                // sync stuff
+            }
+        }
     }
 
     pub fn get_events(&mut self) -> Vec<sdl2::event::Event> {

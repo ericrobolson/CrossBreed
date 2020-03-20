@@ -19,13 +19,17 @@ pub const MAX_CHUNK_INDEX: usize = CHUNK_SIZE - 1;
 
 pub const VOXEL_SIZE: f32 = 1.0;
 
-pub const CHUNKS: usize = 4;
+pub const CHUNKS: usize = 1;
 pub const CHUNKS_SQUARED: usize = CHUNKS * CHUNKS;
 pub const CHUNKS_CUBED: usize = CHUNKS * CHUNKS * CHUNKS;
 
 /// (Active, Visible, Type, MiscValues)
 /// A voxel contains four pieces of info, whether it's active, whether it is visible, it's type, and some misc values that may be used for different voxel types (such as health remaining on a block).
 pub type CbVoxel = (bool, bool, u8, u8);
+
+pub fn voxel_active(voxel: &CbVoxel) -> bool {
+    return voxel.0;
+}
 
 #[derive(Debug, Clone)]
 pub struct CbChunkManager {
@@ -54,8 +58,23 @@ impl CbChunkManager {
         };
     }
 
+    pub fn get_chunk_width(&self) -> usize {
+        return CHUNKS;
+    }
+
+    pub fn get_voxel_count_per_chunk(&self) -> usize {
+        return CHUNK_SIZE;
+    }
+
     pub fn get_voxel_width(&self) -> usize {
-        return CHUNKS * CHUNK_SIZE;
+        return self.get_chunk_width() * self.get_voxel_count_per_chunk();
+    }
+
+    pub fn get_voxel(&self, x: usize, y: usize, z: usize) -> &CbVoxel {
+        let (chunk_index, voxel_index) =
+            get_chunk_and_voxel_indexes_3d_to_1d(x, y, z, CHUNKS, CHUNK_SIZE);
+
+        return &self.chunks[chunk_index].voxel_vec[voxel_index];
     }
 
     pub fn get_voxel_mut(&mut self, x: usize, y: usize, z: usize, frame: usize) -> &mut CbVoxel {
@@ -103,7 +122,11 @@ impl CbVoxelChunk {
             .collect::<Vec<usize>>()
             .iter()
             .map(|i| {
-                return (true, true, VOXEL_TYPE_GRASS, 0);
+                let (x, y, z) = index_1d_to_3d(*i, CHUNK_SIZE, CHUNK_SIZE);
+
+                let active = x % 2 == 0 && y % 2 == 0;
+
+                return (active, true, VOXEL_TYPE_GRASS, 0);
             })
             .collect();
 
