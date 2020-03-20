@@ -15,6 +15,7 @@ pub mod mesh;
 pub mod sprites;
 
 use crate::cb_menu;
+use cb_menu::menu_events;
 
 use crate::cb_menu::gfx;
 use gfx::{Color, Palette};
@@ -167,6 +168,14 @@ impl<'a> CbGfx {
 
     pub fn toggle_editor_window(&mut self) {
         //UNIMPLEMENTED!();
+    }
+
+    pub fn handle_databinding_changes(
+        &mut self,
+        databinding_events: &Vec<(menu_events::EventId, menu_events::Events)>,
+    ) {
+        self.editor_gui_env
+            .handle_databinding_changes(&databinding_events);
     }
 
     pub fn build_menus(&mut self, world: &mut World) {

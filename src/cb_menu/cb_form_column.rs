@@ -30,7 +30,9 @@ impl Form for CbFormColumn {
         return self.form.get_position();
     }
 
-    fn update(&mut self) {
+    fn update(&mut self) -> Vec<(menu_events::EventId, menu_events::Events)> {
+        let mut events = vec![];
+
         let self_pos = self.get_position();
 
         if self.get_children_mut().is_empty() == false {
@@ -50,11 +52,14 @@ impl Form for CbFormColumn {
 
                 existing_child.set_position(child_pos);
 
-                existing_child.update();
+                let mut child_events = existing_child.update();
+                events.append(&mut child_events);
 
                 current_y += children_height;
             }
         }
+
+        return events;
     }
 
     fn get_children_mut(&mut self) -> &mut std::vec::Vec<std::boxed::Box<(dyn Form + 'static)>> {
@@ -69,11 +74,11 @@ impl Form for CbFormColumn {
         self.form.on_unhover();
     }
 
-    fn on_click(&mut self) {
-        self.form.on_click();
+    fn on_click(&mut self, x: usize, y: usize) {
+        self.form.on_click(x, y);
     }
-    fn on_release(&mut self) {
-        self.form.on_release();
+    fn on_release(&mut self, x: usize, y: usize) {
+        self.form.on_release(x, y);
     }
 
     fn draw(&self) -> Vec<CbMenuDrawVirtualMachine> {

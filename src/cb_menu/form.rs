@@ -19,11 +19,17 @@ impl FormPosition {
 pub trait Form: FormClone {
     fn set_position(&mut self, form_position: FormPosition);
     fn get_position(&self) -> FormPosition;
-    fn update(&mut self);
+    fn update(&mut self) -> Vec<(menu_events::EventId, menu_events::Events)>;
+    fn rebind_data(&mut self, events: &Vec<(menu_events::EventId, menu_events::Events)>) {
+        for child in self.get_children_mut().iter_mut() {
+            child.rebind_data(&events);
+        }
+    }
+
     fn on_hover(&mut self);
     fn on_unhover(&mut self);
-    fn on_click(&mut self);
-    fn on_release(&mut self);
+    fn on_click(&mut self, x: usize, y: usize);
+    fn on_release(&mut self, x: usize, y: usize);
     fn draw(&self) -> Vec<CbMenuDrawVirtualMachine>;
 
     fn add_child(&mut self, child: Box<Form>) {

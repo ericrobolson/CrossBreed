@@ -15,7 +15,7 @@ nalgebra = "0.20.0"
 rayon = "1.3.0"
 time = "0.2.9"
 collada = "0.12.0"
-
+uuid = { version = "0.8.1", features = ["serde", "v4"] }
 
 [profile.dev]
 panic = "abort"

@@ -5,31 +5,35 @@ use menu_events::{BoolEvent, EventId, EventId_new, Events};
 use crate::cb_menu::gfx;
 use gfx::{Color, Palette};
 
+use crate::cb_math::cb_range;
+use cb_range::CbNormalizedRange;
+
 #[derive(Clone)]
-pub struct CbButtonToggle {
+pub struct CbSliderHorizontal {
     event_id: EventId,
+    events: Vec<(EventId, Events)>,
     children: Vec<Box<dyn Form>>,
     palette: Palette,
 
-    pub value: bool,
-
-    events: Vec<(EventId, Events)>,
-
+    pub x_value: CbNormalizedRange,
     form_position: FormPosition,
     outline_color: Option<Color>,
     fill_color: Option<Color>,
+
+    start_xy: Option<(usize, usize)>,
 }
 
-impl CbButtonToggle {
+impl CbSliderHorizontal {
     pub fn new(palette: Palette) -> Self {
-        return CbButtonToggle {
+        return CbSliderHorizontal {
             event_id: EventId_new(),
             events: vec![],
             children: vec![],
             palette: palette,
-            value: true,
+            x_value: CbNormalizedRange::default(),
             outline_color: Some(palette.quaternary),
             fill_color: Some(palette.primary),
+            start_xy: None,
             form_position: FormPosition {
                 x: 0,
                 y: 0,
@@ -42,30 +46,22 @@ impl CbButtonToggle {
     pub fn subscribe_to_event(&self) -> EventId {
         return self.event_id;
     }
-
-    fn set_fill_color(&mut self) {
-        if self.value {
-            self.fill_color = Some(self.palette.tertiary);
-        } else {
-            self.fill_color = Some(self.palette.background);
-        }
-    }
 }
 
-impl Form for CbButtonToggle {
-    fn set_position(&mut self, form_position: FormPosition) {
-        self.form_position = form_position;
-    }
-
+impl Form for CbSliderHorizontal {
     fn rebind_data(&mut self, events: &Vec<(menu_events::EventId, menu_events::Events)>) {
         for (id, event) in events.iter() {
             if *id == self.event_id {
                 match event {
                     menu_events::Events::BoolValueChange(value) => {
-                        self.value = *value;
+                        if *value {
+                            self.x_value.value = self.x_value.max();
+                        } else {
+                            self.x_value.value = self.x_value.min();
+                        }
                     }
                     menu_events::Events::SingleRangeChange(value) => {
-                        self.value = value.value >= 0;
+                        self.x_value = *value;
                     }
                 }
             }
@@ -74,6 +70,10 @@ impl Form for CbButtonToggle {
         for child in self.get_children_mut().iter_mut() {
             child.rebind_data(events);
         }
+    }
+
+    fn set_position(&mut self, form_position: FormPosition) {
+        self.form_position = form_position;
     }
 
     fn get_position(&self) -> FormPosition {
@@ -99,13 +99,9 @@ impl Form for CbButtonToggle {
         return &mut self.children;
     }
 
-    fn on_hover(&mut self) {
-        self.fill_color = Some(self.palette.accent);
-    }
+    fn on_hover(&mut self) {}
 
     fn on_unhover(&mut self) {
-        self.set_fill_color();
-
         for child in self.children.iter_mut() {
             child.on_unhover();
         }
@@ -113,12 +109,39 @@ impl Form for CbButtonToggle {
 
     fn on_click(&mut self, x: usize, y: usize) {}
     fn on_release(&mut self, x: usize, y: usize) {
-        self.value = !self.value;
+        {
+            let (start_x, start_y) = (self.form_position.x, self.form_position.y);
 
-        self.set_fill_color();
+            let (start_x, start_y) = (start_x as i32, start_y as i32);
+            let (x, y) = (x as i32, y as i32);
 
-        self.events
-            .push((self.event_id, Events::BoolValueChange(self.value)));
+            let mut xdiff = x - start_x;
+            let mut ydiff = y - start_y;
+
+            if xdiff < 0 {
+                xdiff = 0;
+            } else if xdiff > self.form_position.width as i32 {
+                xdiff = self.form_position.width as i32;
+            }
+
+            let xvalue = xdiff as usize;
+
+            if ydiff < 0 {
+                ydiff = 0;
+            } else if ydiff > self.form_position.height as i32 {
+                ydiff = self.form_position.height as i32;
+            }
+
+            let yvalue = ydiff as usize;
+
+            let xrange = CbNormalizedRange::new(xvalue as i32, 0, self.form_position.width as i32);
+            let yrange = CbNormalizedRange::new(yvalue as i32, 0, self.form_position.height as i32);
+
+            self.x_value = xrange;
+
+            self.events
+                .push((self.event_id, Events::SingleRangeChange(self.x_value)));
+        }
     }
 
     fn draw(&self) -> Vec<CbMenuDrawVirtualMachine> {
@@ -126,6 +149,7 @@ impl Form for CbButtonToggle {
 
         // Draw self stuff
         {
+            // Draw background
             if self.fill_color.is_some() {
                 let call = CbMenuDrawVirtualMachine::FilledRect(
                     self.form_position,
@@ -135,6 +159,26 @@ impl Form for CbButtonToggle {
                 draw_calls.push(call);
             }
 
+            // Slider
+            {
+                let mut slider_pos = self.form_position;
+
+                let slider_width = self.x_value.map_to_range_usize(0, self.form_position.width);
+                slider_pos.width = slider_width;
+
+                let call = CbMenuDrawVirtualMachine::FilledRect(slider_pos, self.palette.accent);
+
+                draw_calls.push(call);
+
+                let call = CbMenuDrawVirtualMachine::WireframeRect(
+                    slider_pos,
+                    self.outline_color.unwrap(),
+                );
+
+                draw_calls.push(call);
+            }
+
+            // Draw outline
             if self.outline_color.is_some() {
                 let call = CbMenuDrawVirtualMachine::WireframeRect(
                     self.form_position,

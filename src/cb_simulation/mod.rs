@@ -27,7 +27,7 @@ use crate::cb_input;
 use cb_input::CbGameInput;
 
 use crate::cb_menu;
-use cb_menu::Form;
+use cb_menu::{menu_events, Form};
 
 pub mod world_builder;
 
@@ -35,22 +35,29 @@ pub mod world_builder;
 
 #[derive(Default)]
 pub struct CbSystemValues {
+    pub events: Vec<(menu_events::EventId, menu_events::Events)>,
     pub world_inputs: CbWorldInputs,
+    pub databinding_changes: Vec<(menu_events::EventId, menu_events::Events)>,
+
     pub frame: usize,
 }
 
 impl CbSystemValues {
     pub fn new() -> Self {
         return Self {
+            events: vec![],
             world_inputs: vec![],
             frame: 0,
+            databinding_changes: vec![],
         };
     }
 
     pub fn from(world_inputs: CbWorldInputs, frame: usize) -> Self {
         return Self {
+            events: vec![],
             world_inputs: world_inputs,
             frame: frame,
+            databinding_changes: vec![],
         };
     }
 }
@@ -137,14 +144,22 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
         return "hello world!".to_string();
     }
     fn advance_frame(&mut self, inputs: std::vec::Vec<CbGameInput>) {
-        self.world.insert(CbSystemValues::from(
-            inputs,
-            self.game_state.current_tick as usize,
-        ));
+        let mut sys_values = CbSystemValues::from(inputs, self.game_state.current_tick as usize);
+        sys_values.events = self.gfx.editor_gui_env.get_events();
+
+        self.world.insert(sys_values);
 
         if self.in_editor_mode {
             self.gfx.build_menus(&mut self.world);
+
             self.editor_dispatcher.dispatch(&mut self.world);
+
+            // Handle databinding changes
+            let updated_sys_values: (Read<CbSystemValues>) = self.world.system_data();
+
+            let databinding_changes = updated_sys_values.databinding_changes.clone();
+
+            self.gfx.handle_databinding_changes(&databinding_changes);
         }
         //else
         {

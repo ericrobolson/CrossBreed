@@ -39,10 +39,15 @@ impl Form for CbButton {
         return self.form_position;
     }
 
-    fn update(&mut self) {
+    fn update(&mut self) -> Vec<(menu_events::EventId, menu_events::Events)> {
+        let mut events = vec![];
         for child in self.children.iter_mut() {
-            child.update();
+            let mut child_events = child.update();
+
+            events.append(&mut child_events);
         }
+
+        return events;
     }
 
     fn get_children_mut(&mut self) -> &mut std::vec::Vec<std::boxed::Box<(dyn Form + 'static)>> {
@@ -61,10 +66,10 @@ impl Form for CbButton {
         }
     }
 
-    fn on_click(&mut self) {
+    fn on_click(&mut self, x: usize, y: usize) {
         println!("button clicked!");
     }
-    fn on_release(&mut self) {
+    fn on_release(&mut self, x: usize, y: usize) {
         println!("button released!");
     }
 
