@@ -133,7 +133,11 @@ impl<'a> CbGfx {
 
         let gl_backend = OpenGlBackend::new();
 
-        let mut editor_window = video_subsystem.window("Editor", 640, 480).build().unwrap();
+        let (editor_width, editor_height) = (640, 480);
+        let mut editor_window = video_subsystem
+            .window("Editor", editor_width, editor_height)
+            .build()
+            .unwrap();
 
         let editor_window_id = editor_window.id();
 
@@ -150,7 +154,10 @@ impl<'a> CbGfx {
             main_window_id: main_window_id,
             editor_window_id: editor_window_id,
             editor_window: canvas,
-            editor_gui_env: cb_menu::GuiEnvironment::new(),
+            editor_gui_env: cb_menu::GuiEnvironment::new(
+                editor_width as usize,
+                editor_height as usize,
+            ),
             editor_visible: true,
             gl_context: ctx,
             gl_backend: gl_backend,
@@ -278,7 +285,7 @@ impl<'a> CbGfx {
         {
             // Clear canvas
             let canvas = &mut self.editor_window;
-            canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+            canvas.set_draw_color(sdl2::pixels::Color::RGB(237, 237, 237));
             canvas.clear();
 
             let presenter_components =
@@ -289,7 +296,7 @@ impl<'a> CbGfx {
                 let view_position = presenter.get_view_position();
 
                 let view_boundary = 5;
-
+                /*
                 canvas.set_draw_color(sdl2::pixels::Color::RGB(255, 210, 0));
                 canvas
                     .fill_rect(sdl2::rect::Rect::new(
@@ -320,12 +327,38 @@ impl<'a> CbGfx {
                             }
                         }
                     }
-                }
+                }*/
             }
 
             // Render
 
-            self.editor_gui_env.draw();
+            let draw_calls = self.editor_gui_env.draw();
+            for draw_call in draw_calls.iter() {
+                match draw_call {
+                    cb_menu::CbMenuDrawVirtualMachine::WireframeRect(position, color) => {
+                        canvas.set_draw_color(sdl2::pixels::Color::RGB(color.r, color.g, color.b));
+                        canvas
+                            .draw_rect(sdl2::rect::Rect::new(
+                                (position.x as i32),
+                                position.y as i32,
+                                (position.width) as u32,
+                                (position.height) as u32,
+                            ))
+                            .unwrap();
+                    }
+                    cb_menu::CbMenuDrawVirtualMachine::FilledRect(position, color) => {
+                        canvas.set_draw_color(sdl2::pixels::Color::RGB(color.r, color.g, color.b));
+                        canvas
+                            .fill_rect(sdl2::rect::Rect::new(
+                                (position.x as i32),
+                                position.y as i32,
+                                (position.width) as u32,
+                                (position.height) as u32,
+                            ))
+                            .unwrap();
+                    }
+                }
+            }
 
             canvas.present();
         }
