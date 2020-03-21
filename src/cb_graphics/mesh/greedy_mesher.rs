@@ -10,7 +10,14 @@ use mesh::Mesh;
 use crate::cb_voxels;
 use cb_voxels::*;
 
-pub fn calculate_greedy_mesh(voxels: &Vec<CbVoxel>, frame: usize, chunk_size: usize) -> Mesh {
+pub fn calculate_greedy_mesh(
+    voxels: &[[[CbVoxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
+    chunk_x_offset: usize,
+    chunk_y_offset: usize,
+    chunk_z_offset: usize,
+    frame: usize,
+    chunk_size: usize,
+) -> Mesh {
     const SOUTH: usize = 0;
     const NORTH: usize = 1;
     const EAST: usize = 2;
@@ -219,6 +226,9 @@ pub fn calculate_greedy_mesh(voxels: &Vec<CbVoxel>, frame: usize, chunk_size: us
 
                                 // Call the quad() to render the merged quad in the scene. mask[n] will contain the attributes to pass to shaders
                                 let quad = get_quad(
+                                    chunk_x_offset,
+                                    chunk_y_offset,
+                                    chunk_z_offset,
                                     Vector3::new(x0, x1, x2),
                                     Vector3::new(x0 + du0, x1 + du1, x2 + du2),
                                     Vector3::new(x0 + du0 + dv0, x1 + du1 + dv1, x2 + du2 + dv2),
@@ -264,7 +274,7 @@ pub fn calculate_greedy_mesh(voxels: &Vec<CbVoxel>, frame: usize, chunk_size: us
 }
 
 fn get_voxel_face(
-    voxels: &Vec<CbVoxel>,
+    voxels: &[[[CbVoxel; CHUNK_SIZE]; CHUNK_SIZE]; CHUNK_SIZE],
     x: usize,
     y: usize,
     z: usize,
@@ -274,10 +284,8 @@ fn get_voxel_face(
 ) -> VoxelFace {
     // NOTE: Add the following here:
     // ** Set per face / per vertex values as well as voxel values here.
-    let chunk_size_squared = chunk_size * chunk_size;
 
-    let index = x + y * chunk_size + z * chunk_size_squared;
-    let (active, visible, vf_type, _) = voxels[index];
+    let (active, visible, vf_type, _) = voxels[x][y][z];
 
     let mut transparent = !active;
 
@@ -331,6 +339,9 @@ type V3 = nalgebra::Matrix<
 >;
 
 fn get_quad(
+    chunk_x_offset: usize,
+    chunk_y_offset: usize,
+    chunk_z_offset: usize,
     bottom_left: V3,
     top_left: V3,
     top_right: V3,
@@ -345,23 +356,27 @@ fn get_quad(
     let vertices;
     let indices;
     {
+        let x_offset = (chunk_x_offset * CHUNK_SIZE) as f32 * VOXEL_SIZE;
+        let y_offset = (chunk_y_offset * CHUNK_SIZE) as f32 * VOXEL_SIZE;
+        let z_offset = (chunk_z_offset * CHUNK_SIZE) as f32 * VOXEL_SIZE;
+
         vertices = vec![
             // ----
-            bottom_left.x,
-            bottom_left.y,
-            bottom_left.z,
+            bottom_left.x + x_offset,
+            bottom_left.y + y_offset,
+            bottom_left.z + z_offset,
             // ----
-            bottom_right.x,
-            bottom_right.y,
-            bottom_right.z,
+            bottom_right.x + x_offset,
+            bottom_right.y + y_offset,
+            bottom_right.z + z_offset,
             // ----
-            top_left.x,
-            top_left.y,
-            top_left.z,
+            top_left.x + x_offset,
+            top_left.y + y_offset,
+            top_left.z + z_offset,
             // ----
-            top_right.x,
-            top_right.y,
-            top_right.z,
+            top_right.x + x_offset,
+            top_right.y + y_offset,
+            top_right.z + z_offset,
         ];
         if backface {
             indices = vec![

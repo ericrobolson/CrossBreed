@@ -12,6 +12,14 @@ impl CbNormalizedRange {
     }
 
     fn scale_value(value: i32, start_min: i32, start_max: i32, end_min: i32, end_max: i32) -> i32 {
+        if value == start_min {
+            return end_min;
+        }
+
+        if value == start_max {
+            return end_max;
+        }
+
         let going_to_larger_range = (end_max - end_min) > (start_max - start_min);
 
         let v;
@@ -145,12 +153,12 @@ mod tests {
     #[test]
     fn CbNormalizedRange_map_to_range_usize_value_is_max_sets_to_usize_max() {
         let min = 0;
-        let max = 1;
+        let max = 2;
 
         let range = CbNormalizedRange { value: MAX_VALUE };
 
         let actual = range.map_to_range_usize(min, max);
-        let expected_value = max;
+        let expected_value = max - 1;
 
         assert_eq!(expected_value, actual);
     }
@@ -171,7 +179,7 @@ mod tests {
     #[test]
     fn CbNormalizedRange_map_to_range_usize__value_is_middle_returns_middle_usize() {
         let min = 0;
-        let max = 4;
+        let max = 5;
 
         let range = CbNormalizedRange { value: 0 };
 

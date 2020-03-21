@@ -141,9 +141,11 @@ impl VoxelComponent {
 
         let mut columns = cb_menu::cb_form_column::CbFormColumn::new(palette);
 
-        for x in 0..self.chunk_manager.get_voxel_width() {
+        let num_voxels_in_slice = cb_voxels::CHUNK_SIZE * cb_voxels::CHUNKS;
+
+        for x in 0..num_voxels_in_slice {
             let mut row = cb_menu::cb_form_row::CbFormRow::new(palette);
-            for y in 0..self.chunk_manager.get_voxel_width() {
+            for y in 0..num_voxels_in_slice {
                 let mut button = cb_menu::cb_button_toggle::CbButtonToggle::new(palette);
 
                 let (active, _, _, _) = self.chunk_manager.get_voxel(x, y, self.editor.z_index);
