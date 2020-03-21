@@ -65,31 +65,9 @@ impl VoxelMesher {
     ) {
         /*
         XXXXXXXXXXXXXXXXXXXXXXX
-        NOTE: CURRENTLY SUPPORTS A SINGLE VOXEL CHUNK, DOES NOT TAKE INTO ACCOUNT POSITION/VELOCITY COMPONENTS YET
+        NOTE: DOES NOT TAKE INTO ACCOUNT POSITION/VELOCITY COMPONENTS YET
         XXXXXXXXXXXXXXXXXXXXXXX
         */
-
-        let first_frame = self.first_frame; // NOTE:
-
-        let camera_coords = Vector3::new(camera.pos_x, camera.pos_y, camera.pos_z);
-
-        let max_voxel_coordinates = CHUNKS as f32 * CHUNK_SIZE as f32 * VOXEL_SIZE;
-
-        // Calculate the acceptable lods
-        let mut available_lods = vec![];
-        {
-            available_lods.push(1);
-            let mut i = 2;
-
-            while i < CHUNKS {
-                available_lods.push(i);
-                i = i * 2;
-            }
-        }
-
-        let available_lods = available_lods;
-
-        let lod_enabled = false;
 
         // Go through and rebuild meshes that have changed
         {
@@ -104,8 +82,8 @@ impl VoxelMesher {
                         // Calculate lod to scale at; note: should be done by comparing to camera position
                         let chunk_updated = chunk.frame_updated_at >= mesh.mesh.generated_at_frame;
 
-                        if chunk_updated || first_frame {
-                            let mut greedy_mesh = calculate_greedy_mesh(
+                        if chunk_updated || self.first_frame {
+                            let greedy_mesh = calculate_greedy_mesh(
                                 &chunk.voxels,
                                 xchunk,
                                 ychunk,

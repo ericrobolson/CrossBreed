@@ -137,43 +137,49 @@ impl VoxelComponent {
         }
 
         self.editor.created_menu = true;
-        let palette = cb_menu::gfx::Palette::new();
 
-        let mut columns = cb_menu::cb_form_column::CbFormColumn::new(palette);
+        // Initialize the menu
+        let mut columns;
+        {
+            let palette = cb_menu::gfx::Palette::new();
+            columns = cb_menu::cb_form_column::CbFormColumn::new(palette);
 
-        let num_voxels_in_slice = cb_voxels::CHUNK_SIZE * cb_voxels::CHUNKS;
+            let num_voxels_in_slice = cb_voxels::CHUNK_SIZE * cb_voxels::CHUNKS;
 
-        for x in 0..num_voxels_in_slice {
-            let mut row = cb_menu::cb_form_row::CbFormRow::new(palette);
-            for y in 0..num_voxels_in_slice {
-                let mut button = cb_menu::cb_button_toggle::CbButtonToggle::new(palette);
+            for x in (0..num_voxels_in_slice).rev() {
+                let mut row = cb_menu::cb_form_row::CbFormRow::new(palette);
+                for y in (0..num_voxels_in_slice).rev() {
+                    let (x, y) = (y, x);
 
-                let (active, _, _, _) = self.chunk_manager.get_voxel(x, y, self.editor.z_index);
+                    let mut button = cb_menu::cb_button_toggle::CbButtonToggle::new(palette);
 
-                button.value = *active;
+                    let (active, _, _, _) = self.chunk_manager.get_voxel(x, y, self.editor.z_index);
 
-                let callback = ActivateCallbacks::new(button.subscribe_to_event(), x, y);
-                self.editor.toggle_active_callbacks.push(callback);
+                    button.value = *active;
 
-                row.add_child(Box::new(button))
+                    let callback = ActivateCallbacks::new(button.subscribe_to_event(), x, y);
+                    self.editor.toggle_active_callbacks.push(callback);
+
+                    row.add_child(Box::new(button))
+                }
+
+                columns.add_child(Box::new(row));
             }
 
-            columns.add_child(Box::new(row));
+            // Add slider component to control selected Z index
+            let mut slider = cb_menu::cb_slider_horizontal::CbSliderHorizontal::new(palette);
+            let slider_value = CbNormalizedRange::new(
+                self.editor.z_index as i32,
+                0,
+                self.chunk_manager.get_voxel_width() as i32,
+            );
+
+            slider.x_value = slider_value;
+
+            self.editor.z_index_callback = Some(slider.subscribe_to_event());
+
+            columns.add_child(Box::new(slider));
         }
-
-        // Add slider component to control selected Z index
-        let mut slider = cb_menu::cb_slider_horizontal::CbSliderHorizontal::new(palette);
-        let slider_value = CbNormalizedRange::new(
-            self.editor.z_index as i32,
-            0,
-            self.chunk_manager.get_voxel_width() as i32,
-        );
-
-        slider.x_value = slider_value;
-
-        self.editor.z_index_callback = Some(slider.subscribe_to_event());
-
-        columns.add_child(Box::new(slider));
 
         return Box::new(columns);
     }
