@@ -18,7 +18,7 @@ pub struct CbGameInputWrapper<T> {
 
 #[derive(Debug, Copy, Clone)]
 pub struct CbGameInput {
-    player_id: usize,
+    pub player_id: usize,
     pub context_manager: CbContextManager,
 }
 
@@ -33,11 +33,10 @@ impl CbGameInput {
 
 impl RMercuryInput for CbGameInput {
     fn get_player_id(&self) -> usize {
-        //unimplemented!()
-        return 0;
+        return self.player_id;
     }
-    fn set_player_id(&mut self, _: usize) {
-        //unimplemented!()
+    fn set_player_id(&mut self, player_id: usize) {
+        self.player_id = player_id;
     }
     fn to_bits(&self) -> std::vec::Vec<u8> {
         let mut bits = vec![];

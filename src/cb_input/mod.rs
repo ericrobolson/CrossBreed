@@ -20,12 +20,6 @@ pub use cb_input::CbGameInput;
 use crate::cb_graphics;
 use cb_graphics::Sdl2HardwareInterface;
 
-fn get_os_inputs(event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
-    let events = event_pump.poll_iter().map(|e| e).collect();
-
-    return events;
-}
-
 pub struct CbInputContextManager {
     active_contexts: Vec<ContextId>,
     previous_context: Option<CbContextManager>,
@@ -49,12 +43,6 @@ impl CbInputContextManager {
 
     pub fn remove_context(&mut self, context_id: ContextId) {
         self.active_contexts.retain(|i| *i != context_id);
-    }
-
-    pub fn read_os_inputs(&mut self, event_pump: &mut sdl2::EventPump) -> Vec<sdl2::event::Event> {
-        let current_frame_inputs = get_os_inputs(event_pump);
-
-        return current_frame_inputs;
     }
 
     pub fn get_rmercury_inputs(&mut self, input_interface: &Sdl2HardwareInterface) -> CbGameInput {

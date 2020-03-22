@@ -1,15 +1,9 @@
 // Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
 
-#[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Range {
-    pub value: i32,
-}
+use crate::cb_math;
+use cb_math::cb_range::CbNormalizedRange;
 
-impl Range {
-    pub fn new(value: i32) -> Self {
-        return Range { value: value };
-    }
-}
+pub type Range = CbNormalizedRange;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Press {

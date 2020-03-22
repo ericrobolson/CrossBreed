@@ -37,6 +37,7 @@ pub fn init_voxel_mesh_buffers() -> Vec<MeshBuffers> {
             normal_buff: normal_buff,
             last_calculated_frame: 0,
             indices_count: 0,
+            visible: true,
         });
     }
 
@@ -93,35 +94,35 @@ fn draw_meshes(
         }
     }
 
-    // Render the meshes
-    for i in 0..CHUNKS_CUBED {
-        let mut buffer = &mut backend.chunk_mesh_buffers[i];
-
+    for (buffer, mesh) in backend
+        .chunk_mesh_buffers
+        .iter_mut()
+        .zip(backend.voxel_mesher.meshes.iter())
+    {
         // Get the last frame the meshes were updated at
-        let most_recent_mesh_update_frame: usize =
-            backend.voxel_mesher.meshes[i].mesh.generated_at_frame;
+        let most_recent_mesh_update_frame: usize = mesh.mesh.generated_at_frame;
         // Only update the buffers if it's needed
-        let mut mesh = None;
+        let mut new_mesh = None;
         let changed;
         {
             // Only copy over the mesh if it's the first frame or it's been updated
             if most_recent_mesh_update_frame > buffer.last_calculated_frame || frame == 0 {
-                let m = &backend.voxel_mesher.meshes[i].mesh;
+                let m = &mesh.mesh;
                 changed = true;
 
                 // Store the frame the mesh was generated at
                 buffer.last_calculated_frame = m.generated_at_frame;
                 buffer.indices_count = m.indices.len();
 
-                mesh = Some(m);
+                new_mesh = Some(m);
             } else {
                 changed = false;
             }
         }
 
         // Update the buffers with the latest mesh
-        if changed && mesh.is_some() {
-            let mesh = mesh.unwrap();
+        if changed && new_mesh.is_some() {
+            let mesh = new_mesh.unwrap();
             unsafe {
                 // Buffer vertices
                 gl::BindVertexArray(buffer.vao);
@@ -200,6 +201,9 @@ fn draw_meshes(
                 );
 
                 gl::BindVertexArray(0);
+
+                buffer.visible = !mesh.is_empty();
+                if mesh.is_empty() {}
             }
         }
 
@@ -208,15 +212,17 @@ fn draw_meshes(
         }
 
         // Render
-        unsafe {
-            gl::BindVertexArray(buffer.vao);
-            gl::DrawElements(
-                gl::TRIANGLES,
-                buffer.indices_count as i32,
-                gl::UNSIGNED_INT,
-                std::ptr::null(),
-            );
-            gl::BindVertexArray(0);
+        if buffer.visible {
+            unsafe {
+                gl::BindVertexArray(buffer.vao);
+                gl::DrawElements(
+                    gl::TRIANGLES,
+                    buffer.indices_count as i32,
+                    gl::UNSIGNED_INT,
+                    std::ptr::null(),
+                );
+                gl::BindVertexArray(0);
+            }
         }
 
         // End render mesh

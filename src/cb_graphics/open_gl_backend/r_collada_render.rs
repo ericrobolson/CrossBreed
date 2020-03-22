@@ -242,6 +242,7 @@ pub fn init_collada_mesh_buffers() -> Vec<MeshBuffers> {
             vao: vao,
             vbo: vbo,
             ebo: ebo,
+            visible: true,
             color_buff: color_buff,
             normal_buff: normal_buff,
             last_calculated_frame: 0,

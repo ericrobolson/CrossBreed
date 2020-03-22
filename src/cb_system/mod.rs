@@ -17,6 +17,10 @@ impl Coordinate {
     pub fn new(x: GameUnit, y: GameUnit, z: GameUnit) -> Self {
         return Self { x: x, y: y, z: z };
     }
+
+    pub fn full_unit() -> GameUnit {
+        return 1000;
+    }
 }
 
 pub struct CbEvent<T> {

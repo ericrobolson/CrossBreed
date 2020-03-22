@@ -6,8 +6,9 @@ use cb_graphics::Sdl2HardwareInterface;
 fn new_voxel_editor_context() -> CbInputContexts {
     return CbInputContexts::VoxelEditorContext {
         networked: Networked::Off,
-        cursor_x: Range::new(0),
-        cursor_y: Range::new(0),
+        open_console: Press::NotPressed,
+        cursor_x: Range::default(),
+        cursor_y: Range::default(),
         toggle_orthographic_view: Press::NotPressed,
         front_view: Press::NotPressed,
         top_view: Press::NotPressed,
@@ -50,6 +51,7 @@ pub fn get_voxel_editor_context_from_keys(
 
     // Declare keys to map to
     let toggle_orthographic_view_keys = vec![Keycode::Num0];
+    let open_console_keys = vec![];
     let front_view_keys = vec![Keycode::Num1];
     let left_view_keys = vec![Keycode::Num2];
     let right_view_keys = vec![Keycode::Num3];
@@ -66,6 +68,7 @@ pub fn get_voxel_editor_context_from_keys(
     let_mut_for![
         (
             toggle_orthographic_view,
+            open_console,
             front_view,
             top_view,
             right_view,
@@ -81,14 +84,12 @@ pub fn get_voxel_editor_context_from_keys(
         Press::NotPressed
     ];
 
-    let mut cursor_x = Range::new(0);
-    let mut cursor_y = Range::new(0);
-
     // Apply key events
     {
         match ctx {
             CbInputContexts::VoxelEditorContext {
                 networked: _,
+                open_console: ctx_open_console,
                 cursor_x: ctx_cursor_x,
                 cursor_y: ctx_cursor_y,
                 toggle_orthographic_view: ctx_toggle_orthographic_view,
@@ -103,14 +104,13 @@ pub fn get_voxel_editor_context_from_keys(
                 add_voxel: ctx_add_voxel,
                 remove_voxel: ctx_remove_voxel,
             } => {
-                cursor_x = ctx_cursor_x;
-                cursor_y = ctx_cursor_y;
-
                 for event in hardware.events {
                     match event {
                         Event::KeyDown { keycode: a, .. } => {
                             if a.is_some() {
                                 let keycode = a.unwrap();
+
+                                get_press_from_keys(&mut open_console, keycode, &open_console_keys);
 
                                 get_press_from_keys(
                                     &mut toggle_orthographic_view,
@@ -155,26 +155,10 @@ pub fn get_voxel_editor_context_from_keys(
     }
 
     // Now apply cursor movements
-    {
-        let cursor = sdl2::mouse::MouseState::new(hardware.pump);
-
-        let default_cursor_x = hardware.window_width / 2;
-        let default_cursor_y = hardware.window_height / 2;
-
-        if hardware.reset_cursor {
-            let xdiff = default_cursor_x - cursor.x();
-            let ydiff = default_cursor_y - cursor.y();
-
-            cursor_x.value -= xdiff;
-            cursor_y.value -= ydiff;
-        } else {
-            cursor_x.value += cursor.x();
-            cursor_y.value += cursor.y();
-        }
-    }
-
+    let (cursor_x, cursor_y) = get_normalized_cursor_coordinates(hardware);
     return CbInputContexts::VoxelEditorContext {
         networked: Networked::Off,
+        open_console: Press::NotPressed,
         cursor_x: cursor_x,
         cursor_y: cursor_y,
         toggle_orthographic_view: toggle_orthographic_view,

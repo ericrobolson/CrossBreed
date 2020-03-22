@@ -16,8 +16,8 @@ fn new_shooter_context() -> CbInputContexts {
         move_backward: State::Off,
         move_left: State::Off,
         move_right: State::Off,
-        look_x: Range::new(0),
-        look_y: Range::new(0),
+        look_x: Range::default(),
+        look_y: Range::default(),
     };
 }
 
@@ -57,8 +57,8 @@ pub fn get_shooter_context_from_keys(
         State::Off
     ];
 
-    let mut look_x = Range::new(0);
-    let mut look_y = Range::new(0);
+    let mut look_x = Range::default();
+    let mut look_y = Range::default();
 
     // Apply key events
     {
@@ -190,23 +190,7 @@ pub fn get_shooter_context_from_keys(
     }
 
     // Now apply cursor movements
-    {
-        let cursor = sdl2::mouse::MouseState::new(hardware.pump);
-
-        let default_cursor_x = hardware.window_width / 2;
-        let default_cursor_y = hardware.window_height / 2;
-
-        if hardware.reset_cursor {
-            let xdiff = default_cursor_x - cursor.x();
-            let ydiff = default_cursor_y - cursor.y();
-
-            look_x.value -= xdiff;
-            look_y.value -= ydiff;
-        } else {
-            look_x.value += cursor.x();
-            look_y.value += cursor.y();
-        }
-    }
+    let (cursor_x, cursor_y) = get_normalized_cursor_coordinates(hardware);
 
     return CbInputContexts::ShooterContext {
         networked: Networked::On,

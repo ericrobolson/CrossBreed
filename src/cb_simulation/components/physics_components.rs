@@ -15,15 +15,21 @@ impl VelocityComponent {
 }
 
 pub struct TransformComponent {
-    pub position: Coordinate,
-    pub transform: Coordinate,
+    pub world_position: Coordinate,
+    pub rotation: Coordinate,
+    pub scale: Coordinate,
 }
 
 impl TransformComponent {
     pub fn new() -> Self {
         return Self {
-            position: Coordinate::new(0, 0, 0),
-            transform: Coordinate::new(0, 0, 0),
+            world_position: Coordinate::new(0, 0, 0),
+            rotation: Coordinate::new(0, 0, 0),
+            scale: Coordinate::new(
+                Coordinate::full_unit(),
+                Coordinate::full_unit(),
+                Coordinate::full_unit(),
+            ),
         };
     }
 }

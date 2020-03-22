@@ -42,7 +42,11 @@ impl Mesh {
         };
     }
 
-    pub fn merge(meshes: &Vec<Mesh>) -> Mesh {
+    pub fn is_empty(&self) -> bool {
+        return self.vertices.is_empty() && self.indices.is_empty();
+    }
+
+    pub fn merge(meshes: &Vec<Mesh>, frame: usize) -> Mesh {
         //TODO: paralellize
         let mut mesh = Mesh::new(3, vec![], vec![], 3, vec![], 3, vec![], 0);
         if meshes.is_empty() == false {
@@ -86,6 +90,10 @@ impl Mesh {
                     mesh.generated_at_frame = m.generated_at_frame;
                 }
             }
+        }
+
+        if mesh.is_empty() {
+            mesh.generated_at_frame = frame;
         }
 
         return mesh;
