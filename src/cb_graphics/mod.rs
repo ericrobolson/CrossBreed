@@ -15,7 +15,7 @@ pub mod mesh;
 pub mod sprites;
 
 use crate::cb_menu;
-use cb_menu::menu_events;
+use cb_menu::{menu_events, EditorComponent};
 
 use crate::cb_menu::gfx;
 use gfx::{Color, Palette};
@@ -186,9 +186,12 @@ impl<'a> CbGfx {
             world.write_storage::<cb_simulation::components::voxel_components::VoxelComponent>();
 
         for (editable, voxel) in (&mut editable_components, &mut voxel_components).join() {
-            if voxel.editor.editing {
+            if editable.is_editing() == false {
+                continue;
+            }
+            if !voxel.is_editing() {
                 if !voxel.editor.created_menu {
-                    let menu = voxel.start_editing();
+                    let menu = voxel.init_editor();
                     self.editor_gui_env.add_form(menu);
                 }
                 // sync stuff

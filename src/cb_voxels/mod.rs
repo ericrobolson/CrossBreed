@@ -64,14 +64,7 @@ impl CbChunkManager {
     }
 
     pub fn get_voxel(&self, x: usize, y: usize, z: usize) -> &CbVoxel {
-        println!("input: {:?}", (x, y, z));
-        println!("num chunks: {}, chunk size: {}", CHUNKS, CHUNK_SIZE);
         let ((cx, cy, cz), (vx, vy, vz)) = get_chunk_and_voxel_indexes(x, y, z, CHUNKS, CHUNK_SIZE);
-
-        println!(
-            "returned value: {:?}",
-            get_chunk_and_voxel_indexes(x, y, z, CHUNKS, CHUNK_SIZE)
-        );
 
         return &self.chunk_array[cx][cy][cz].voxels[vx][vy][vz];
     }

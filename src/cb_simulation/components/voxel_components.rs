@@ -13,7 +13,7 @@ use crate::cb_voxels;
 use crate::cb_math::cb_range::CbNormalizedRange;
 
 use crate::cb_menu;
-use cb_menu::{menu_events, menu_events::EventId, Form};
+use cb_menu::{menu_events, menu_events::EventId, EditorComponent, Form};
 
 #[derive(Clone)]
 pub struct VoxelComponent {
@@ -30,52 +30,12 @@ pub struct VoxelEditor {
     toggle_active_callbacks: Vec<ActivateCallbacks>,
 }
 
-impl VoxelEditor {
-    pub fn new() -> Self {
-        return Self {
-            editing: true,
-            z_index_callback: None,
-            created_menu: false,
-            z_index: 0,
-            toggle_active_callbacks: vec![],
-        };
+impl EditorComponent for VoxelComponent {
+    fn is_editing(&self) -> bool {
+        return self.editor.editing;
     }
 
-    pub fn reset(&mut self) {
-        self.editing = false;
-        self.created_menu = false;
-        self.z_index_callback = None;
-        self.z_index = 0;
-        self.toggle_active_callbacks = vec![];
-    }
-}
-
-#[derive(Clone)]
-struct ActivateCallbacks {
-    event_id: EventId,
-    x_location: usize,
-    y_location: usize,
-}
-
-impl ActivateCallbacks {
-    pub fn new(event_id: EventId, x_location: usize, y_location: usize) -> Self {
-        return Self {
-            event_id: event_id,
-            x_location: x_location,
-            y_location: y_location,
-        };
-    }
-}
-
-impl VoxelComponent {
-    pub fn new() -> Self {
-        return Self {
-            editor: VoxelEditor::new(),
-            chunk_manager: cb_voxels::CbChunkManager::new(),
-        };
-    }
-
-    pub fn handle_events(
+    fn handle_events(
         &mut self,
         events: &Vec<(menu_events::EventId, menu_events::Events)>,
         frame: usize,
@@ -131,7 +91,7 @@ impl VoxelComponent {
         return databinding_changes;
     }
 
-    pub fn start_editing(&mut self) -> Box<Form> {
+    fn init_editor(&mut self) -> Box<Form> {
         if self.editor.created_menu {
             panic!("already created menu!");
         }
@@ -184,8 +144,54 @@ impl VoxelComponent {
         return Box::new(columns);
     }
 
-    pub fn stop_editing(&mut self) {
+    fn close_editor(&mut self) {
         self.editor.reset()
+    }
+}
+
+impl VoxelEditor {
+    pub fn new() -> Self {
+        return Self {
+            editing: false,
+            z_index_callback: None,
+            created_menu: false,
+            z_index: 0,
+            toggle_active_callbacks: vec![],
+        };
+    }
+
+    pub fn reset(&mut self) {
+        self.editing = false;
+        self.created_menu = false;
+        self.z_index_callback = None;
+        self.z_index = 0;
+        self.toggle_active_callbacks = vec![];
+    }
+}
+
+#[derive(Clone)]
+struct ActivateCallbacks {
+    event_id: EventId,
+    x_location: usize,
+    y_location: usize,
+}
+
+impl ActivateCallbacks {
+    pub fn new(event_id: EventId, x_location: usize, y_location: usize) -> Self {
+        return Self {
+            event_id: event_id,
+            x_location: x_location,
+            y_location: y_location,
+        };
+    }
+}
+
+impl VoxelComponent {
+    pub fn new() -> Self {
+        return Self {
+            editor: VoxelEditor::new(),
+            chunk_manager: cb_voxels::CbChunkManager::new(),
+        };
     }
 }
 

@@ -25,6 +25,22 @@ pub struct GuiEnvironment {
     clicked_at_xy: Option<(usize, usize)>,
 }
 
+pub trait EditorComponent {
+    /// Pass in events to the editor, and return any events for databinding.
+    fn handle_events(
+        &mut self,
+        events: &Vec<(menu_events::EventId, menu_events::Events)>,
+        frame: usize,
+    ) -> Vec<(menu_events::EventId, menu_events::Events)>;
+
+    /// Initialize the editor. Will panic if already implemented.
+    fn init_editor(&mut self) -> Box<Form>;
+    /// Return whether the current component has an editor opened.
+    fn is_editing(&self) -> bool;
+    /// Close the current editor.
+    fn close_editor(&mut self);
+}
+
 impl GuiEnvironment {
     pub fn new(width: usize, height: usize) -> Self {
         return Self {

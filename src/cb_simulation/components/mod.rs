@@ -10,6 +10,7 @@ use cb_math::cb_range::CbNormalizedRange;
 
 use crate::cb_menu;
 
+pub mod actor_components;
 pub mod gfx_components;
 pub mod physics_components;
 pub mod rts_components;
@@ -22,6 +23,10 @@ pub struct EditableComponent {
 impl EditableComponent {
     pub fn new(editing: bool) -> Self {
         return Self { editing: editing };
+    }
+
+    pub fn is_editing(&self) -> bool {
+        return self.editing;
     }
 }
 

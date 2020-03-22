@@ -134,6 +134,11 @@ fn main() {
                 }
             }
 
+            let local_player_id = r_mercury.get_local_player_id();
+            r_mercury
+                .get_game_interface_mut()
+                .set_local_player_id(local_player_id);
+
             let result = r_mercury.execute(); // Always execute, as even if the sim is not run the networking protocols are
         }
 

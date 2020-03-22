@@ -8,7 +8,7 @@ use crate::cb_voxels;
 use crate::cb_graphics;
 
 mod systems;
-use systems::{editor_system::EditorSystem, voxel_editor_system};
+use systems::{actor_input_system, editor_system::EditorSystem, voxel_editor_system};
 
 pub mod assemblages;
 pub mod components;
@@ -38,7 +38,7 @@ pub struct CbSystemValues {
     pub events: Vec<(menu_events::EventId, menu_events::Events)>,
     pub world_inputs: CbWorldInputs,
     pub databinding_changes: Vec<(menu_events::EventId, menu_events::Events)>,
-
+    current_player_id: usize,
     pub frame: usize,
 }
 
@@ -48,12 +48,18 @@ impl CbSystemValues {
             events: vec![],
             world_inputs: vec![],
             frame: 0,
+            current_player_id: 0,
             databinding_changes: vec![],
         };
     }
 
-    pub fn from(world_inputs: CbWorldInputs, frame: usize) -> Self {
+    pub fn get_current_player_id(&self) -> usize {
+        return self.current_player_id;
+    }
+
+    pub fn from(world_inputs: CbWorldInputs, current_player_id: usize, frame: usize) -> Self {
         return Self {
+            current_player_id: current_player_id,
             events: vec![],
             world_inputs: world_inputs,
             frame: frame,
@@ -68,6 +74,7 @@ pub struct CbSimulationInterface<'a, 'b> {
     game_state: CbGameState,
     world: World,
     in_editor_mode: bool,
+    current_player_id: usize,
     sim_dispatcher: specs::Dispatcher<'a, 'b>,
     editor_dispatcher: specs::Dispatcher<'a, 'b>,
     gfx_dispatcher: specs::Dispatcher<'a, 'b>,
@@ -98,6 +105,13 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             dispatcher = builder.build();
         }
 
+        let game_system_dispatcher;
+        {
+            game_system_dispatcher = DispatcherBuilder::new()
+                .with(actor_input_system::ActorInputSystem, "actor input", &[])
+                .build();
+        }
+
         let editor_dispatcher = DispatcherBuilder::new()
             .with(EditorSystem, "editor system", &[])
             .build();
@@ -106,14 +120,23 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
         let mut world = world_builder::new(mode);
 
         return Self {
+            current_player_id: 0,
             game_state: CbGameState::new(),
-            sim_dispatcher: dispatcher,
+            sim_dispatcher: game_system_dispatcher,
             editor_dispatcher: editor_dispatcher,
             gfx_dispatcher: gfx_dispatcher,
             world: world,
             gfx: cb_graphics::CbGfx::new(),
             in_editor_mode: true,
         };
+    }
+
+    pub fn set_local_player_id(&mut self, current_player_id: usize) {
+        self.current_player_id = current_player_id;
+    }
+
+    pub fn get_local_player_id(&self) -> usize {
+        return self.current_player_id;
     }
 
     pub fn toggle_editor_mode(&mut self) {
@@ -144,7 +167,11 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
         return "hello world!".to_string();
     }
     fn advance_frame(&mut self, inputs: std::vec::Vec<CbGameInput>) {
-        let mut sys_values = CbSystemValues::from(inputs, self.game_state.current_tick as usize);
+        let mut sys_values = CbSystemValues::from(
+            inputs,
+            self.get_local_player_id(),
+            self.game_state.current_tick as usize,
+        );
         sys_values.events = self.gfx.editor_gui_env.get_events();
 
         self.world.insert(sys_values);

@@ -4,7 +4,9 @@ use specs::prelude::*;
 use super::*;
 
 use components;
-use components::{gfx_components, physics_components, voxel_components, EditableComponent};
+use components::{
+    actor_components, gfx_components, physics_components, voxel_components, EditableComponent,
+};
 
 pub fn new(mode: CbSimulationModes) -> specs::World {
     let mut world = World::new();
@@ -25,6 +27,11 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
         world.register::<gfx_components::CameraComponent>();
     }
 
+    // Actor components
+    {
+        world.register::<actor_components::ActorComponent>();
+    }
+
     // Misc components
     {
         world.register::<EditableComponent>();
@@ -41,6 +48,8 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
             // run all voxel editor assemblages
             assemblages::voxel_editor_assemblages::new(&mut world);
         }
+
+        assemblages::fps_player_actor_assemblage::new(&mut world);
     }
 
     return world;
