@@ -8,7 +8,7 @@ use crate::cb_voxels;
 use crate::cb_graphics;
 
 mod systems;
-use systems::{actor_input_system, editor_system::EditorSystem, voxel_editor_system};
+use systems::{actor_input_system, editor_system::EditorSystem, ik_system, voxel_editor_system};
 
 pub mod assemblages;
 pub mod components;
@@ -109,6 +109,8 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
         {
             game_system_dispatcher = DispatcherBuilder::new()
                 .with(actor_input_system::ActorInputSystem, "actor input", &[])
+                .with_barrier()
+                .with(ik_system::IkSystem, "inverse kinematics", &[])
                 .build();
         }
 

@@ -5,7 +5,8 @@ use super::*;
 
 use components;
 use components::{
-    actor_components, gfx_components, physics_components, voxel_components, EditableComponent,
+    actor_components, gfx_components, ik_components, physics_components, voxel_components,
+    EditableComponent,
 };
 
 pub fn new(mode: CbSimulationModes) -> specs::World {
@@ -25,6 +26,11 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
     // GFX components
     {
         world.register::<gfx_components::CameraComponent>();
+    }
+
+    // IK components
+    {
+        world.register::<ik_components::IkComponent>();
     }
 
     // Actor components

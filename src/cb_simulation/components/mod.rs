@@ -12,6 +12,7 @@ use crate::cb_menu;
 
 pub mod actor_components;
 pub mod gfx_components;
+pub mod ik_components;
 pub mod physics_components;
 pub mod rts_components;
 pub mod voxel_components;
