@@ -9,6 +9,7 @@ use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 #[macro_use]
 pub mod cb_utility;
 // Non-macro Internal Crates
+pub mod cb_audio;
 pub mod cb_cmd_line;
 pub mod cb_data_structures;
 pub mod cb_graphics;
@@ -30,6 +31,7 @@ fn get_top_level_menu_choice(
     top_level_menu: CbCmdMenu,
     voxel_editor_mode: &str,
     simulation_mode: &str,
+    fm_audio_editor_mode: &str,
 ) -> String {
     top_level_menu.print();
 
@@ -44,6 +46,9 @@ fn get_top_level_menu_choice(
         } else if mode_choice == simulation_mode {
             println!("Do Sim stuff");
             done = true;
+        } else if mode_choice == fm_audio_editor_mode {
+            println!("Do FM Audio Editor Stuff");
+            done = true;
         } else {
             println!("Invalid choice! Try again.");
         }
@@ -55,13 +60,19 @@ fn get_top_level_menu_choice(
 fn main() {
     let top_level_menu = CbCmdMenu::root(
         "CrossBreed.exe - Dev Kit",
-        vec!["Voxel Model Editor", "Begin Simulation"],
+        vec!["Voxel Model Editor", "Begin Simulation", "FM Audio Editor"],
     );
 
     const VOXEL_EDITOR_MODE: &str = "1";
     const SIMULATION_MODE: &str = "2";
+    const FM_EDITOR_MODE: &str = "3";
 
-    let mode_choice = get_top_level_menu_choice(top_level_menu, VOXEL_EDITOR_MODE, SIMULATION_MODE);
+    let mode_choice = get_top_level_menu_choice(
+        top_level_menu,
+        VOXEL_EDITOR_MODE,
+        SIMULATION_MODE,
+        FM_EDITOR_MODE,
+    );
 
     // Init RMercury
     let mut input_context_manager = CbInputContextManager::new();
@@ -72,6 +83,11 @@ fn main() {
     {
         if mode_choice == VOXEL_EDITOR_MODE {
             game_interface = CbSimulationInterface::new(CbSimulationModes::VoxelEditor);
+            game_interface.gfx.reset_cursor = false;
+
+            input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
+        } else if mode_choice == FM_EDITOR_MODE {
+            game_interface = CbSimulationInterface::new(CbSimulationModes::FmAudioEditor);
             game_interface.gfx.reset_cursor = false;
 
             input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
@@ -146,6 +162,7 @@ fn main() {
         // Run gfx
         {
             r_mercury.get_game_interface_mut().render();
+            r_mercury.get_game_interface_mut().render_audio();
         }
     }
 }

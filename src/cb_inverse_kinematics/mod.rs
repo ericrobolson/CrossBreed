@@ -100,7 +100,10 @@ pub fn fabrik(rig: &mut IkRig) {
     */
 
     let n = joint_positions.len();
-    // Note, in the algorithm, it indexes from 1 to N. Rust, however, indexes from 0..N, so not much actually changes. Just pointing it out.
+    // Note, in the algorithm, it indexes from 1 to N. Rust, however, indexes from 0..N, so not much actually changes. Just pointing it out. May be a few instances where the index
+    // in code looks different from the algorithm; this is expected.
+
+    // Base algorithm found on: http://www.andreasaristidou.com/publications/papers/FABRIK.pdf
 
     //1.1 Distance between root and target
     let dist: i32 = abs(distance(rig.root_joint.current_position, target_position)); // 1.2

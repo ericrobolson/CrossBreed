@@ -8,7 +8,9 @@ use crate::cb_voxels;
 use crate::cb_graphics;
 
 mod systems;
-use systems::{actor_input_system, editor_system::EditorSystem, ik_system, voxel_editor_system};
+use systems::{
+    actor_input_system, audio, editor_system::EditorSystem, ik_system, voxel_editor_system,
+};
 
 pub mod assemblages;
 pub mod components;
@@ -84,6 +86,7 @@ pub struct CbSimulationInterface<'a, 'b> {
     sim_dispatcher: specs::Dispatcher<'a, 'b>,
     editor_dispatcher: specs::Dispatcher<'a, 'b>,
     gfx_dispatcher: specs::Dispatcher<'a, 'b>,
+    audio_dispatcher: specs::Dispatcher<'a, 'b>,
     pub gfx: cb_graphics::CbGfx,
 }
 
@@ -91,6 +94,7 @@ pub struct CbSimulationInterface<'a, 'b> {
 pub enum CbSimulationModes {
     VoxelEditor,
     Simulation,
+    FmAudioEditor,
 }
 
 impl<'a, 'b> CbSimulationInterface<'a, 'b> {
@@ -120,6 +124,19 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
                 .build();
         }
 
+        let audio_system_dispatcher;
+        {
+            let mut dispatcher = DispatcherBuilder::new();
+
+            dispatcher = dispatcher
+                .with(audio::FmAudioSystem, "fm audio", &[])
+                .with_barrier();
+
+            dispatcher = dispatcher.with(audio::AudioSystem, "audio", &[]);
+
+            audio_system_dispatcher = dispatcher.build();
+        }
+
         let editor_dispatcher = DispatcherBuilder::new()
             .with(EditorSystem, "editor system", &[])
             .build();
@@ -132,6 +149,7 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             game_state: CbGameState::new(),
             sim_dispatcher: game_system_dispatcher,
             editor_dispatcher: editor_dispatcher,
+            audio_dispatcher: audio_system_dispatcher,
             gfx_dispatcher: gfx_dispatcher,
             world: world,
             gfx: cb_graphics::CbGfx::new(),
@@ -153,8 +171,15 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
         println!("Editor Mode: {}", self.in_editor_mode);
     }
 
+    /// Render the audio
+    pub fn render_audio(&mut self) {
+        //TODO: maybe make delta based?
+        self.audio_dispatcher.dispatch(&self.world);
+    }
+
     /// Render the simulation; only updates the graphics systems
     pub fn render(&mut self) {
+        //TODO: maybe make delta based to allow for interpolation?
         self.gfx.render(
             &self.game_state,
             &self.world,

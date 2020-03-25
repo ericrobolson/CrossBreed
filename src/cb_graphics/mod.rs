@@ -326,61 +326,48 @@ impl<'a> CbGfx {
         self.window.gl_swap_window();
 
         // Draw GUI editor window
+        self.render_editor_window(&game_state, &world, frame);
+    }
+
+    fn render_editor_window(&mut self, game_state: &CbGameState, world: &World, frame: usize) {
         {
             // Clear canvas
             let canvas = &mut self.editor_window;
             canvas.set_draw_color(sdl2::pixels::Color::RGB(237, 237, 237));
             canvas.clear();
 
-            // Misc things to draw
-            let ik_components =
-                world.read_storage::<cb_simulation::components::ik_components::IkComponent>();
+            // IK components to draw
+            {
+                let ik_components =
+                    world.read_storage::<cb_simulation::components::ik_components::IkComponent>();
 
-            for ik in (&ik_components).join() {
-                let rig = &ik.rig;
+                for ik in (&ik_components).join() {
+                    let rig = &ik.rig;
 
-                for bone in rig.bones.iter() {
-                    let_mut_for![(x, y, x1, y1), i32, 0];
+                    for bone in rig.bones.iter() {
+                        let_mut_for![(x, y, x1, y1), i32, 0];
 
-                    // Get the start position
-                    if bone.get_root_bone().is_none() {
-                        x = rig.position.x;
-                        y = rig.position.y;
-                    } else {
-                        let root_bone = bone.get_root_bone().unwrap();
-                        x = root_bone.get_local_end_position().x;
-                        y = root_bone.get_local_end_position().x;
-                    }
+                        // Get the start position
+                        if bone.get_root_bone().is_none() {
+                            x = rig.position.x;
+                            y = rig.position.y;
+                        } else {
+                            let root_bone = bone.get_root_bone().unwrap();
+                            x = root_bone.get_local_end_position().x;
+                            y = root_bone.get_local_end_position().x;
+                        }
 
-                    // Get the end position
-                    x1 = x + bone.get_local_end_position().x;
-                    y1 = y + bone.get_local_end_position().y;
-
-                    canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
-                    canvas.draw_line((x, y), (x1, y1)).unwrap();
-                }
-                /*
-                old shit
-                let can_run = rig.segments.len() >= 2;
-
-                if can_run {
-                    for i in 0..(rig.segments.len() - 1) {
-                        let x = rig.segments[i].x;
-                        let y = rig.segments[i].y;
-
-                        let x1 = rig.segments[i + 1].x;
-                        let y1 = rig.segments[i + 1].y;
+                        // Get the end position
+                        x1 = x + bone.get_local_end_position().x;
+                        y1 = y + bone.get_local_end_position().y;
 
                         canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
-
                         canvas.draw_line((x, y), (x1, y1)).unwrap();
-                        println!("draw a line");
                     }
                 }
-                */
             }
 
-            // Render
+            // Render editor GUI
             let draw_calls = self.editor_gui_env.draw();
             for draw_call in draw_calls.iter() {
                 match draw_call {
