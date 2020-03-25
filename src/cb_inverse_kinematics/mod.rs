@@ -92,11 +92,9 @@ pub fn fabrik(rig: &mut IkRig) {
         // Errors if only 1 bone in chain, as the following code uses direct indexing. Need to add checks in algorithm to solve.
     }
 
-    let joint_positions = Vec::<CbMatrix>::new();
-    let joint_pair_distances = Vec::<CbMatrix>::new(); // Note: need to populate. Will be of size N-1, where N is number of positions (since it's distances per joint pairs)
+    let mut joint_positions: Vec<CbMatrix> = Vec::<CbMatrix>::new();
+    let joint_pair_distances = vec![0]; // Note: need to populate. Will be of size N-1, where N is number of positions (since it's distances per joint pairs)
     let target_position = CbMatrix::new(0, 0);
-
-    let mut output_joint_positions = joint_positions.clone();
     /*
         Right now just going for single IK chain, will update it as time goes
     */
@@ -105,23 +103,75 @@ pub fn fabrik(rig: &mut IkRig) {
     // Note, in the algorithm, it indexes from 1 to N. Rust, however, indexes from 0..N, so not much actually changes. Just pointing it out.
 
     //1.1 Distance between root and target
-    let dist = abs(rig.root_joint.current_position - target_position); // 1.2
-                                                                       //1.3 Check whether target is in reach
-    if dist > joint_pair_distances.iter().sum() {
+    let dist: i32 = abs(distance(rig.root_joint.current_position, target_position)); // 1.2
+                                                                                     //1.3 Check whether target is in reach
+    if dist > sum(&joint_pair_distances) {
         // 1.4
         //1.5 Target is unreachable
         for i in 0..(n - 1) {
             // 1.6
             // 1.7 Find the distance ri between target t and joint position pi
-            let ri = abs(target_position - joint_positions[i]); //1.8
+            let ri = abs(distance(target_position, joint_positions[i])); //1.8
             let lambda_i = joint_pair_distances[i] / ri; //1.9
                                                          //1.10 Find new joint positions pi
-            output_joint_positions[i + 1] =
+            joint_positions[i + 1] =
                 (1 - lambda_i) * joint_positions[i] + lambda_i * target_position;
             //1.11
         } // 1.12
-    } else { //1.13
+    } else {
+        //1.13
+        //1.14 target is reachable, set b as the initial position of p0
+        let b = joint_positions[0]; // 1.15
+                                    //1.16 Check whether distance between end effector pn and the target is greater than a tolerance
+        let mut diff_a = abs(distance(joint_positions[n - 1], target_position)); //1.17
+        let tolerance = 1; // TODO: figure out
+        while diff_a > tolerance {
+            //1.18
+            //1.19 Stage 1: Forward reaching
+            //1.20 Set end effector pn as target t
+            joint_positions[n - 1] = target_position; //1.21
+
+            //note: skip the last value, as it's being handled elsewhere
+            for i in (0..n - 1).rev() {
+                //1.22
+                //1.23 Find the distance ri between the new joint position pi+1 and the joint pi
+                let ri = abs(distance(joint_positions[i + 1], joint_positions[i])); //1.24
+                let lambda_i = joint_pair_distances[i] / ri; //1.25
+                                                             //1.26 Find the new joint positions pi
+                joint_positions[i] =
+                    (1 - lambda_i) * joint_positions[i + 1] + lambda_i * joint_positions[i];
+                //1.27
+            } // 1.28
+              //1.29 Stage 2: Backwards reaching
+              //1.30 Set the root p0 it's initial position
+            joint_positions[0] = b; //1.31
+
+            for i in 0..n - 1 {
+                //1.32
+                //1.33 Find the distance ri between the new joint position pi and the joint pi+1
+                let ri = abs(distance(joint_positions[i + 1], joint_positions[i])); //1.34
+                let lambda_i = joint_pair_distances[i] / ri; //1.35
+                                                             //1.36 Find the new joint positions pi
+                joint_positions[i] =
+                    (1 - lambda_i) * joint_positions[i] + lambda_i * joint_positions[i + 1];
+                //1.37
+            } //1.38
+            diff_a = abs(distance(joint_positions[n - 1], target_position)); // 1.39
+        } //1.40
+    } //1.41
+}
+
+fn sum(values: &Vec<i32>) -> i32 {
+    let mut value = 0;
+    for v in values.iter() {
+        value += v;
     }
+
+    return value;
+}
+
+fn distance(vector_a: CbMatrix, vector_b: CbMatrix) -> i32 {
+    unimplemented!();
 }
 
 fn abs<T>(value: T) -> T {
