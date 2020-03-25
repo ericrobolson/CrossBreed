@@ -14,6 +14,21 @@ pub fn pow(num: usize, pow: usize) -> usize {
     return value;
 }
 
+/// NOTE: get rid of floating points as they're non-deterministic
+pub fn sqrt_f32(value: f32) -> f32 {
+    return value.sqrt();
+}
+
+pub fn pow_i32(num: i32, pow: usize) -> i32 {
+    let mut value = 1;
+
+    for _ in 0..pow {
+        value *= num;
+    }
+
+    return value;
+}
+
 pub fn index_1d_to_3d(index: usize, x_max: usize, y_max: usize) -> (usize, usize, usize) {
     let mut i = index;
 

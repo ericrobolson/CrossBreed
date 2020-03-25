@@ -99,6 +99,9 @@ pub struct CbGfx {
     main_window_id: u32,
     editor_window_id: u32,
 
+    pub editor_mouse_x: i32,
+    pub editor_mouse_y: i32,
+
     gl_context: sdl2::video::GLContext, // Need this to keep the OpenGL context active
     gl_backend: OpenGlBackend,
     camera: CbCamera,
@@ -155,6 +158,8 @@ impl<'a> CbGfx {
             main_window_id: main_window_id,
             editor_window_id: editor_window_id,
             editor_window: canvas,
+            editor_mouse_x: 0,
+            editor_mouse_y: 0,
             editor_gui_env: cb_menu::GuiEnvironment::new(
                 editor_width as usize,
                 editor_height as usize,
@@ -199,6 +204,11 @@ impl<'a> CbGfx {
         }
     }
 
+    /// Hacky, remove when ready to ship
+    pub fn get_editor_cursor_xy(&self) -> (i32, i32) {
+        return (self.editor_mouse_x, self.editor_mouse_y);
+    }
+
     pub fn get_events(&mut self) -> Vec<sdl2::event::Event> {
         let events: Vec<sdl2::event::Event> = self.event_pump.poll_iter().map(|e| e).collect();
 
@@ -212,12 +222,16 @@ impl<'a> CbGfx {
                     window_id,
                     which: _,
                     mousestate: _,
-                    x: _,
-                    y: _,
+                    x: mouse_x,
+                    y: mouse_y,
                     xrel: _,
                     yrel: _,
                 } => {
                     let is_editor = *window_id == self.editor_window_id;
+
+                    self.editor_mouse_x = *mouse_x;
+                    self.editor_mouse_y = *mouse_y;
+
                     if is_editor {
                         editor_window_events.push(e.clone());
                     } else {
@@ -317,6 +331,54 @@ impl<'a> CbGfx {
             let canvas = &mut self.editor_window;
             canvas.set_draw_color(sdl2::pixels::Color::RGB(237, 237, 237));
             canvas.clear();
+
+            // Misc things to draw
+            let ik_components =
+                world.read_storage::<cb_simulation::components::ik_components::IkComponent>();
+
+            for ik in (&ik_components).join() {
+                let rig = &ik.rig;
+
+                for bone in rig.bones.iter() {
+                    let_mut_for![(x, y, x1, y1), i32, 0];
+
+                    // Get the start position
+                    if bone.get_root_bone().is_none() {
+                        x = rig.position.x;
+                        y = rig.position.y;
+                    } else {
+                        let root_bone = bone.get_root_bone().unwrap();
+                        x = root_bone.get_local_end_position().x;
+                        y = root_bone.get_local_end_position().x;
+                    }
+
+                    // Get the end position
+                    x1 = x + bone.get_local_end_position().x;
+                    y1 = y + bone.get_local_end_position().y;
+
+                    canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+                    canvas.draw_line((x, y), (x1, y1)).unwrap();
+                }
+                /*
+                old shit
+                let can_run = rig.segments.len() >= 2;
+
+                if can_run {
+                    for i in 0..(rig.segments.len() - 1) {
+                        let x = rig.segments[i].x;
+                        let y = rig.segments[i].y;
+
+                        let x1 = rig.segments[i + 1].x;
+                        let y1 = rig.segments[i + 1].y;
+
+                        canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+
+                        canvas.draw_line((x, y), (x1, y1)).unwrap();
+                        println!("draw a line");
+                    }
+                }
+                */
+            }
 
             // Render
             let draw_calls = self.editor_gui_env.draw();

@@ -40,6 +40,8 @@ pub struct CbSystemValues {
     pub databinding_changes: Vec<(menu_events::EventId, menu_events::Events)>,
     current_player_id: usize,
     pub frame: usize,
+    pub editor_x: i32,
+    pub editor_y: i32,
 }
 
 impl CbSystemValues {
@@ -50,6 +52,8 @@ impl CbSystemValues {
             frame: 0,
             current_player_id: 0,
             databinding_changes: vec![],
+            editor_x: 0,
+            editor_y: 0,
         };
     }
 
@@ -63,6 +67,8 @@ impl CbSystemValues {
             events: vec![],
             world_inputs: world_inputs,
             frame: frame,
+            editor_x: 0,
+            editor_y: 0,
             databinding_changes: vec![],
         };
     }
@@ -175,6 +181,8 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
             self.game_state.current_tick as usize,
         );
         sys_values.events = self.gfx.editor_gui_env.get_events();
+        sys_values.editor_x = self.gfx.editor_mouse_x;
+        sys_values.editor_y = self.gfx.editor_mouse_y;
 
         self.world.insert(sys_values);
 
@@ -193,7 +201,6 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
         //else
         {
             // Execute simulation systems
-
             {
                 // Execute world systems + maintain it
                 self.sim_dispatcher.dispatch(&mut self.world);
@@ -211,7 +218,7 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct CbGameState {
     pub current_tick: GameTick,
 }

@@ -16,13 +16,13 @@ pub mod rts_context;
 pub mod shooter_context;
 pub mod voxel_editor_context;
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum Networked {
     On,
     Off,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CbInputContexts {
     FightingContext {
         networked: Networked,
@@ -162,6 +162,30 @@ const NUM_ACTIVE_CONTEXTS: usize = 10;
 #[derive(Debug, Copy, Clone)]
 pub struct CbContextManager {
     contexts: [Option<CbInputContexts>; NUM_ACTIVE_CONTEXTS],
+}
+
+impl PartialEq for CbContextManager {
+    fn eq(&self, other: &Self) -> bool {
+        let mut same = true;
+
+        for i in 0..NUM_ACTIVE_CONTEXTS {
+            if self.contexts[i].is_some() && other.contexts[i].is_none()
+                || self.contexts[i].is_none() && other.contexts[i].is_some()
+            {
+                return false;
+            }
+
+            if self.contexts[i].is_none() && other.contexts[i].is_none() {
+                continue;
+            }
+
+            if self.contexts[i].unwrap() != other.contexts[i].unwrap() {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }
 
 impl CbContextManager {

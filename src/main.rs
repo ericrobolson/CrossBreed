@@ -13,6 +13,7 @@ pub mod cb_cmd_line;
 pub mod cb_data_structures;
 pub mod cb_graphics;
 pub mod cb_input;
+pub mod cb_inverse_kinematics;
 pub mod cb_math;
 pub mod cb_menu;
 pub mod cb_patterns;

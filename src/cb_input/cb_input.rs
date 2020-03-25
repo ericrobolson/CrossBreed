@@ -16,7 +16,7 @@ pub struct CbGameInputWrapper<T> {
     pub input: T,
 }
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, PartialEq)]
 pub struct CbGameInput {
     pub player_id: usize,
     pub context_manager: CbContextManager,
