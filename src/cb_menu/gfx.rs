@@ -12,6 +12,10 @@ impl Color {
     pub fn new(r: u8, g: u8, b: u8) -> Self {
         return Self { r: r, b: b, g: g };
     }
+
+    pub fn black() -> Self {
+        return Self::new(0, 0, 0);
+    }
 }
 
 /// A simplified way to keep consistent pallates.
@@ -41,4 +45,5 @@ impl Palette {
 pub enum CbMenuDrawVirtualMachine {
     WireframeRect(FormPosition, Color),
     FilledRect(FormPosition, Color),
+    Text(FormPosition, Color, String),
 }

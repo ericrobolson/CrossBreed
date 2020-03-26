@@ -1,9 +1,11 @@
 use super::*;
 
-use menu_events::{BoolEvent, EventId, EventId_new, Events};
-
-use crate::cb_menu::gfx;
-use gfx::{Color, Palette};
+use crate::cb_menu;
+use cb_menu::{
+    form::{Form, FormPosition},
+    gfx::{CbMenuDrawVirtualMachine, Color, Palette},
+    menu_events::{BoolEvent, EventId, EventId_new, Events},
+};
 
 use crate::cb_math::cb_range;
 use cb_range::CbNormalizedRange;
@@ -49,18 +51,18 @@ impl CbSliderHorizontal {
 }
 
 impl Form for CbSliderHorizontal {
-    fn rebind_data(&mut self, events: &Vec<(menu_events::EventId, menu_events::Events)>) {
+    fn rebind_data(&mut self, events: &Vec<(EventId, Events)>) {
         for (id, event) in events.iter() {
             if *id == self.event_id {
                 match event {
-                    menu_events::Events::BoolValueChange(value) => {
+                    Events::BoolValueChange(value) => {
                         if *value {
                             self.x_value.value = self.x_value.max();
                         } else {
                             self.x_value.value = self.x_value.min();
                         }
                     }
-                    menu_events::Events::SingleRangeChange(value) => {
+                    Events::SingleRangeChange(value) => {
                         self.x_value = *value;
                     }
                 }
@@ -80,7 +82,7 @@ impl Form for CbSliderHorizontal {
         return self.form_position;
     }
 
-    fn update(&mut self) -> Vec<(menu_events::EventId, menu_events::Events)> {
+    fn update(&mut self) -> Vec<(EventId, Events)> {
         let mut events = vec![];
 
         events.append(&mut self.events);

@@ -25,6 +25,7 @@ panic = "abort"
 
 [dependencies.sdl2]
 version = "0.33.0"
+default-features = false
 features = ["bundled"]
 
 

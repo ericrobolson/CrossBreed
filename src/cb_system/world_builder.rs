@@ -5,8 +5,8 @@ use super::*;
 
 use components;
 use components::{
-    actor_components, audio_components, gfx_components, ik_components, physics_components,
-    voxel_components, EditableComponent,
+    actor_components, gfx_components, ik_components, physics_components, voxel_components,
+    EditableComponent,
 };
 
 pub fn new(mode: CbSimulationModes) -> specs::World {
@@ -38,11 +38,6 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
         world.register::<actor_components::ActorComponent>();
     }
 
-    // Audio components
-    {
-        world.register::<audio_components::FmSynthComponent>();
-    }
-
     // Misc components
     {
         world.register::<EditableComponent>();
@@ -60,7 +55,6 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
             assemblages::voxel_editor_assemblages::new(&mut world);
             assemblages::fps_player_actor_assemblage::new(&mut world);
         } else if mode == CbSimulationModes::FmAudioEditor {
-            assemblages::fm_audio_editor_assemblage::new(&mut world);
         } else {
         }
     }

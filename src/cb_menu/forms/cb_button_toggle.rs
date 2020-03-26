@@ -1,23 +1,37 @@
 use super::*;
 
-use crate::cb_menu::gfx;
-use gfx::{Color, Palette};
+use menu_events::{BoolEvent, EventId, EventId_new, Events};
+
+use crate::cb_menu;
+use cb_menu::{
+    form::{Form, FormPosition},
+    gfx::{CbMenuDrawVirtualMachine, Color, Palette},
+    menu_events,
+};
 
 #[derive(Clone)]
-pub struct CbButton {
+pub struct CbButtonToggle {
+    event_id: EventId,
     children: Vec<Box<dyn Form>>,
     palette: Palette,
+
+    pub value: bool,
+
+    events: Vec<(EventId, Events)>,
 
     form_position: FormPosition,
     outline_color: Option<Color>,
     fill_color: Option<Color>,
 }
 
-impl CbButton {
+impl CbButtonToggle {
     pub fn new(palette: Palette) -> Self {
-        return CbButton {
+        return CbButtonToggle {
+            event_id: EventId_new(),
+            events: vec![],
             children: vec![],
             palette: palette,
+            value: true,
             outline_color: Some(palette.quaternary),
             fill_color: Some(palette.primary),
             form_position: FormPosition {
@@ -28,11 +42,42 @@ impl CbButton {
             },
         };
     }
+
+    pub fn subscribe_to_event(&self) -> EventId {
+        return self.event_id;
+    }
+
+    fn set_fill_color(&mut self) {
+        if self.value {
+            self.fill_color = Some(self.palette.tertiary);
+        } else {
+            self.fill_color = Some(self.palette.background);
+        }
+    }
 }
 
-impl Form for CbButton {
+impl Form for CbButtonToggle {
     fn set_position(&mut self, form_position: FormPosition) {
         self.form_position = form_position;
+    }
+
+    fn rebind_data(&mut self, events: &Vec<(menu_events::EventId, menu_events::Events)>) {
+        for (id, event) in events.iter() {
+            if *id == self.event_id {
+                match event {
+                    menu_events::Events::BoolValueChange(value) => {
+                        self.value = *value;
+                    }
+                    menu_events::Events::SingleRangeChange(value) => {
+                        self.value = value.value >= 0;
+                    }
+                }
+            }
+        }
+
+        for child in self.get_children_mut().iter_mut() {
+            child.rebind_data(events);
+        }
     }
 
     fn get_position(&self) -> FormPosition {
@@ -41,6 +86,10 @@ impl Form for CbButton {
 
     fn update(&mut self) -> Vec<(menu_events::EventId, menu_events::Events)> {
         let mut events = vec![];
+
+        events.append(&mut self.events);
+        self.events.clear();
+
         for child in self.children.iter_mut() {
             let mut child_events = child.update();
 
@@ -59,18 +108,21 @@ impl Form for CbButton {
     }
 
     fn on_unhover(&mut self) {
-        self.fill_color = Some(self.palette.primary);
+        self.set_fill_color();
 
         for child in self.children.iter_mut() {
             child.on_unhover();
         }
     }
 
-    fn on_click(&mut self, x: usize, y: usize) {
-        println!("button clicked!");
-    }
+    fn on_click(&mut self, x: usize, y: usize) {}
     fn on_release(&mut self, x: usize, y: usize) {
-        println!("button released!");
+        self.value = !self.value;
+
+        self.set_fill_color();
+
+        self.events
+            .push((self.event_id, Events::BoolValueChange(self.value)));
     }
 
     fn draw(&self) -> Vec<CbMenuDrawVirtualMachine> {

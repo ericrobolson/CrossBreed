@@ -1,7 +1,11 @@
 use super::*;
 
-use crate::cb_menu::gfx;
-use gfx::{Color, Palette};
+use crate::cb_menu;
+use cb_menu::{
+    form::{Form, FormPosition},
+    gfx::{CbMenuDrawVirtualMachine, Color, Palette},
+    menu_events,
+};
 
 #[derive(Clone)]
 pub struct CbForm {

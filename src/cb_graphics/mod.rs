@@ -145,7 +145,12 @@ impl<'a> CbGfx {
 
         let editor_window_id = editor_window.id();
 
-        let mut canvas = editor_window.into_canvas().build().unwrap();
+        let mut editor_canvas = editor_window.into_canvas().build().unwrap();
+
+        // Load fonts for editor_canvas
+        {
+            //let tff_context = sdl2::tff::init().unwrap();
+        }
 
         return Self {
             reset_cursor: true,
@@ -157,7 +162,7 @@ impl<'a> CbGfx {
             window: window,
             main_window_id: main_window_id,
             editor_window_id: editor_window_id,
-            editor_window: canvas,
+            editor_window: editor_canvas,
             editor_mouse_x: 0,
             editor_mouse_y: 0,
             editor_gui_env: cb_menu::GuiEnvironment::new(
@@ -187,19 +192,42 @@ impl<'a> CbGfx {
         let mut editable_components =
             world.write_storage::<cb_simulation::components::EditableComponent>();
 
-        let mut voxel_components =
-            world.write_storage::<cb_simulation::components::voxel_components::VoxelComponent>();
+        // Voxels
+        {
+            let mut voxel_components = world
+                .write_storage::<cb_simulation::components::voxel_components::VoxelComponent>(
+            );
 
-        for (editable, voxel) in (&mut editable_components, &mut voxel_components).join() {
-            if editable.is_editing() == false {
-                continue;
-            }
-            if !voxel.is_editing() {
-                if !voxel.editor.created_menu {
-                    let menu = voxel.init_editor();
-                    self.editor_gui_env.add_form(menu);
+            for (editable, voxel) in (&mut editable_components, &mut voxel_components).join() {
+                if editable.is_editing() == false {
+                    continue;
                 }
-                // sync stuff
+                if !voxel.is_editing() {
+                    if !voxel.editor.created_menu {
+                        let menu = voxel.init_editor();
+                        self.editor_gui_env.add_form(menu);
+                    }
+                    // sync stuff
+                }
+            }
+        }
+
+        // Fm Synth
+        {
+            let mut synths = world
+                .write_storage::<cb_simulation::components::audio_components::FmSynthComponent>();
+
+            for (editable, synth) in (&mut editable_components, &mut synths).join() {
+                if editable.is_editing() == false {
+                    continue;
+                }
+                if !synth.is_editing() {
+                    if !synth.editor.created_menu {
+                        let menu = synth.init_editor();
+                        self.editor_gui_env.add_form(menu);
+                    }
+                    // sync stuff
+                }
             }
         }
     }
@@ -402,6 +430,9 @@ impl<'a> CbGfx {
                                 (position.height) as u32,
                             ))
                             .unwrap();
+                    }
+                    cb_menu::CbMenuDrawVirtualMachine::Text(position, color, value) => {
+                        println!("gonna draw text: {}", value);
                     }
                 }
             }
