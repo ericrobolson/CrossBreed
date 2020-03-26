@@ -9,10 +9,10 @@ use crate::cb_graphics;
 
 mod systems;
 use systems::{
-    actor_input_system, audio, editor_system::EditorSystem, ik_system, voxel_editor_system,
+    actor_input_system, audio, editor_system::EditorSystem, physics, voxel_editor_system,
 };
 
-pub mod assemblages;
+mod assemblages;
 pub mod components;
 use components::{
     gfx_components::CameraComponent, physics_components::TransformComponent,
@@ -31,7 +31,7 @@ use cb_input::CbGameInput;
 use crate::cb_menu;
 use cb_menu::{menu_events, Form};
 
-pub mod world_builder;
+mod world_builder;
 
 // NOTE: GAME UNITS are 1 = 1mm, using i32s
 
@@ -100,27 +100,12 @@ pub enum CbSimulationModes {
 impl<'a, 'b> CbSimulationInterface<'a, 'b> {
     /// Create a new CbSimulation
     pub fn new(mode: CbSimulationModes) -> Self {
-        let dispatcher;
-        {
-            let mut builder = DispatcherBuilder::new();
-
-            if mode == CbSimulationModes::VoxelEditor {
-                builder = builder.with(
-                    voxel_editor_system::VoxelEditorSystem,
-                    "voxel editor system",
-                    &[],
-                );
-            }
-
-            dispatcher = builder.build();
-        }
-
         let game_system_dispatcher;
         {
             game_system_dispatcher = DispatcherBuilder::new()
                 .with(actor_input_system::ActorInputSystem, "actor input", &[])
                 .with_barrier()
-                .with(ik_system::IkSystem, "inverse kinematics", &[])
+                .with(physics::IkSystem, "inverse kinematics", &[])
                 .build();
         }
 

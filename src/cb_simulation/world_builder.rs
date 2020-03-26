@@ -53,9 +53,9 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
         if mode == CbSimulationModes::VoxelEditor {
             // run all voxel editor assemblages
             assemblages::voxel_editor_assemblages::new(&mut world);
+            assemblages::fps_player_actor_assemblage::new(&mut world);
         } else if mode == CbSimulationModes::FmAudioEditor {
         } else {
-            assemblages::fps_player_actor_assemblage::new(&mut world);
         }
     }
 

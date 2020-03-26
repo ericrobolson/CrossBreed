@@ -9,7 +9,8 @@ extern crate fixed;
 use fixed::types::I24F8;
 use fixed::FixedI32;
 
-pub type CbMatrix = na::Vector2<i32>; // Note: using a self aliased type here for 2d/3d implementations. First, get 2d working, then can easily export that to use 3d
+type Tnum = f32;
+pub type CbMatrix = na::Vector2<Tnum>; // Note: using a self aliased type here for 2d/3d implementations. First, get 2d working, then can easily export that to use 3d. Change to use fixed point.
 
 /*
 Based off of:
@@ -20,152 +21,131 @@ T is the pose vector which represents the final orientation of every joint, such
 dO is the vector which represents the change in orientation for each joint, such that the articulated body reaches T from O.
 For example, O would be (45°, 15°, -60°) in the Figure below.
 
-
-
 T = O + dO
-
-
 */
 
 #[derive(Clone)]
 pub struct IkRig {
     pub target: Option<CbMatrix>,
-    pub segments: Vec<CbMatrix>,
-    pub bones: Vec<Bone>,
+    pub joints: Vec<CbMatrix>,
+    pub joint_distances: Vec<Tnum>, // Will be of size N-1, where N is number of positions (since it's distances per joint pairs)
     pub position: CbMatrix,
-    root_joint: Joint,
 }
 
 impl IkRig {
     pub fn new() -> Self {
-        return Self {
+        let mut rig = Self {
             target: None,
-            bones: vec![Bone::new()],
-            position: CbMatrix::new(0, 0),
-            segments: vec![
-                CbMatrix::new(100, 100),
-                CbMatrix::new(200, 100),
-                CbMatrix::new(300, 100),
-            ],
-            root_joint: Joint::new(),
+            joints: vec![],
+            joint_distances: vec![],
+            position: CbMatrix::new(0.0, 0.0),
         };
-    }
-}
 
-#[derive(Clone)]
-pub struct Bone {
-    length: u32,
-    end_joint: Joint,
-}
+        for i in 0..6 {
+            rig.add_joint(CbMatrix::new(60.0 * i as f32, 0.0));
+        }
 
-impl Bone {
-    pub fn new() -> Self {
-        unimplemented!();
+        return rig;
     }
 
-    pub fn get_local_end_position(&self) -> CbMatrix {
-        unimplemented!();
+    /// Returns whether the current rig is a valid rig or not. A valid rig has at least 2 joints.
+    pub fn is_valid_rig(&self) -> bool {
+        const MIN_JOINTS_FOR_FABRIK: usize = 2;
+
+        return self.joints.len() >= MIN_JOINTS_FOR_FABRIK;
     }
 
-    pub fn get_root_bone(&self) -> Option<Bone> {
-        unimplemented!();
-    }
-}
+    /// Add a new joint to the IK rig. Calculates the distance for later use.
+    fn add_joint(&mut self, joint_position: CbMatrix) {
+        let last = self.joints.last();
 
-#[derive(Clone)]
-pub struct Joint {
-    current_position: CbMatrix,
-    current_angle: CbMatrix,
-    max_angle: CbMatrix,
-    children: Vec<Bone>,
-}
+        if last.is_some() {
+            let last = last.unwrap();
+            let distance = distance(*last, joint_position);
+            self.joint_distances.push(distance);
+        }
 
-impl Joint {
-    pub fn new() -> Self {
-        unimplemented!();
+        self.joints.push(joint_position);
     }
 }
 
 pub fn fabrik(rig: &mut IkRig) {
     // Boundary condition checks
     {
-        // Errors if only 1 bone in chain, as the following code uses direct indexing. Need to add checks in algorithm to solve.
+        if rig.target.is_none() || rig.joints.is_empty() || !rig.is_valid_rig() {
+            return;
+        }
     }
 
-    let mut joint_positions: Vec<CbMatrix> = Vec::<CbMatrix>::new();
-    let joint_pair_distances = vec![0]; // Note: need to populate. Will be of size N-1, where N is number of positions (since it's distances per joint pairs)
-    let target_position = CbMatrix::new(0, 0);
+    let target_position = rig.target.unwrap();
     /*
-        Right now just going for single IK chain, will update it as time goes
+        Right now just going for single IK chain with single end effectors, will update it as time goes
     */
 
-    let n = joint_positions.len();
+    let n = rig.joints.len();
     // Note, in the algorithm, it indexes from 1 to N. Rust, however, indexes from 0..N, so not much actually changes. Just pointing it out. May be a few instances where the index
     // in code looks different from the algorithm; this is expected.
 
     // Base algorithm found on: http://www.andreasaristidou.com/publications/papers/FABRIK.pdf
 
     //1.1 Distance between root and target
-    let dist: i32 = abs(distance(rig.root_joint.current_position, target_position)); // 1.2
-                                                                                     //1.3 Check whether target is in reach
-    if dist > sum(&joint_pair_distances) {
+    let dist = abs(distance(rig.joints[0], target_position)); // 1.2
+                                                              //1.3 Check whether target is in reach
+    if dist > sum(&rig.joint_distances) {
         // 1.4
         //1.5 Target is unreachable
         for i in 0..(n - 1) {
             // 1.6
             // 1.7 Find the distance ri between target t and joint position pi
-            let ri = abs(distance(target_position, joint_positions[i])); //1.8
-            let lambda_i = joint_pair_distances[i] / ri; //1.9
-                                                         //1.10 Find new joint positions pi
-            joint_positions[i + 1] =
-                (1 - lambda_i) * joint_positions[i] + lambda_i * target_position;
+            let ri = abs(distance(target_position, rig.joints[i])); //1.8
+            let lambda_i = rig.joint_distances[i] / ri; //1.9
+                                                        //1.10 Find new joint positions pi
+            rig.joints[i + 1] = (1.0 - lambda_i) * rig.joints[i] + lambda_i * target_position;
             //1.11
         } // 1.12
     } else {
         //1.13
         //1.14 target is reachable, set b as the initial position of p0
-        let b = joint_positions[0]; // 1.15
-                                    //1.16 Check whether distance between end effector pn and the target is greater than a tolerance
-        let mut diff_a = abs(distance(joint_positions[n - 1], target_position)); //1.17
-        let tolerance = 1; // TODO: figure out
+        let b = rig.joints[0]; // 1.15
+                               //1.16 Check whether distance between end effector pn and the target is greater than a tolerance
+        let mut diff_a = abs(distance(rig.joints[n - 1], target_position)); //1.17
+        let tolerance = 0.01; // TODO: figure out
         while diff_a > tolerance {
             //1.18
             //1.19 Stage 1: Forward reaching
             //1.20 Set end effector pn as target t
-            joint_positions[n - 1] = target_position; //1.21
+            rig.joints[n - 1] = target_position; //1.21
 
             //note: skip the last value, as it's being handled elsewhere
             for i in (0..n - 1).rev() {
                 //1.22
                 //1.23 Find the distance ri between the new joint position pi+1 and the joint pi
-                let ri = abs(distance(joint_positions[i + 1], joint_positions[i])); //1.24
-                let lambda_i = joint_pair_distances[i] / ri; //1.25
-                                                             //1.26 Find the new joint positions pi
-                joint_positions[i] =
-                    (1 - lambda_i) * joint_positions[i + 1] + lambda_i * joint_positions[i];
+                let ri = abs(distance(rig.joints[i + 1], rig.joints[i])); //1.24
+                let lambda_i = rig.joint_distances[i] / ri; //1.25
+                                                            //1.26 Find the new joint positions pi
+                rig.joints[i] = (1.0 - lambda_i) * rig.joints[i + 1] + lambda_i * rig.joints[i];
                 //1.27
             } // 1.28
               //1.29 Stage 2: Backwards reaching
               //1.30 Set the root p0 it's initial position
-            joint_positions[0] = b; //1.31
+            rig.joints[0] = b; //1.31
 
             for i in 0..n - 1 {
                 //1.32
                 //1.33 Find the distance ri between the new joint position pi and the joint pi+1
-                let ri = abs(distance(joint_positions[i + 1], joint_positions[i])); //1.34
-                let lambda_i = joint_pair_distances[i] / ri; //1.35
-                                                             //1.36 Find the new joint positions pi
-                joint_positions[i] =
-                    (1 - lambda_i) * joint_positions[i] + lambda_i * joint_positions[i + 1];
+                let ri = abs(distance(rig.joints[i + 1], rig.joints[i])); //1.34
+                let lambda_i = rig.joint_distances[i] / ri; //1.35
+                                                            //1.36 Find the new joint positions pi
+                rig.joints[i + 1] = (1.0 - lambda_i) * rig.joints[i] + lambda_i * rig.joints[i + 1];
                 //1.37
             } //1.38
-            diff_a = abs(distance(joint_positions[n - 1], target_position)); // 1.39
+            diff_a = abs(distance(rig.joints[n - 1], target_position)); // 1.39
         } //1.40
     } //1.41
 }
 
-fn sum(values: &Vec<i32>) -> i32 {
-    let mut value = 0;
+fn sum(values: &Vec<Tnum>) -> Tnum {
+    let mut value = 0.0;
     for v in values.iter() {
         value += v;
     }
@@ -173,12 +153,26 @@ fn sum(values: &Vec<i32>) -> i32 {
     return value;
 }
 
-fn distance(vector_a: CbMatrix, vector_b: CbMatrix) -> i32 {
-    unimplemented!();
+fn square(value: Tnum) -> Tnum {
+    return value * value;
 }
 
-fn abs<T>(value: T) -> T {
-    unimplemented!();
+fn sqrt(value: Tnum) -> Tnum {
+    return value.sqrt();
+}
+
+fn distance(a: CbMatrix, b: CbMatrix) -> Tnum {
+    let d_squared = square(a.x - b.x) + square(a.y - b.y);
+
+    return sqrt(d_squared);
+}
+
+fn abs(value: Tnum) -> Tnum {
+    if value < 0.0 {
+        return -value;
+    }
+
+    return value;
 }
 /*
 /// Returns a new head and new tail, where 'new_head' has been moved to the target

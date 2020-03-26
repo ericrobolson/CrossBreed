@@ -344,25 +344,35 @@ impl<'a> CbGfx {
                 for ik in (&ik_components).join() {
                     let rig = &ik.rig;
 
-                    for bone in rig.bones.iter() {
-                        let_mut_for![(x, y, x1, y1), i32, 0];
+                    if rig.is_valid_rig() {
+                        let len = rig.joints.len() - 1;
 
-                        // Get the start position
-                        if bone.get_root_bone().is_none() {
-                            x = rig.position.x;
-                            y = rig.position.y;
-                        } else {
-                            let root_bone = bone.get_root_bone().unwrap();
-                            x = root_bone.get_local_end_position().x;
-                            y = root_bone.get_local_end_position().x;
+                        for i in 0..len {
+                            let mut joint1 = rig.joints[i];
+                            let mut joint2 = rig.joints[i + 1];
+
+                            joint1 += rig.position;
+                            joint2 += rig.position;
+
+                            canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+
+                            let joint_rect_width = 6;
+                            canvas
+                                .draw_rect(sdl2::rect::Rect::new(
+                                    (joint1.x as i32) - joint_rect_width,
+                                    (joint1.y as i32) - joint_rect_width,
+                                    joint_rect_width as u32,
+                                    joint_rect_width as u32,
+                                ))
+                                .unwrap();
+
+                            canvas
+                                .draw_line(
+                                    (joint1.x as i32, joint1.y as i32),
+                                    (joint2.x as i32, joint2.y as i32),
+                                )
+                                .unwrap();
                         }
-
-                        // Get the end position
-                        x1 = x + bone.get_local_end_position().x;
-                        y1 = y + bone.get_local_end_position().y;
-
-                        canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
-                        canvas.draw_line((x, y), (x1, y1)).unwrap();
                     }
                 }
             }
