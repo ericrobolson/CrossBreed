@@ -113,6 +113,9 @@ impl<'a> CbGfx {
         let sdl_context = sdl2::init().unwrap();
         let event_pump = sdl_context.event_pump().unwrap();
 
+        // Init audio?
+        let audio = sdl_context.audio().unwrap();
+
         // Init OpenGL
         let video_subsystem = sdl_context.video().unwrap();
         let gl_attr = video_subsystem.gl_attr();
@@ -214,8 +217,8 @@ impl<'a> CbGfx {
 
         // Fm Synth
         {
-            let mut synths = world
-                .write_storage::<cb_simulation::components::audio_components::FmSynthComponent>();
+            let mut synths =
+                world.write_storage::<cb_simulation::components::audio::FmSynthComponent>();
 
             for (editable, synth) in (&mut editable_components, &mut synths).join() {
                 if editable.is_editing() == false {

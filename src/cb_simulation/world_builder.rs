@@ -5,8 +5,8 @@ use super::*;
 
 use components;
 use components::{
-    actor_components, audio_components, gfx_components, ik_components, physics_components,
-    voxel_components, EditableComponent,
+    actor_components, audio, gfx_components, ik_components, physics_components, voxel_components,
+    EditableComponent,
 };
 
 pub fn new(mode: CbSimulationModes) -> specs::World {
@@ -40,7 +40,7 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
 
     // Audio components
     {
-        world.register::<audio_components::FmSynthComponent>();
+        world.register::<audio::FmSynthComponent>();
     }
 
     // Misc components

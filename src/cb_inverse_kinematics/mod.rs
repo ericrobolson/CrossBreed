@@ -3,21 +3,25 @@ use na::Vector2;
 
 use crate::cb_math::sqrt_f32;
 
-const UNIT_VALUE: i32 = 100000; // The number of values equal to 1.0 or 360*
-
 extern crate fixed;
 use fixed::types::I24F8;
 use fixed::FixedI32;
+
+#[derive(Clone)]
+struct Rotor {}
 
 type Tnum = f32;
 pub type CbMatrix = na::Vector2<Tnum>; // Note: using a self aliased type here for 2d/3d implementations. First, get 2d working, then can easily export that to use 3d. Change to use fixed point.
 
 pub type CbRotationMatrix = na::Vector1<Tnum>;
 
+const SOLVE_TOLERANCE: f32 = 0.01;
+
 #[derive(Clone)]
 pub struct IkRig {
     pub target: Option<CbMatrix>,
     pub joints: Vec<CbMatrix>,
+    rotors: Vec<Option<Rotor>>,
     pub joint_distances: Vec<Tnum>, // Will be of size N-1, where N is number of positions (since it's distances per joint pairs)
     pub position: CbMatrix,
 }
@@ -27,12 +31,13 @@ impl IkRig {
         let mut rig = Self {
             target: None,
             joints: vec![],
+            rotors: vec![],
             joint_distances: vec![],
             position: CbMatrix::new(0.0, 0.0),
         };
 
         for i in 0..6 {
-            rig.add_joint(CbMatrix::new(60.0 * i as f32, 0.0));
+            rig.add_joint(CbMatrix::new(60.0 * i as f32, 0.0), None);
         }
 
         return rig;
@@ -46,7 +51,7 @@ impl IkRig {
     }
 
     /// Add a new joint to the IK rig. Calculates the distance for later use.
-    fn add_joint(&mut self, joint_position: CbMatrix) {
+    fn add_joint(&mut self, joint_position: CbMatrix, rotor: Option<Rotor>) {
         let last = self.joints.last();
 
         if last.is_some() {
@@ -56,6 +61,7 @@ impl IkRig {
         }
 
         self.joints.push(joint_position);
+        self.rotors.push(rotor); //NOTE: not sure if a rotor is between two joints, or each joint has a rotor
     }
 }
 
@@ -85,12 +91,29 @@ pub fn fabrik(rig: &mut IkRig) {
         // 1.4
         //1.5 Target is unreachable
         for i in 0..(n - 1) {
-            // 1.6
-            // 1.7 Find the distance ri between target t and joint position pi
-            let ri = abs(distance(target_position, rig.joints[i])); //1.8
-            let lambda_i = rig.joint_distances[i] / ri; //1.9
-                                                        //1.10 Find new joint positions pi
-            rig.joints[i + 1] = (1.0 - lambda_i) * rig.joints[i] + lambda_i * target_position;
+            // Execute algorithm 1, finding the new position
+            {
+                // 1.6
+                // 1.7 Find the distance ri between target t and joint position pi
+                let ri = abs(distance(target_position, rig.joints[i])); //1.8
+                let lambda_i = rig.joint_distances[i] / ri; //1.9
+                                                            //1.10 Find new joint positions pi
+                rig.joints[i + 1] = (1.0 - lambda_i) * rig.joints[i] + lambda_i * target_position;
+            }
+            // Execute algorithm 2
+            {
+                rig.joints[i] = apply_orientational_constraints(
+                    &rig.joints[i + 1], // NOTE: not sure if this is the proper indexing or if backwards
+                    &rig.joints[i], // NOTE: not sure if this is the proper indexing or if backwards
+                    &rig.rotors[i], //NOTE: not sure if a rotor is between two joints, or each joint has a rotor
+                );
+            }
+
+            //TODO: Execute algorithm 3
+            {
+                apply_rotational_constraints();
+            }
+
             //1.11
         } // 1.12
     } else {
@@ -99,8 +122,7 @@ pub fn fabrik(rig: &mut IkRig) {
         let b = rig.joints[0]; // 1.15
                                //1.16 Check whether distance between end effector pn and the target is greater than a tolerance
         let mut diff_a = abs(distance(rig.joints[n - 1], target_position)); //1.17
-        let tolerance = 0.01; // TODO: figure out
-        while diff_a > tolerance {
+        while diff_a > SOLVE_TOLERANCE {
             //1.18
             //1.19 Stage 1: Forward reaching
             //1.20 Set end effector pn as target t
@@ -108,30 +130,96 @@ pub fn fabrik(rig: &mut IkRig) {
 
             //note: skip the last value, as it's being handled elsewhere
             for i in (0..n - 1).rev() {
-                //1.22
-                //1.23 Find the distance ri between the new joint position pi+1 and the joint pi
-                let ri = abs(distance(rig.joints[i + 1], rig.joints[i])); //1.24
-                let lambda_i = rig.joint_distances[i] / ri; //1.25
-                                                            //1.26 Find the new joint positions pi
-                rig.joints[i] = (1.0 - lambda_i) * rig.joints[i + 1] + lambda_i * rig.joints[i];
-                //1.27
+                // Execute algorithm 1, finding the new position
+                {
+                    //1.22
+                    //1.23 Find the distance ri between the new joint position pi+1 and the joint pi
+                    let ri = abs(distance(rig.joints[i + 1], rig.joints[i])); //1.24
+                    let lambda_i = rig.joint_distances[i] / ri; //1.25
+                                                                //1.26 Find the new joint positions pi
+                    rig.joints[i] = (1.0 - lambda_i) * rig.joints[i + 1] + lambda_i * rig.joints[i];
+                    //1.27
+                }
+                // Execute algorithm 2
+                {
+                    rig.joints[i] = apply_orientational_constraints(
+                        &rig.joints[i + 1], // NOTE: not sure if this is the proper indexing or if backwards
+                        &rig.joints[i], // NOTE: not sure if this is the proper indexing or if backwards
+                        &rig.rotors[i], //NOTE: not sure if a rotor is between two joints, or each joint has a rotor
+                    );
+                }
+
+                //TODO: Execute algorithm 3
+                {
+                    apply_rotational_constraints();
+                }
             } // 1.28
               //1.29 Stage 2: Backwards reaching
               //1.30 Set the root p0 it's initial position
             rig.joints[0] = b; //1.31
 
             for i in 0..n - 1 {
-                //1.32
-                //1.33 Find the distance ri between the new joint position pi and the joint pi+1
-                let ri = abs(distance(rig.joints[i + 1], rig.joints[i])); //1.34
-                let lambda_i = rig.joint_distances[i] / ri; //1.35
-                                                            //1.36 Find the new joint positions pi
-                rig.joints[i + 1] = (1.0 - lambda_i) * rig.joints[i] + lambda_i * rig.joints[i + 1];
+                // Execute algorithm 1, finding the new position
+                {
+                    //1.32
+                    //1.33 Find the distance ri between the new joint position pi and the joint pi+1
+                    let ri = abs(distance(rig.joints[i + 1], rig.joints[i])); //1.34
+                    let lambda_i = rig.joint_distances[i] / ri; //1.35
+                                                                //1.36 Find the new joint positions pi
+                    rig.joints[i + 1] =
+                        (1.0 - lambda_i) * rig.joints[i] + lambda_i * rig.joints[i + 1];
+                }
+
+                // Execute algorithm 2
+                {
+                    rig.joints[i] = apply_orientational_constraints(
+                        &rig.joints[i + 1], // NOTE: not sure if this is the proper indexing or if backwards
+                        &rig.joints[i], // NOTE: not sure if this is the proper indexing or if backwards
+                        &rig.rotors[i], //NOTE: not sure if a rotor is between two joints, or each joint has a rotor
+                    );
+                }
+
+                //TODO: Execute algorithm 3
+                {
+                    apply_rotational_constraints();
+                }
+
                 //1.37
             } //1.38
             diff_a = abs(distance(rig.joints[n - 1], target_position)); // 1.39
         } //1.40
     } //1.41
+}
+
+fn apply_orientational_constraints(
+    joint_pi: &CbMatrix,
+    joint_pi_minus_1: &CbMatrix,
+    r: &Option<Rotor>,
+) -> CbMatrix {
+    /*
+        Fabrik Algorithm 2
+    */
+
+    // 2.1 Check whether the rotor R is within the motion range bounds
+    let within_the_bounds = true; //TODO solve
+    if within_the_bounds {
+        // 2.2
+        //2.3 do nothing and exit
+        return *joint_pi_minus_1;
+    } else {
+        //2.4
+        //2.5 reorient the joint pi-1 in such a way that the rotor will be within the limits
+
+        let mut modified_pi_minus_1 = *joint_pi_minus_1;
+
+        return modified_pi_minus_1;
+    } // 2.6
+}
+
+fn apply_rotational_constraints() {
+    /*
+        Fabrik Algorithm 3
+    */
 }
 
 fn sum(values: &Vec<Tnum>) -> Tnum {

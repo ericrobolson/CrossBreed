@@ -1,1 +1,1 @@
-pub mod fm_synthesis;
+pub mod fm_operator;

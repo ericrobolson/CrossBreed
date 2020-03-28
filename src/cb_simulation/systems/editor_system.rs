@@ -13,7 +13,7 @@ impl<'a> System<'a> for EditorSystem {
         Write<'a, CbSystemValues>,
         WriteStorage<'a, components::EditableComponent>,
         WriteStorage<'a, components::voxel_components::VoxelComponent>,
-        WriteStorage<'a, components::audio_components::FmSynthComponent>,
+        WriteStorage<'a, components::audio::FmSynthComponent>,
     );
 
     fn run(
