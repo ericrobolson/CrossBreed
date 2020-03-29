@@ -379,8 +379,8 @@ impl<'a> CbGfx {
                         let len = rig.joints.len() - 1;
 
                         for i in 0..len {
-                            let mut joint1 = rig.joints[i];
-                            let mut joint2 = rig.joints[i + 1];
+                            let mut joint1 = rig.get_child_position(i);
+                            let mut joint2 = rig.get_child_position(i + 1);
 
                             joint1 += rig.position;
                             joint2 += rig.position;
