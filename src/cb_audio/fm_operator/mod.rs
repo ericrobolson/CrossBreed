@@ -43,116 +43,63 @@ pub trait fFmOperator {
           write('audio/%s' % self.name, 44100.0, self.wavData)
           */
 pub struct FmSynthesizer {
-    render_execution_chain: Vec<Vec<usize>>,
-    operators: Vec<FmOperator>,
     next_operator_id: usize,
-    output_operator_id: Option<usize>,
+    output_operator: FmOperator,
 }
 
 impl FmSynthesizer {
-    fn set_output_operator(&mut self, operator: &FmOperator) {
-        self.output_operator_id = Some(operator.id);
-        self.recalculate_render_execution_chain();
-    }
-
-    fn recalculate_render_execution_chain(&mut self) {
-        //TODO: calculate the dependent render jobs.
-        /*
-        Basically need to calculate some sort of heirarchy, e.g. if operator B depends on A, and there exists a nondependanct C, render chain would be [[operator_A_id, operator_C_id], [operator_B_id]]
-        Something to get an idea started:
-        let mut finished_count = 0;
-        loop {
-            for (id, operator) in self.operators.iter().enumerate() {
-                if operator_values[id].is_some() {
-                    // Continue, and possibly stop checking this?
-                    continue;
-                }
-
-                if operator.carrier_fm_operator_ids.is_empty() {
-                    operator_values[id] = Some(operator.get_fm());
-                    finished_count += 1;
-                } else {
-                    // Check to see if all the values are ready. If so, render. Otherwise, continue processing.
-                    let mut ready_to_render = true;
-                    for carrier_id in operator.carrier_fm_operator_ids.iter() {
-                        if operator_values[*carrier_id].is_none() {
-                            ready_to_render = false;
-                            break;
-                        }
-                    }
-
-                    if ready_to_render {
-                        operator_values[id] = Some(operator.get_fm());
-                        finished_count += 1;
-                    }
-                }
-            }
-
-            // All operators have processed, so break.
-            if finished_count >= self.operators.len() {
-                break;
-            }
-        }
-        */
-    }
-
     /// Monophonic fm synthesis renderer
     fn render(&mut self, midi_note: f32) {
-        // For each operator, go through
-        let mut operator_values: Vec<f32> = vec![];
-        operator_values.reserve(self.operators.len());
-
-        self.render_execution_chain.iter().for_each(|render_batch| {
-            for id in render_batch.iter() {
-                let id = *id;
-                operator_values[id] = self.operators[id].get_fm();
-            }
-        });
-
-        let output = operator_values[self.output_operator_id.unwrap()];
+        let output = self.output_operator.render();
         //TODO: what to do with renders?
     }
 }
 
 pub struct FmOperator {
     id: usize,
-    carrier_fm_operator_ids: Vec<usize>,
+    last_render: f32,
+
+    inputs: Vec<FmOperator>,
 }
 
 impl FmOperator {
     fn new(id: usize) -> Self {
         return Self {
             id: id,
-            carrier_fm_operator_ids: vec![],
+            last_render: 0.0,
+            inputs: vec![],
         };
     }
 
-    fn link_carriers(&mut self, carrier_fm_operator_ids: Vec<usize>) {
-        self.carrier_fm_operator_ids = carrier_fm_operator_ids;
-    }
-
     fn get_amplitude(&self) -> f32 {
-        unimplemented!();
-        //return self.amplitude;
+        return 1.0; //TODO wireup envelope
     }
 
-    fn get_fm(&self) -> f32 {
-        let amplitude = 0.0; //TODO: figure out?
-        let carrier = 0.0;
-        let depth_of_modualation = 0.0;
-        let frequency_of_modulation = 0.0;
+    pub fn render(&mut self) -> f32 {
+        let inputs: Vec<f32> = self.inputs.iter_mut().map(|i| i.render()).collect();
 
-        let t = 1.0; //TODO: figure out?
+        let output = {
+            let amplitude = self.get_amplitude();
+            let carrier = 0.0;
+            let depth_of_modualation = 0.0;
+            let frequency_of_modulation = 0.0;
 
-        // http://www.cs.cmu.edu/~music/icm-online/readings/fm-synthesis/fm_synthesis.pdf
+            let t = 1.0; //TODO: figure out?
 
-        const twoPi: f32 = 2.0 * PI;
+            // http://www.cs.cmu.edu/~music/icm-online/readings/fm-synthesis/fm_synthesis.pdf
 
-        let fOfT = amplitude
-            * sin((twoPi * carrier * t)
-                + depth_of_modualation * sin(twoPi * frequency_of_modulation * t));
-        // not sure if more needed?
-        return fOfT;
+            const twoPi: f32 = 2.0 * PI;
+
+            let fOfT = amplitude
+                * sin((twoPi * carrier * t)
+                    + depth_of_modualation * sin(twoPi * frequency_of_modulation * t));
+            // not sure if more needed?
+            fOfT
+        };
+
+        self.last_render = output;
+
+        return output;
     }
 }
 
