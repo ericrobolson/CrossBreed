@@ -95,6 +95,7 @@ pub enum CbSimulationModes {
     VoxelEditor,
     Simulation,
     FmAudioEditor,
+    RtsMode,
 }
 
 impl<'a, 'b> CbSimulationInterface<'a, 'b> {

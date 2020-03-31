@@ -10,6 +10,12 @@ pub struct ArmorComponent {
     pub current: u8,
 }
 
+pub struct HealthComponent {
+    pub max: u8,
+    pub min: u8,
+    pub current: u8,
+}
+
 impl ArmorComponent {
     pub fn new() -> Self {
         return Self {
@@ -18,12 +24,6 @@ impl ArmorComponent {
             current: 100,
         };
     }
-}
-
-pub struct HealthComponent {
-    pub max: u8,
-    pub min: u8,
-    pub current: u8,
 }
 
 impl HealthComponent {
@@ -81,17 +81,9 @@ impl UnitComponent {
     }
 }
 
-pub struct PassiveAbilityComponent {}
+pub struct AbilitiesComponent {}
 
-impl PassiveAbilityComponent {
-    pub fn new() -> Self {
-        return Self {};
-    }
-}
-
-pub struct ActiveAbilityComponent {}
-
-impl ActiveAbilityComponent {
+impl AbilitiesComponent {
     pub fn new() -> Self {
         return Self {};
     }
@@ -103,6 +95,5 @@ init_component_implementations![
     AttackComponent,
     RtsMovableComponent,
     UnitComponent,
-    PassiveAbilityComponent,
-    ActiveAbilityComponent
+    AbilitiesComponent
 ];

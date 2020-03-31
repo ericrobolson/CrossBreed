@@ -5,8 +5,8 @@ use specs::prelude::*;
 
 use crate::cb_simulation::components::rts_components;
 use rts_components::{
-    ActiveAbilityComponent, ArmorComponent, AttackComponent, HealthComponent,
-    PassiveAbilityComponent, RtsMovableComponent, UnitComponent,
+    AbilitiesComponent, ArmorComponent, AttackComponent, HealthComponent, RtsMovableComponent,
+    UnitComponent,
 };
 
 use crate::cb_simulation::components::physics_components;
@@ -19,8 +19,7 @@ pub fn new_unit(world: &mut specs::World) {
     let attack = AttackComponent::new();
     let moveable = RtsMovableComponent::new();
     let unit = UnitComponent::new();
-    let active_ability = ActiveAbilityComponent::new();
-    let passive_ability = PassiveAbilityComponent::new();
+    let active_ability = AbilitiesComponent::new();
 
     // Physics components
     let transform = TransformComponent::new();
@@ -34,7 +33,6 @@ pub fn new_unit(world: &mut specs::World) {
         .with(attack)
         .with(unit)
         .with(active_ability)
-        .with(passive_ability)
         .with(transform)
         .with(velocity)
         .build();

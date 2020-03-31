@@ -32,6 +32,7 @@ fn get_top_level_menu_choice(
     voxel_editor_mode: &str,
     simulation_mode: &str,
     fm_audio_editor_mode: &str,
+    rts_mode: &str,
 ) -> String {
     top_level_menu.print();
 
@@ -49,6 +50,9 @@ fn get_top_level_menu_choice(
         } else if mode_choice == fm_audio_editor_mode {
             println!("Do FM Audio Editor Stuff");
             done = true;
+        } else if mode_choice == rts_mode {
+            println!("Do RTS Stuff");
+            done = true;
         } else {
             println!("Invalid choice! Try again.");
         }
@@ -60,18 +64,25 @@ fn get_top_level_menu_choice(
 fn main() {
     let top_level_menu = CbCmdMenu::root(
         "CrossBreed.exe - Dev Kit",
-        vec!["Voxel Model Editor", "Begin Simulation", "FM Audio Editor"],
+        vec![
+            "Voxel Model Editor",
+            "Begin Simulation",
+            "FM Audio Editor",
+            "RTS Mode",
+        ],
     );
 
     const VOXEL_EDITOR_MODE: &str = "1";
     const SIMULATION_MODE: &str = "2";
     const FM_EDITOR_MODE: &str = "3";
+    const RTS_MODE: &str = "4";
 
     let mode_choice = get_top_level_menu_choice(
         top_level_menu,
         VOXEL_EDITOR_MODE,
         SIMULATION_MODE,
         FM_EDITOR_MODE,
+        RTS_MODE,
     );
 
     // Init RMercury
@@ -91,6 +102,11 @@ fn main() {
             game_interface.gfx.reset_cursor = false;
 
             input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
+        } else if mode_choice == RTS_MODE {
+            game_interface = CbSimulationInterface::new(CbSimulationModes::RtsMode);
+            game_interface.gfx.reset_cursor = false;
+
+            input_context_manager.add_context(cb_input::contexts::RTS_CONTEXT_ID);
         } else {
             game_interface = CbSimulationInterface::new(CbSimulationModes::Simulation);
             game_interface.gfx.reset_cursor = true;
