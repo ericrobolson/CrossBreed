@@ -15,6 +15,10 @@ use crate::cb_math::cb_range::CbNormalizedRange;
 use crate::cb_menu;
 use cb_menu::{menu_events, menu_events::EventId, EditorComponent, Form};
 
+use super::ComponentLinker;
+
+init_components![VoxelComponentsLinker, (VoxelComponent)];
+
 #[derive(Clone)]
 pub struct VoxelComponent {
     pub chunk_manager: cb_voxels::CbChunkManager,
@@ -194,8 +198,6 @@ impl VoxelComponent {
         };
     }
 }
-
-init_component_implementations![VoxelComponent];
 
 pub struct VoxelComponentController {
     command_stack: MacroCommand,

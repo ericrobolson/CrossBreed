@@ -3,6 +3,10 @@
 extern crate specs;
 use specs::prelude::*;
 
+use super::ComponentLinker;
+
+init_components![GfxComponentsLinker, (CameraComponent)];
+
 pub struct CameraComponent {
     pub camera_orthographic_view: bool,
 
@@ -37,5 +41,3 @@ impl CameraComponent {
         };
     }
 }
-
-init_component_implementations![CameraComponent];

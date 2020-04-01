@@ -27,13 +27,7 @@ use cb_input::{CbGameInput, CbInputContextManager};
 use cb_simulation::{CbGameState, CbSimulationInterface, CbSimulationModes};
 use cb_system::PlayerId;
 
-fn get_top_level_menu_choice(
-    top_level_menu: CbCmdMenu,
-    voxel_editor_mode: &str,
-    simulation_mode: &str,
-    fm_audio_editor_mode: &str,
-    rts_mode: &str,
-) -> String {
+fn get_top_level_menu_choice(top_level_menu: CbCmdMenu, rts_mode: &str) -> String {
     top_level_menu.print();
 
     let mut mode_choice = "-1".to_string();
@@ -41,16 +35,7 @@ fn get_top_level_menu_choice(
     while !done {
         mode_choice = top_level_menu.get_menu_choice();
 
-        if mode_choice == voxel_editor_mode {
-            println!("Do Voxel Editor stuff");
-            done = true;
-        } else if mode_choice == simulation_mode {
-            println!("Do Sim stuff");
-            done = true;
-        } else if mode_choice == fm_audio_editor_mode {
-            println!("Do FM Audio Editor Stuff");
-            done = true;
-        } else if mode_choice == rts_mode {
+        if mode_choice == rts_mode {
             println!("Do RTS Stuff");
             done = true;
         } else {
@@ -62,28 +47,11 @@ fn get_top_level_menu_choice(
 }
 
 fn main() {
-    let top_level_menu = CbCmdMenu::root(
-        "CrossBreed.exe - Dev Kit",
-        vec![
-            "Voxel Model Editor",
-            "Begin Simulation",
-            "FM Audio Editor",
-            "RTS Mode",
-        ],
-    );
+    let top_level_menu = CbCmdMenu::root("CrossBreed.exe - Dev Kit", vec!["RTS Mode"]);
 
-    const VOXEL_EDITOR_MODE: &str = "1";
-    const SIMULATION_MODE: &str = "2";
-    const FM_EDITOR_MODE: &str = "3";
-    const RTS_MODE: &str = "4";
+    const RTS_MODE: &str = "1";
 
-    let mode_choice = get_top_level_menu_choice(
-        top_level_menu,
-        VOXEL_EDITOR_MODE,
-        SIMULATION_MODE,
-        FM_EDITOR_MODE,
-        RTS_MODE,
-    );
+    let mode_choice = get_top_level_menu_choice(top_level_menu, RTS_MODE);
 
     // Init RMercury
     let mut input_context_manager = CbInputContextManager::new();
@@ -92,26 +60,12 @@ fn main() {
     let mut game_interface;
     let mut builder;
     {
-        if mode_choice == VOXEL_EDITOR_MODE {
-            game_interface = CbSimulationInterface::new(CbSimulationModes::VoxelEditor);
-            game_interface.gfx.reset_cursor = false;
-
-            input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
-        } else if mode_choice == FM_EDITOR_MODE {
-            game_interface = CbSimulationInterface::new(CbSimulationModes::FmAudioEditor);
-            game_interface.gfx.reset_cursor = false;
-
-            input_context_manager.add_context(cb_input::contexts::VOXEL_EDITOR_CONTEXT_ID);
-        } else if mode_choice == RTS_MODE {
+        //if mode_choice == RTS_MODE
+        {
             game_interface = CbSimulationInterface::new(CbSimulationModes::RtsMode);
             game_interface.gfx.reset_cursor = false;
 
             input_context_manager.add_context(cb_input::contexts::RTS_CONTEXT_ID);
-        } else {
-            game_interface = CbSimulationInterface::new(CbSimulationModes::Simulation);
-            game_interface.gfx.reset_cursor = true;
-
-            input_context_manager.add_context(cb_input::contexts::SHOOTER_CONTEXT_ID);
         }
 
         builder = RMercuryBuilder::<CbSimulationInterface, CbGameInput, CbGameState>::new(

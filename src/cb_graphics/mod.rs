@@ -193,7 +193,8 @@ impl<'a> CbGfx {
 
     pub fn build_menus(&mut self, world: &mut World) {
         let mut editable_components =
-            world.write_storage::<cb_simulation::components::EditableComponent>();
+            world
+                .write_storage::<cb_simulation::components::editor_components::EditableComponent>();
 
         // Voxels
         {
@@ -208,25 +209,6 @@ impl<'a> CbGfx {
                 if !voxel.is_editing() {
                     if !voxel.editor.created_menu {
                         let menu = voxel.init_editor();
-                        self.editor_gui_env.add_form(menu);
-                    }
-                    // sync stuff
-                }
-            }
-        }
-
-        // Fm Synth
-        {
-            let mut synths =
-                world.write_storage::<cb_simulation::components::audio::FmSynthComponent>();
-
-            for (editable, synth) in (&mut editable_components, &mut synths).join() {
-                if editable.is_editing() == false {
-                    continue;
-                }
-                if !synth.is_editing() {
-                    if !synth.editor.created_menu {
-                        let menu = synth.init_editor();
                         self.editor_gui_env.add_form(menu);
                     }
                     // sync stuff

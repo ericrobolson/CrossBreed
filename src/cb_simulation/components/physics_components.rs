@@ -6,6 +6,13 @@ use specs::prelude::*;
 use crate::cb_system;
 use cb_system::Coordinate;
 
+use super::ComponentLinker;
+
+init_components![
+    PhysicsComponentsLinker,
+    (VelocityComponent, TransformComponent)
+];
+
 pub struct VelocityComponent(Coordinate);
 
 impl VelocityComponent {
@@ -33,5 +40,3 @@ impl TransformComponent {
         };
     }
 }
-
-init_component_implementations![VelocityComponent, TransformComponent];

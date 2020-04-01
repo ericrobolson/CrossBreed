@@ -6,6 +6,10 @@ use specs::prelude::*;
 use crate::cb_simulation;
 use cb_simulation::CbWorldInputs;
 
+use super::ComponentLinker;
+
+init_components![ActorComponentsLinker, (ActorComponent)];
+
 pub struct ActorComponent {
     pub player_id: usize,
     pub inputs: CbWorldInputs,
@@ -19,5 +23,3 @@ impl ActorComponent {
         };
     }
 }
-
-init_component_implementations![ActorComponent];

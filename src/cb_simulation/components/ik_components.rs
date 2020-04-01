@@ -13,6 +13,10 @@ use cb_inverse_kinematics::IkRig;
 
 use crate::cb_menu;
 
+use super::ComponentLinker;
+
+init_components![IkComponentsLinker, (IkComponent)];
+
 pub struct IkComponent {
     pub rig: IkRig,
 }
@@ -22,5 +26,3 @@ impl IkComponent {
         return Self { rig: IkRig::new() };
     }
 }
-
-init_component_implementations![IkComponent];

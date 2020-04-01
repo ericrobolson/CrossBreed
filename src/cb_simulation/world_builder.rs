@@ -5,48 +5,29 @@ use super::*;
 
 use components;
 use components::{
-    actor_components, audio, gfx_components, ik_components, physics_components, voxel_components,
-    EditableComponent,
+    actor_components, audio, editor_components, gfx_components, ik_components, physics_components,
+    rts_components, voxel_components, ComponentLinker,
 };
 
 pub fn new(mode: CbSimulationModes) -> specs::World {
     let mut world = World::new();
 
     // Physics components
-    {
-        world.register::<physics_components::VelocityComponent>();
-        world.register::<physics_components::TransformComponent>();
-    }
-
-    // Voxel components
-    {
-        world.register::<voxel_components::VoxelComponent>();
-    }
-
+    physics_components::PhysicsComponentsLinker::register_components(&mut world);
+    // Rts components
+    rts_components::RtsComponentsLinker::register_components(&mut world);
     // GFX components
-    {
-        world.register::<gfx_components::CameraComponent>();
-    }
-
+    gfx_components::GfxComponentsLinker::register_components(&mut world);
     // IK components
-    {
-        world.register::<ik_components::IkComponent>();
-    }
-
+    ik_components::IkComponentsLinker::register_components(&mut world);
     // Actor components
-    {
-        world.register::<actor_components::ActorComponent>();
-    }
+    actor_components::ActorComponentsLinker::register_components(&mut world);
+    // Voxel components
+    voxel_components::VoxelComponentsLinker::register_components(&mut world);
+    // Editor components
+    editor_components::EditorComponentsLinker::register_components(&mut world);
 
     // Audio components
-    {
-        world.register::<audio::FmSynthComponent>();
-    }
-
-    // Misc components
-    {
-        world.register::<EditableComponent>();
-    }
 
     // Resources
     {
@@ -55,13 +36,8 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
 
     // Setup entities
     {
-        if mode == CbSimulationModes::VoxelEditor {
-            // run all voxel editor assemblages
-            assemblages::voxel_editor_assemblages::new(&mut world);
-            assemblages::fps_player_actor_assemblage::new(&mut world);
-        } else if mode == CbSimulationModes::FmAudioEditor {
-            assemblages::fm_audio_editor_assemblage::new(&mut world);
-        } else {
+        if mode == CbSimulationModes::RtsMode {
+            assemblages::rts_assemblages::new_unit(&mut world)
         }
     }
 

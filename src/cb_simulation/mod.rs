@@ -92,9 +92,6 @@ pub struct CbSimulationInterface<'a, 'b> {
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CbSimulationModes {
-    VoxelEditor,
-    Simulation,
-    FmAudioEditor,
     RtsMode,
 }
 

@@ -4,6 +4,20 @@ use specs::prelude::*;
 use crate::cb_system;
 use cb_system::{Coordinate, GameUnit};
 
+use super::ComponentLinker;
+
+init_components![
+    RtsComponentsLinker,
+    (
+        ArmorComponent,
+        HealthComponent,
+        AttackComponent,
+        RtsMovableComponent,
+        UnitComponent,
+        AbilitiesComponent
+    )
+];
+
 pub struct ArmorComponent {
     pub max: u8,
     pub min: u8,
@@ -88,12 +102,3 @@ impl AbilitiesComponent {
         return Self {};
     }
 }
-
-init_component_implementations![
-    ArmorComponent,
-    HealthComponent,
-    AttackComponent,
-    RtsMovableComponent,
-    UnitComponent,
-    AbilitiesComponent
-];
