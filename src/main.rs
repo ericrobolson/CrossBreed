@@ -1,7 +1,6 @@
 // Copyright 2020, Eric Olson, All rights reserved. Contact eric.rob.olson@gmail.com for questions regarding use.
 
 // External crates
-
 extern crate rmercury;
 use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 
@@ -9,9 +8,7 @@ use rmercury::{MercuryType, RMercuryBuilder, RMercuryExecutionResults};
 #[macro_use]
 pub mod cb_utility;
 // Non-macro Internal Crates
-pub mod cb_audio;
 pub mod cb_cmd_line;
-pub mod cb_data_structures;
 pub mod cb_graphics;
 pub mod cb_input;
 pub mod cb_inverse_kinematics;
@@ -22,37 +19,11 @@ pub mod cb_simulation;
 pub mod cb_system;
 pub mod cb_voxels;
 
-use cb_cmd_line::CbCmdMenu;
 use cb_input::{CbGameInput, CbInputContextManager};
 use cb_simulation::{CbGameState, CbSimulationInterface, CbSimulationModes};
 use cb_system::PlayerId;
 
-fn get_top_level_menu_choice(top_level_menu: CbCmdMenu, rts_mode: &str) -> String {
-    top_level_menu.print();
-
-    let mut mode_choice = "-1".to_string();
-    let mut done = false;
-    while !done {
-        mode_choice = top_level_menu.get_menu_choice();
-
-        if mode_choice == rts_mode {
-            println!("Do RTS Stuff");
-            done = true;
-        } else {
-            println!("Invalid choice! Try again.");
-        }
-    }
-
-    return mode_choice;
-}
-
 fn main() {
-    let top_level_menu = CbCmdMenu::root("CrossBreed.exe - Dev Kit", vec!["RTS Mode"]);
-
-    const RTS_MODE: &str = "1";
-
-    let mode_choice = get_top_level_menu_choice(top_level_menu, RTS_MODE);
-
     // Init RMercury
     let mut input_context_manager = CbInputContextManager::new();
 
@@ -60,13 +31,10 @@ fn main() {
     let mut game_interface;
     let mut builder;
     {
-        //if mode_choice == RTS_MODE
-        {
-            game_interface = CbSimulationInterface::new(CbSimulationModes::RtsMode);
-            game_interface.gfx.reset_cursor = false;
+        game_interface = CbSimulationInterface::new(CbSimulationModes::RtsMode);
+        game_interface.gfx.reset_cursor = false;
 
-            input_context_manager.add_context(cb_input::contexts::RTS_CONTEXT_ID);
-        }
+        input_context_manager.add_context(cb_input::contexts::RTS_CONTEXT_ID);
 
         builder = RMercuryBuilder::<CbSimulationInterface, CbGameInput, CbGameState>::new(
             &mut game_interface,
