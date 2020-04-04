@@ -4,34 +4,40 @@ extern crate specs;
 use specs::prelude::*;
 
 use crate::cb_system;
-use cb_system::Coordinate;
+use cb_system::Coordinate2d;
 
-pub struct VelocityComponent(Coordinate);
+use crate::cb_math;
+use cb_math::FInt;
+
+use super::ComponentLinker;
+
+init_components![
+    PhysicsComponentsLinker,
+    (VelocityComponent, TransformComponent)
+];
+
+pub struct VelocityComponent(Coordinate2d);
 
 impl VelocityComponent {
     pub fn new() -> Self {
-        return Self(Coordinate::new(0, 0, 0));
+        return Self(Coordinate2d::zero());
     }
 }
 
 pub struct TransformComponent {
-    pub world_position: Coordinate,
-    pub rotation: Coordinate,
-    pub scale: Coordinate,
+    pub world_position: Coordinate2d,
+    pub rotation: Coordinate2d,
+    pub scale: Coordinate2d,
 }
 
 impl TransformComponent {
     pub fn new() -> Self {
+        let zero = FInt::from_num(0);
+
         return Self {
-            world_position: Coordinate::new(0, 0, 0),
-            rotation: Coordinate::new(0, 0, 0),
-            scale: Coordinate::new(
-                Coordinate::full_unit(),
-                Coordinate::full_unit(),
-                Coordinate::full_unit(),
-            ),
+            world_position: Coordinate2d::zero(),
+            rotation: Coordinate2d::zero(),
+            scale: Coordinate2d::one(),
         };
     }
 }
-
-init_component_implementations![VelocityComponent, TransformComponent];

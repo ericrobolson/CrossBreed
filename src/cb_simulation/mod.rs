@@ -8,9 +8,11 @@ use crate::cb_voxels;
 use crate::cb_graphics;
 
 mod systems;
-use systems::{actor_input_system, editor_system::EditorSystem, voxel_editor_system};
+use systems::{
+    actor_input_system, audio, editor_system::EditorSystem, physics, voxel_editor_system,
+};
 
-pub mod assemblages;
+mod assemblages;
 pub mod components;
 use components::{
     gfx_components::CameraComponent, physics_components::TransformComponent,
@@ -29,7 +31,7 @@ use cb_input::CbGameInput;
 use crate::cb_menu;
 use cb_menu::{menu_events, Form};
 
-pub mod world_builder;
+mod world_builder;
 
 // NOTE: GAME UNITS are 1 = 1mm, using i32s
 
@@ -40,6 +42,8 @@ pub struct CbSystemValues {
     pub databinding_changes: Vec<(menu_events::EventId, menu_events::Events)>,
     current_player_id: usize,
     pub frame: usize,
+    pub editor_x: i32,
+    pub editor_y: i32,
 }
 
 impl CbSystemValues {
@@ -50,6 +54,8 @@ impl CbSystemValues {
             frame: 0,
             current_player_id: 0,
             databinding_changes: vec![],
+            editor_x: 0,
+            editor_y: 0,
         };
     }
 
@@ -63,6 +69,8 @@ impl CbSystemValues {
             events: vec![],
             world_inputs: world_inputs,
             frame: frame,
+            editor_x: 0,
+            editor_y: 0,
             databinding_changes: vec![],
         };
     }
@@ -78,45 +86,45 @@ pub struct CbSimulationInterface<'a, 'b> {
     sim_dispatcher: specs::Dispatcher<'a, 'b>,
     editor_dispatcher: specs::Dispatcher<'a, 'b>,
     gfx_dispatcher: specs::Dispatcher<'a, 'b>,
+    audio_dispatcher: specs::Dispatcher<'a, 'b>,
     pub gfx: cb_graphics::CbGfx,
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub enum CbSimulationModes {
-    VoxelEditor,
-    Simulation,
+    RtsMode,
 }
 
 impl<'a, 'b> CbSimulationInterface<'a, 'b> {
     /// Create a new CbSimulation
     pub fn new(mode: CbSimulationModes) -> Self {
-        let dispatcher;
-        {
-            let mut builder = DispatcherBuilder::new();
-
-            if mode == CbSimulationModes::VoxelEditor {
-                builder = builder.with(
-                    voxel_editor_system::VoxelEditorSystem,
-                    "voxel editor system",
-                    &[],
-                );
-            }
-
-            dispatcher = builder.build();
-        }
-
         let game_system_dispatcher;
         {
             game_system_dispatcher = DispatcherBuilder::new()
                 .with(actor_input_system::ActorInputSystem, "actor input", &[])
+                .with_barrier()
+                .with(physics::IkSystem, "inverse kinematics", &[])
                 .build();
+        }
+
+        let audio_system_dispatcher;
+        {
+            let mut dispatcher = DispatcherBuilder::new();
+
+            dispatcher = dispatcher
+                .with(audio::FmAudioSystem, "fm audio", &[])
+                .with_barrier();
+
+            dispatcher = dispatcher.with(audio::AudioSystem, "audio", &[]);
+
+            audio_system_dispatcher = dispatcher.build();
         }
 
         let editor_dispatcher = DispatcherBuilder::new()
             .with(EditorSystem, "editor system", &[])
             .build();
 
-        let mut gfx_dispatcher = DispatcherBuilder::new().build();
+        let mut gfx_dispatcher = cb_graphics::gfx_build_dispatcher();
         let mut world = world_builder::new(mode);
 
         return Self {
@@ -124,6 +132,7 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             game_state: CbGameState::new(),
             sim_dispatcher: game_system_dispatcher,
             editor_dispatcher: editor_dispatcher,
+            audio_dispatcher: audio_system_dispatcher,
             gfx_dispatcher: gfx_dispatcher,
             world: world,
             gfx: cb_graphics::CbGfx::new(),
@@ -145,8 +154,15 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
         println!("Editor Mode: {}", self.in_editor_mode);
     }
 
+    /// Render the audio
+    pub fn render_audio(&mut self) {
+        //TODO: maybe make delta based?
+        self.audio_dispatcher.dispatch(&self.world);
+    }
+
     /// Render the simulation; only updates the graphics systems
     pub fn render(&mut self) {
+        //TODO: maybe make delta based to allow for interpolation?
         self.gfx.render(
             &self.game_state,
             &self.world,
@@ -154,6 +170,7 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
         );
 
         self.gfx_dispatcher.dispatch(&self.world);
+        self.world.maintain();
     }
 }
 
@@ -173,6 +190,8 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
             self.game_state.current_tick as usize,
         );
         sys_values.events = self.gfx.editor_gui_env.get_events();
+        sys_values.editor_x = self.gfx.editor_mouse_x;
+        sys_values.editor_y = self.gfx.editor_mouse_y;
 
         self.world.insert(sys_values);
 
@@ -191,7 +210,6 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
         //else
         {
             // Execute simulation systems
-
             {
                 // Execute world systems + maintain it
                 self.sim_dispatcher.dispatch(&mut self.world);
@@ -209,7 +227,7 @@ impl<'a, 'b> RMercuryGameInterface<CbGameState, CbGameInput> for CbSimulationInt
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct CbGameState {
     pub current_tick: GameTick,
 }

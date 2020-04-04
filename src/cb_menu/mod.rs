@@ -3,14 +3,9 @@ pub use form::{Form, FormPosition};
 
 pub mod menu_events;
 
-pub mod cb_form;
-use cb_form::CbForm;
+pub mod forms;
+use forms::CbForm;
 
-pub mod cb_button;
-pub mod cb_button_toggle;
-pub mod cb_form_column;
-pub mod cb_form_row;
-pub mod cb_slider_horizontal;
 pub mod gfx;
 pub use gfx::{CbMenuDrawVirtualMachine, Palette};
 

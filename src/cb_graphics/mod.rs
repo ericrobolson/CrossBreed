@@ -13,6 +13,7 @@ use open_gl_backend::OpenGlBackend;
 pub mod cb_collada;
 pub mod mesh;
 pub mod sprites;
+mod systems;
 
 use crate::cb_menu;
 use cb_menu::{menu_events, EditorComponent};
@@ -22,6 +23,8 @@ use gfx::{Color, Palette};
 
 use crate::cb_simulation;
 use cb_simulation::CbGameState;
+
+pub use systems::gfx_build_dispatcher;
 
 /// A class that is meant to congregate all platform specific code that interacts with the logic layers, so that it can easily be refactored/swapped out later on.
 /// Eventually will switch over to a trait based system when cross-platform begins.
@@ -99,6 +102,9 @@ pub struct CbGfx {
     main_window_id: u32,
     editor_window_id: u32,
 
+    pub editor_mouse_x: i32,
+    pub editor_mouse_y: i32,
+
     gl_context: sdl2::video::GLContext, // Need this to keep the OpenGL context active
     gl_backend: OpenGlBackend,
     camera: CbCamera,
@@ -109,6 +115,9 @@ impl<'a> CbGfx {
     pub fn new() -> Self {
         let sdl_context = sdl2::init().unwrap();
         let event_pump = sdl_context.event_pump().unwrap();
+
+        // Init audio?
+        let audio = sdl_context.audio().unwrap();
 
         // Init OpenGL
         let video_subsystem = sdl_context.video().unwrap();
@@ -142,7 +151,12 @@ impl<'a> CbGfx {
 
         let editor_window_id = editor_window.id();
 
-        let mut canvas = editor_window.into_canvas().build().unwrap();
+        let mut editor_canvas = editor_window.into_canvas().build().unwrap();
+
+        // Load fonts for editor_canvas
+        {
+            //let tff_context = sdl2::tff::init().unwrap();
+        }
 
         return Self {
             reset_cursor: true,
@@ -154,7 +168,9 @@ impl<'a> CbGfx {
             window: window,
             main_window_id: main_window_id,
             editor_window_id: editor_window_id,
-            editor_window: canvas,
+            editor_window: editor_canvas,
+            editor_mouse_x: 0,
+            editor_mouse_y: 0,
             editor_gui_env: cb_menu::GuiEnvironment::new(
                 editor_width as usize,
                 editor_height as usize,
@@ -180,23 +196,33 @@ impl<'a> CbGfx {
 
     pub fn build_menus(&mut self, world: &mut World) {
         let mut editable_components =
-            world.write_storage::<cb_simulation::components::EditableComponent>();
+            world
+                .write_storage::<cb_simulation::components::editor_components::EditableComponent>();
 
-        let mut voxel_components =
-            world.write_storage::<cb_simulation::components::voxel_components::VoxelComponent>();
+        // Voxels
+        {
+            let mut voxel_components = world
+                .write_storage::<cb_simulation::components::voxel_components::VoxelComponent>(
+            );
 
-        for (editable, voxel) in (&mut editable_components, &mut voxel_components).join() {
-            if editable.is_editing() == false {
-                continue;
-            }
-            if !voxel.is_editing() {
-                if !voxel.editor.created_menu {
-                    let menu = voxel.init_editor();
-                    self.editor_gui_env.add_form(menu);
+            for (editable, voxel) in (&mut editable_components, &mut voxel_components).join() {
+                if editable.is_editing() == false {
+                    continue;
                 }
-                // sync stuff
+                if !voxel.is_editing() {
+                    if !voxel.editor.created_menu {
+                        let menu = voxel.init_editor();
+                        self.editor_gui_env.add_form(menu);
+                    }
+                    // sync stuff
+                }
             }
         }
+    }
+
+    /// Hacky, remove when ready to ship
+    pub fn get_editor_cursor_xy(&self) -> (i32, i32) {
+        return (self.editor_mouse_x, self.editor_mouse_y);
     }
 
     pub fn get_events(&mut self) -> Vec<sdl2::event::Event> {
@@ -212,12 +238,16 @@ impl<'a> CbGfx {
                     window_id,
                     which: _,
                     mousestate: _,
-                    x: _,
-                    y: _,
+                    x: mouse_x,
+                    y: mouse_y,
                     xrel: _,
                     yrel: _,
                 } => {
                     let is_editor = *window_id == self.editor_window_id;
+
+                    self.editor_mouse_x = *mouse_x;
+                    self.editor_mouse_y = *mouse_y;
+
                     if is_editor {
                         editor_window_events.push(e.clone());
                     } else {
@@ -312,13 +342,85 @@ impl<'a> CbGfx {
         self.window.gl_swap_window();
 
         // Draw GUI editor window
+        self.render_editor_window(&game_state, &world, frame);
+    }
+
+    fn render_editor_window(&mut self, game_state: &CbGameState, world: &World, frame: usize) {
         {
             // Clear canvas
             let canvas = &mut self.editor_window;
             canvas.set_draw_color(sdl2::pixels::Color::RGB(237, 237, 237));
             canvas.clear();
 
-            // Render
+            // IK components to draw
+            {
+                let ik_components =
+                    world.read_storage::<cb_simulation::components::ik_components::IkComponent>();
+
+                for ik in (&ik_components).join() {
+                    let rig = &ik.rig;
+
+                    if rig.is_valid_rig() {
+                        let len = rig.joints.len() - 1;
+
+                        for i in 0..len {
+                            let mut joint1 = rig.get_child_position(i);
+                            let mut joint2 = rig.get_child_position(i + 1);
+
+                            joint1 += rig.position;
+                            joint2 += rig.position;
+
+                            canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+
+                            let joint_rect_width = 6;
+                            canvas
+                                .draw_rect(sdl2::rect::Rect::new(
+                                    (joint1.x as i32) - joint_rect_width,
+                                    (joint1.y as i32) - joint_rect_width,
+                                    joint_rect_width as u32,
+                                    joint_rect_width as u32,
+                                ))
+                                .unwrap();
+
+                            canvas
+                                .draw_line(
+                                    (joint1.x as i32, joint1.y as i32),
+                                    (joint2.x as i32, joint2.y as i32),
+                                )
+                                .unwrap();
+                        }
+                    }
+                }
+            }
+
+            // Rts components to draw
+            {
+                let transform_components =
+                    world.read_storage::<cb_simulation::components::physics_components::TransformComponent>();
+
+                let unit_base_components  =
+                    world.read_storage::<cb_simulation::components::character_components::UnitBaseComponent>();
+
+                for (transform, base) in (&transform_components, &unit_base_components).join() {
+                    canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+
+                    let rect_size = base.base_size.to_num::<i32>();
+
+                    let x = transform.world_position.x.to_num::<i32>();
+                    let y = transform.world_position.y.to_num::<i32>();
+
+                    canvas
+                        .draw_rect(sdl2::rect::Rect::new(
+                            x - rect_size / 2,
+                            y - rect_size / 2,
+                            rect_size as u32,
+                            rect_size as u32,
+                        ))
+                        .unwrap();
+                }
+            }
+
+            // Render editor GUI
             let draw_calls = self.editor_gui_env.draw();
             for draw_call in draw_calls.iter() {
                 match draw_call {
@@ -343,6 +445,9 @@ impl<'a> CbGfx {
                                 (position.height) as u32,
                             ))
                             .unwrap();
+                    }
+                    cb_menu::CbMenuDrawVirtualMachine::Text(position, color, value) => {
+                        println!("gonna draw text: {}", value);
                     }
                 }
             }

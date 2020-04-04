@@ -11,7 +11,7 @@ use cb_menu::EditorComponent;
 impl<'a> System<'a> for EditorSystem {
     type SystemData = (
         Write<'a, CbSystemValues>,
-        WriteStorage<'a, components::EditableComponent>,
+        WriteStorage<'a, components::editor_components::EditableComponent>,
         WriteStorage<'a, components::voxel_components::VoxelComponent>,
     );
 
@@ -34,5 +34,7 @@ impl<'a> System<'a> for EditorSystem {
 
             // sync stuff
         }
+
+        // sync stuff
     }
 }

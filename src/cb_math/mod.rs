@@ -3,8 +3,29 @@
 pub mod cb_matrix;
 pub mod cb_range;
 
+extern crate fixed;
+use fixed::types::{I20F12, U20F12};
+
+pub type FInt = I20F12;
+pub type FUint = U20F12;
+
 /// Returns the number raised to the power
 pub fn pow(num: usize, pow: usize) -> usize {
+    let mut value = 1;
+
+    for _ in 0..pow {
+        value *= num;
+    }
+
+    return value;
+}
+
+/// NOTE: get rid of floating points as they're non-deterministic
+pub fn sqrt_f32(value: f32) -> f32 {
+    return value.sqrt();
+}
+
+pub fn pow_i32(num: i32, pow: usize) -> i32 {
     let mut value = 1;
 
     for _ in 0..pow {

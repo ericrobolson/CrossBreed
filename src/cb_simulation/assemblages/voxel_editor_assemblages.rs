@@ -13,6 +13,6 @@ pub fn new(world: &mut World) {
         .with(VoxelComponent::new())
         .with(TransformComponent::new())
         .with(CameraComponent::new())
-        .with(components::EditableComponent::new(false))
+        .with(components::editor_components::EditableComponent::new(false))
         .build();
 }

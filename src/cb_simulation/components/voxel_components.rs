@@ -3,7 +3,7 @@ extern crate specs;
 use specs::prelude::*;
 
 use crate::cb_system;
-use cb_system::{Coordinate, GameUnit};
+use cb_system::{Coordinate3d, GameUnit};
 
 use crate::cb_patterns;
 use cb_patterns::command::MacroCommand;
@@ -14,6 +14,10 @@ use crate::cb_math::cb_range::CbNormalizedRange;
 
 use crate::cb_menu;
 use cb_menu::{menu_events, menu_events::EventId, EditorComponent, Form};
+
+use super::ComponentLinker;
+
+init_components![VoxelComponentsLinker, (VoxelComponent)];
 
 #[derive(Clone)]
 pub struct VoxelComponent {
@@ -102,16 +106,16 @@ impl EditorComponent for VoxelComponent {
         let mut columns;
         {
             let palette = cb_menu::gfx::Palette::new();
-            columns = cb_menu::cb_form_column::CbFormColumn::new(palette);
+            columns = cb_menu::forms::CbFormColumn::new(palette);
 
             let num_voxels_in_slice = cb_voxels::CHUNK_SIZE * cb_voxels::CHUNKS;
 
             for x in (0..num_voxels_in_slice).rev() {
-                let mut row = cb_menu::cb_form_row::CbFormRow::new(palette);
+                let mut row = cb_menu::forms::CbFormRow::new(palette);
                 for y in (0..num_voxels_in_slice).rev() {
                     let (x, y) = (y, x);
 
-                    let mut button = cb_menu::cb_button_toggle::CbButtonToggle::new(palette);
+                    let mut button = cb_menu::forms::CbButtonToggle::new(palette);
 
                     let (active, _, _, _) = self.chunk_manager.get_voxel(x, y, self.editor.z_index);
 
@@ -127,7 +131,7 @@ impl EditorComponent for VoxelComponent {
             }
 
             // Add slider component to control selected Z index
-            let mut slider = cb_menu::cb_slider_horizontal::CbSliderHorizontal::new(palette);
+            let mut slider = cb_menu::forms::CbSliderHorizontal::new(palette);
             let slider_value = CbNormalizedRange::new(
                 self.editor.z_index as i32,
                 0,
@@ -194,8 +198,6 @@ impl VoxelComponent {
         };
     }
 }
-
-init_component_implementations![VoxelComponent];
 
 pub struct VoxelComponentController {
     command_stack: MacroCommand,

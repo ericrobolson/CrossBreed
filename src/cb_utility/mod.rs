@@ -4,19 +4,27 @@
     This module is designed to remove dependencies on other libraries, or platform specific code.
 */
 
-// IF SPECS:
-
-/// Initialize a Specs implementation of Component for the given structs using the VecStorage type.
+/// Initialize a component linker that registers components to the world as well as the component implementations.
 #[macro_export]
-macro_rules! init_component_implementations{
-     ( $( $t:ty ),* ) => {
+macro_rules! init_components{
+    ($i:ident, ($( $t:ty ),*) ) => {
+            pub struct $i {}
+
+            impl ComponentLinker for $i {
+                fn register_components(world: &mut World) {
+                    $(
+                      world.register::<$t>();
+                    )*
+                }
+            }
+
             $(
-                 impl Component for $t {
-            type Storage = VecStorage<Self>;
-        }
+            impl Component for $t {
+                type Storage = VecStorage<Self>;
+            }
             )*
         };
-    }
+}
 
 /// Initialize multiple variables
 #[macro_export]
