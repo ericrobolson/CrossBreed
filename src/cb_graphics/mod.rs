@@ -13,6 +13,7 @@ use open_gl_backend::OpenGlBackend;
 pub mod cb_collada;
 pub mod mesh;
 pub mod sprites;
+mod systems;
 
 use crate::cb_menu;
 use cb_menu::{menu_events, EditorComponent};
@@ -22,6 +23,8 @@ use gfx::{Color, Palette};
 
 use crate::cb_simulation;
 use cb_simulation::CbGameState;
+
+pub use systems::gfx_build_dispatcher;
 
 /// A class that is meant to congregate all platform specific code that interacts with the logic layers, so that it can easily be refactored/swapped out later on.
 /// Eventually will switch over to a trait based system when cross-platform begins.
@@ -387,6 +390,33 @@ impl<'a> CbGfx {
                                 .unwrap();
                         }
                     }
+                }
+            }
+
+            // Rts components to draw
+            {
+                let transform_components =
+                    world.read_storage::<cb_simulation::components::physics_components::TransformComponent>();
+
+                let unit_base_components  =
+                    world.read_storage::<cb_simulation::components::character_components::UnitBaseComponent>();
+
+                for (transform, base) in (&transform_components, &unit_base_components).join() {
+                    canvas.set_draw_color(sdl2::pixels::Color::RGB(0, 0, 0));
+
+                    let rect_size = base.base_size.to_num::<i32>();
+
+                    let x = transform.world_position.x.to_num::<i32>();
+                    let y = transform.world_position.y.to_num::<i32>();
+
+                    canvas
+                        .draw_rect(sdl2::rect::Rect::new(
+                            x - rect_size / 2,
+                            y - rect_size / 2,
+                            rect_size as u32,
+                            rect_size as u32,
+                        ))
+                        .unwrap();
                 }
             }
 

@@ -3,7 +3,7 @@ extern crate specs;
 use specs::prelude::*;
 
 use crate::cb_system;
-use cb_system::{Coordinate, GameUnit};
+use cb_system::{Coordinate3d, GameUnit};
 
 use crate::cb_patterns;
 use cb_patterns::command::MacroCommand;

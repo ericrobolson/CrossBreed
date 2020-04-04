@@ -124,7 +124,7 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
             .with(EditorSystem, "editor system", &[])
             .build();
 
-        let mut gfx_dispatcher = DispatcherBuilder::new().build();
+        let mut gfx_dispatcher = cb_graphics::gfx_build_dispatcher();
         let mut world = world_builder::new(mode);
 
         return Self {
@@ -170,6 +170,7 @@ impl<'a, 'b> CbSimulationInterface<'a, 'b> {
         );
 
         self.gfx_dispatcher.dispatch(&self.world);
+        self.world.maintain();
     }
 }
 

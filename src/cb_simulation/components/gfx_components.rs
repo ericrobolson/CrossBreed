@@ -5,7 +5,27 @@ use specs::prelude::*;
 
 use super::ComponentLinker;
 
-init_components![GfxComponentsLinker, (CameraComponent)];
+init_components![
+    GfxComponentsLinker,
+    (CameraComponent, SpriteComponent, SpriteRenderComponent)
+];
+
+pub struct SpriteComponent {}
+
+impl SpriteComponent {
+    pub fn new() -> Self {
+        return Self {};
+    }
+}
+
+#[derive(Clone)]
+pub struct SpriteRenderComponent {}
+
+impl SpriteRenderComponent {
+    pub fn new() -> Self {
+        return Self {};
+    }
+}
 
 pub struct CameraComponent {
     pub camera_orthographic_view: bool,

@@ -12,11 +12,12 @@ use crate::cb_menu;
 
 pub mod actor_components;
 pub mod audio;
+pub mod character_components;
 pub mod editor_components;
 pub mod gfx_components;
 pub mod ik_components;
+pub mod menu_components;
 pub mod physics_components;
-pub mod rts_components;
 pub mod voxel_components;
 
 /// A simple trait for linking components to the world

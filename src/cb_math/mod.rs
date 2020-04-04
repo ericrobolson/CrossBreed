@@ -3,6 +3,12 @@
 pub mod cb_matrix;
 pub mod cb_range;
 
+extern crate fixed;
+use fixed::types::{I20F12, U20F12};
+
+pub type FInt = I20F12;
+pub type FUint = U20F12;
+
 /// Returns the number raised to the power
 pub fn pow(num: usize, pow: usize) -> usize {
     let mut value = 1;

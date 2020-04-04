@@ -5,8 +5,8 @@ use super::*;
 
 use components;
 use components::{
-    actor_components, audio, editor_components, gfx_components, ik_components, physics_components,
-    rts_components, voxel_components, ComponentLinker,
+    actor_components, audio, character_components, editor_components, gfx_components,
+    ik_components, menu_components, physics_components, voxel_components, ComponentLinker,
 };
 
 pub fn new(mode: CbSimulationModes) -> specs::World {
@@ -14,8 +14,8 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
 
     // Physics components
     physics_components::PhysicsComponentsLinker::register_components(&mut world);
-    // Rts components
-    rts_components::RtsComponentsLinker::register_components(&mut world);
+    // Character components
+    character_components::ComponentsLinker::register_components(&mut world);
     // GFX components
     gfx_components::GfxComponentsLinker::register_components(&mut world);
     // IK components
@@ -26,6 +26,9 @@ pub fn new(mode: CbSimulationModes) -> specs::World {
     voxel_components::VoxelComponentsLinker::register_components(&mut world);
     // Editor components
     editor_components::EditorComponentsLinker::register_components(&mut world);
+
+    // Menu components
+    menu_components::MenuComponentsLinker::register_components(&mut world);
 
     // Audio components
 
